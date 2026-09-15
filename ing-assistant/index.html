@@ -321,6 +321,23 @@
   .site-info-label { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
   .site-info-val { font-size: 13px; color: var(--ink); }
   .site-info-val.empty { color: var(--ink-faint); font-style: italic; }
+  .doclist-docs { display: flex; flex-direction: column; }
+  .docrow { display: grid; grid-template-columns: 220px 1fr; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .docrow:last-child { border-bottom: none; }
+  .docrow-label { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); padding-top: 8px; }
+  .docrow-main { display: flex; flex-direction: column; gap: 10px; }
+  .docrow-value-row { display: flex; gap: 8px; align-items: center; }
+  .docrow-value-row input { flex: 1; border: 1px solid var(--border-strong); border-radius: 8px; padding: 8px 11px;
+    font-size: 13px; font-family: var(--sans); }
+  .doc-file-row { display: flex; align-items: center; }
+  .doc-uploading { font-size: 12px; color: var(--ink-faint); }
+  .doc-file-chip { display: inline-flex; align-items: center; gap: 8px; background: var(--surface-2); border-radius: 8px;
+    padding: 7px 11px; font-size: 12.5px; }
+  .doc-file-chip a { color: var(--navy); font-weight: 600; text-decoration: none; }
+  .doc-file-chip a:hover { text-decoration: underline; }
+  .doc-file-del { cursor: pointer; color: var(--ink-faint); display: flex; }
+  .doc-file-del:hover { color: var(--red); }
+  .doc-upload-label { display: inline-flex; align-items: center; gap: 6px; width: fit-content; }
 
   /* print sheet — hidden on screen, shown only via window.print() */
   #print-sheet { display: none; }
@@ -379,7 +396,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b17-2026-09-15";
+  var BUILD = "b18-2026-09-15";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -404,7 +421,9 @@
       addDraft: emptySiteDraft(),
       editing: false,
       editDraft: emptySiteDraft(),
-      subTab: "sintetice"
+      subTab: "sintetice",
+      docDrafts: {},
+      docUploading: {}
     }
   };
 
@@ -413,6 +432,22 @@
 
   function statusBadgeCls(status) { return status === "Finalizat" ? "badge-final" : "badge-activ"; }
   function statusDotCls(status) { return status === "Finalizat" ? "dot-final" : "dot-activ"; }
+
+  // --- Date generale ale proiectului: nr/dată + fișier scanat, per tip de document ---
+  var DOC_BUCKET = "santier-documente";
+  var PROJECT_DOCS = [
+    ["autorizatie", "Autorizație"]
+  ];
+  var projectDocs = [];
+  function docFromRow(d) {
+    return { id: d.id, santierId: d.santier_id, tip: d.tip, valoare: d.valoare || "", fisierPath: d.fisier_path || "", fisierNume: d.fisier_nume || "", fisierMarime: d.fisier_marime || null };
+  }
+  function findProjectDoc(santierId, tip) {
+    for (var i = 0; i < projectDocs.length; i++) if (projectDocs[i].santierId === santierId && projectDocs[i].tip === tip) return projectDocs[i];
+    return null;
+  }
+  function docDraftKey(santierId, tip) { return santierId + "|" + tip; }
+  function sanitizeFilename(name) { return String(name).replace(/[^a-zA-Z0-9.\-_]+/g, "_"); }
 
   // --- pontaj: persisted in Supabase (workers, daily statuses, company header) ---
   var SUPABASE_URL = "https://rwxsvsqoohepcfbawfng.supabase.co";
@@ -450,9 +485,10 @@
       sb.from("muncitori").select("*").order("created_at"),
       sb.from("pontaj_intrari").select("*"),
       sb.from("companie").select("*").eq("id", 1).single(),
-      sb.from("santiere").select("*").order("created_at")
+      sb.from("santiere").select("*").order("created_at"),
+      sb.from("santier_documente").select("*")
     ]).then(function (results) {
-      var mRes = results[0], eRes = results[1], cRes = results[2], sRes = results[3];
+      var mRes = results[0], eRes = results[1], cRes = results[2], sRes = results[3], dRes = results[4];
       workers = (mRes.data || []).map(function (w) {
         return { id: w.id, name: w.nume, functie: w.functie || "", salariu: w.salariu, metodaPlata: w.metoda_plata || "CARD", telefon: w.telefon || "" };
       });
@@ -460,6 +496,7 @@
       (eRes.data || []).forEach(function (e) { entries[e.muncitor_id + "|" + e.data] = e.status; });
       if (cRes.data) company = { name: cRes.data.nume, cif: cRes.data.cod_fiscal };
       sites = (sRes.data || []).map(siteFromRow);
+      projectDocs = (dRes.data || []).map(docFromRow);
     }).catch(function (err) {
       flashSyncError("Nu am putut încărca datele din Supabase.");
       console.error(err);
@@ -484,7 +521,7 @@
   function doLogout() {
     sb.auth.signOut().then(function () {
       authState.session = null;
-      workers = []; entries = {}; company = { name: "", cif: "" }; sites = [];
+      workers = []; entries = {}; company = { name: "", cif: "" }; sites = []; projectDocs = [];
       state.view = "dashboard"; state.selectedSiteId = null;
       render();
     });
@@ -655,6 +692,70 @@
       if (res.error) { flashSyncError("Nu am putut șterge șantierul."); console.error(res.error); }
     });
   }
+
+  function saveDocValoare(siteId, tip) {
+    var key = docDraftKey(siteId, tip);
+    var val = (state.siteForm.docDrafts[key] || "").trim();
+    var existing = findProjectDoc(siteId, tip);
+    if (existing) existing.valoare = val;
+    else { existing = { id: "tmp-" + Date.now(), santierId: siteId, tip: tip, valoare: val, fisierPath: "", fisierNume: "", fisierMarime: null }; projectDocs.push(existing); }
+    delete state.siteForm.docDrafts[key];
+    sb.from("santier_documente").upsert({ santier_id: siteId, tip: tip, valoare: val }, { onConflict: "santier_id,tip" })
+      .select().single().then(function (res) {
+        if (res.error) { flashSyncError("Nu am putut salva valoarea."); console.error(res.error); render(); return; }
+        if (String(existing.id).indexOf("tmp-") === 0) existing.id = res.data.id;
+        render();
+      });
+  }
+
+  function uploadDocFile(site, tip, file) {
+    var key = docDraftKey(site.id, tip);
+    var existing = findProjectDoc(site.id, tip);
+    var oldPath = existing ? existing.fisierPath : "";
+    state.siteForm.docUploading[key] = true;
+    render();
+    var path = site.id + "/" + tip + "/" + Date.now() + "-" + sanitizeFilename(file.name);
+    sb.storage.from(DOC_BUCKET).upload(path, file).then(function (upRes) {
+      if (upRes.error) {
+        state.siteForm.docUploading[key] = false;
+        flashSyncError("Nu am putut încărca fișierul — încearcă din nou.");
+        console.error(upRes.error);
+        render();
+        return;
+      }
+      sb.from("santier_documente")
+        .upsert({ santier_id: site.id, tip: tip, fisier_path: path, fisier_nume: file.name, fisier_marime: file.size }, { onConflict: "santier_id,tip" })
+        .select().single().then(function (res) {
+          state.siteForm.docUploading[key] = false;
+          if (res.error) {
+            flashSyncError("Fișierul s-a încărcat dar nu am putut salva referința — încearcă din nou.");
+            console.error(res.error);
+            render();
+            return;
+          }
+          if (existing) { existing.fisierPath = path; existing.fisierNume = file.name; existing.fisierMarime = file.size; }
+          else { existing = { id: res.data.id, santierId: site.id, tip: tip, valoare: "", fisierPath: path, fisierNume: file.name, fisierMarime: file.size }; projectDocs.push(existing); }
+          render();
+          if (oldPath) sb.storage.from(DOC_BUCKET).remove([oldPath]); // replaced file — drop the orphaned old one
+        });
+    });
+  }
+
+  function removeDocFile(site, tip) {
+    var existing = findProjectDoc(site.id, tip);
+    if (!existing || !existing.fisierPath) return;
+    if (!confirmDelete('Ștergi fișierul "' + existing.fisierNume + '"? Această acțiune nu poate fi anulată.')) return;
+    var oldPath = existing.fisierPath;
+    existing.fisierPath = ""; existing.fisierNume = ""; existing.fisierMarime = null;
+    render();
+    sb.storage.from(DOC_BUCKET).remove([oldPath]).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut șterge fișierul din stocare."); console.error(res.error); }
+    });
+    sb.from("santier_documente").update({ fisier_path: null, fisier_nume: null, fisier_marime: null }).eq("id", existing.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut actualiza baza de date."); console.error(res.error); render(); }
+    });
+  }
+
   function shiftMonth(delta) {
     var m = state.pontaj.month + delta, y = state.pontaj.year;
     if (m < 1) { m = 12; y -= 1; } else if (m > 12) { m = 1; y += 1; }
@@ -787,6 +888,43 @@
       '</div>';
   }
 
+  function proiectGeneralPanelHTML(site) {
+    var rows = PROJECT_DOCS.map(function (d) {
+      var tip = d[0], label = d[1];
+      var doc = findProjectDoc(site.id, tip);
+      var key = docDraftKey(site.id, tip);
+      var draftVal = state.siteForm.docDrafts[key];
+      var inputVal = (draftVal !== undefined) ? draftVal : (doc ? doc.valoare : "");
+      var uploading = !!state.siteForm.docUploading[key];
+
+      var fileSection;
+      if (uploading) {
+        fileSection = '<div class="doc-file-row"><span class="doc-uploading">Se încarcă…</span></div>';
+      } else if (doc && doc.fisierPath) {
+        var publicUrl = sb.storage.from(DOC_BUCKET).getPublicUrl(doc.fisierPath).data.publicUrl;
+        fileSection = '<div class="doc-file-row"><div class="doc-file-chip">' + icon("doc", 14) +
+          '<a href="' + esc(publicUrl) + '" target="_blank" rel="noopener">' + esc(doc.fisierNume) + '</a>' +
+          '<span class="doc-file-del" data-remove-doc-file="' + site.id + '|' + tip + '" title="Șterge fișier">' + icon("trash", 13) + '</span>' +
+        '</div></div>';
+      } else {
+        var inputId = "doc-file-" + tip + "-" + site.id;
+        fileSection = '<div class="doc-file-row"><label class="btn btn-ghost btn-sm doc-upload-label" for="' + inputId + '">' + icon("plus", 13) + 'Atașează fișier' +
+          '<input type="file" id="' + inputId + '" data-doc-file-input="' + site.id + '|' + tip + '" accept=".pdf,image/*" style="display:none"></label></div>';
+      }
+
+      return '<div class="docrow"><div class="docrow-label">' + esc(label) + '</div>' +
+        '<div class="docrow-main">' +
+          '<div class="docrow-value-row"><input data-doc-valoare-key="' + key + '" placeholder="nr. / data" value="' + esc(inputVal) + '">' +
+            '<button class="btn btn-ghost btn-sm" data-save-doc-valoare="' + site.id + '|' + tip + '">Salvează</button></div>' +
+          fileSection +
+        '</div></div>';
+    }).join("");
+    return '<div class="panel"><div class="panel-title">Date generale ale proiectului</div>' +
+      '<div class="panel-sub">Documentele oficiale ale proiectului — număr/dată și, opțional, fișierul scanat.</div>' +
+      '<div class="doclist-docs">' + rows + '</div>' +
+    '</div>';
+  }
+
   function dateSantierPanelHTML(site) {
     var subTab = state.siteForm.subTab;
     var subtabsNav = '<div class="subtabs">' +
@@ -794,11 +932,7 @@
       '<div class="subtab' + (subTab === "general" ? " active" : "") + '" data-site-subtab="general">Date generale ale proiectului</div>' +
     '</div>';
 
-    if (subTab === "general") {
-      return subtabsNav + '<div class="panel" style="text-align:center;padding:40px 20px">' +
-        '<div style="font-size:13px;color:var(--ink-soft)">Acest sub-tab nu este încă configurat.</div>' +
-      '</div>';
-    }
+    if (subTab === "general") return subtabsNav + proiectGeneralPanelHTML(site);
 
     if (state.siteForm.editing) {
       return subtabsNav + '<div class="panel"><div class="panel-title">Date sintetice</div>' +
@@ -1172,7 +1306,7 @@
       "[data-add-worker],[data-remove-worker],[data-print-pontaj],[data-toggle-company],[data-save-company],[data-logout]," +
       "[data-toggle-select-mode],[data-bulk-status],[data-clear-selection],[data-retry-failed]," +
       "[data-open-add-site],[data-close-add-site],[data-save-new-site],[data-edit-site],[data-save-site-edit],[data-cancel-site-edit],[data-delete-site]," +
-      "[data-site-subtab]"
+      "[data-site-subtab],[data-save-doc-valoare],[data-remove-doc-file]"
     );
 
     // Only re-render when something actually changes. A blanket render() on every
@@ -1259,6 +1393,15 @@
       else if (t.dataset.cancelSiteEdit) { state.siteForm.editing = false; }
       else if (t.dataset.deleteSite) { removeSite(t.dataset.deleteSite); }
       else if (t.dataset.siteSubtab) { state.siteForm.subTab = t.dataset.siteSubtab; }
+      else if (t.dataset.saveDocValoare) {
+        var dvParts = t.dataset.saveDocValoare.split("|");
+        saveDocValoare(dvParts[0], dvParts[1]);
+      }
+      else if (t.dataset.removeDocFile) {
+        var rdParts = t.dataset.removeDocFile.split("|");
+        var rdSite = findSite(rdParts[0]);
+        if (rdSite) removeDocFile(rdSite, rdParts[1]);
+      }
     }
 
     if (needsRender) {
@@ -1280,9 +1423,16 @@
     else if (id === "company-cif-input") cd.cif = e.target.value;
     else if (id.indexOf("new-site-") === 0) state.siteForm.addDraft[id.slice(9)] = e.target.value;
     else if (id.indexOf("site-edit-") === 0) state.siteForm.editDraft[id.slice(10)] = e.target.value;
+    else if (e.target.dataset.docValoareKey) state.siteForm.docDrafts[e.target.dataset.docValoareKey] = e.target.value;
   });
   document.getElementById("app").addEventListener("change", function (e) {
     if (e.target.id === "new-worker-metoda") state.pontaj.newWorker.metoda = e.target.value;
+    else if (e.target.dataset.docFileInput) {
+      var dfParts = e.target.dataset.docFileInput.split("|");
+      var dfSite = findSite(dfParts[0]);
+      var file = e.target.files && e.target.files[0];
+      if (dfSite && file) uploadDocFile(dfSite, dfParts[1], file);
+    }
   });
 
   document.addEventListener("submit", function (e) {
