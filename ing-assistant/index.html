@@ -324,8 +324,15 @@
   .site-info-val { font-size: 13px; color: var(--ink); }
   .site-info-val.empty { color: var(--ink-faint); font-style: italic; }
   .doclist-docs { display: flex; flex-direction: column; }
-  .docrow { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .docrow { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap;
+    position: relative; transition: border-top-color .1s ease, border-bottom-color .1s ease; }
   .docrow:last-child { border-bottom: none; }
+  .docrow[draggable="true"] { cursor: default; }
+  .docrow-grip { flex-shrink: 0; display: flex; align-items: center; color: var(--ink-faint); opacity: .35; cursor: grab; }
+  .docrow-grip:hover { opacity: .8; }
+  .docrow.dragging { opacity: .4; }
+  .docrow.drag-over-top { border-top: 2px solid var(--navy); }
+  .docrow.drag-over-bottom { border-bottom: 2px solid var(--navy); }
   .docrow-label { flex: 0 0 140px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
   .docrow-input { flex: 1 1 220px; min-width: 120px; border: 1px solid var(--border-strong); border-radius: 8px;
     padding: 8px 11px; font-size: 13px; font-family: var(--sans); }
@@ -397,7 +404,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b22-2026-09-15";
+  var BUILD = "b23-2026-09-15";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -454,6 +461,38 @@
   function docDraftKey(santierId, tip) { return santierId + "|" + tip; }
   function sanitizeFilename(name) { return String(name).replace(/[^a-zA-Z0-9.\-_]+/g, "_"); }
 
+  // Row order for the fixed document types is a shared preference (same for
+  // every site), stored on the singleton "companie" row — new types added
+  // later that aren't in the saved order just land at the end.
+  function orderedProjectDocs() {
+    var order = company.docTipOrder;
+    if (!order || !order.length) return PROJECT_DOCS.slice();
+    var byTip = {};
+    PROJECT_DOCS.forEach(function (d) { byTip[d[0]] = d; });
+    var ordered = order.map(function (tip) { return byTip[tip]; }).filter(Boolean);
+    var seen = {};
+    ordered.forEach(function (d) { seen[d[0]] = true; });
+    PROJECT_DOCS.forEach(function (d) { if (!seen[d[0]]) ordered.push(d); });
+    return ordered;
+  }
+
+  function reorderProjectDocs(draggedTip, targetTip, before) {
+    if (draggedTip === targetTip) return;
+    var current = orderedProjectDocs().map(function (d) { return d[0]; });
+    var fromIdx = current.indexOf(draggedTip);
+    if (fromIdx === -1) return;
+    current.splice(fromIdx, 1);
+    var toIdx = current.indexOf(targetTip);
+    if (toIdx === -1) return;
+    if (!before) toIdx += 1;
+    current.splice(toIdx, 0, draggedTip);
+    company.docTipOrder = current;
+    render();
+    sb.from("companie").update({ doc_tip_order: current }).eq("id", 1).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva ordinea documentelor."); console.error(res.error); }
+    });
+  }
+
   // --- pontaj: persisted in Supabase (workers, daily statuses, company header) ---
   var SUPABASE_URL = "https://rwxsvsqoohepcfbawfng.supabase.co";
   var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3eHN2c3Fvb2hlcGNmYmF3Zm5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0NTM4NjksImV4cCI6MjEwNTAyOTg2OX0.kQDsm-LvaKf9iNg9g8fdzdpaHBznK94-_S3jfukKyCs";
@@ -464,7 +503,7 @@
 
   var workers = [];
   var entries = {};
-  var company = { name: "", cif: "" };
+  var company = { name: "", cif: "", docTipOrder: null };
   // Cells whose write to Supabase failed — kept until retried successfully, so a
   // network blip can never silently drop a completed day (per user requirement:
   // "nu vreau sa pierd ce completez").
@@ -500,7 +539,7 @@
       });
       entries = {};
       (eRes.data || []).forEach(function (e) { entries[e.muncitor_id + "|" + e.data] = e.status; });
-      if (cRes.data) company = { name: cRes.data.nume, cif: cRes.data.cod_fiscal };
+      if (cRes.data) company = { name: cRes.data.nume, cif: cRes.data.cod_fiscal, docTipOrder: cRes.data.doc_tip_order || null };
       sites = (sRes.data || []).map(siteFromRow);
       projectDocs = (dRes.data || []).map(docFromRow);
     }).catch(function (err) {
@@ -527,7 +566,7 @@
   function doLogout() {
     sb.auth.signOut().then(function () {
       authState.session = null;
-      workers = []; entries = {}; company = { name: "", cif: "" }; sites = []; projectDocs = [];
+      workers = []; entries = {}; company = { name: "", cif: "", docTipOrder: null }; sites = []; projectDocs = [];
       state.view = "dashboard"; state.selectedSiteId = null;
       render();
     });
@@ -864,6 +903,7 @@
       sparkle: '<path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5Z"/><path d="M18.5 15l.6 1.8 1.8.6-1.8.6-.6 1.8-.6-1.8-1.8-.6 1.8-.6Z"/>',
       doc: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5"/>',
       info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 8h.01"/>',
+      grip: '<circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/>',
       trash: '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/><path d="M10 11v6M14 11v6"/>',
       docLines: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>'
     };
@@ -969,7 +1009,7 @@
     if (doc && doc.fisierPath) {
       var publicUrl = sb.storage.from(DOC_BUCKET).getPublicUrl(doc.fisierPath).data.publicUrl;
       return '<div class="doc-file-chip">' + icon("doc", 14) +
-        '<a href="' + esc(publicUrl) + '" target="_blank" rel="noopener">' + esc(doc.fisierNume) + '</a>' +
+        '<a href="' + esc(publicUrl) + '" target="_blank" rel="noopener" draggable="false">' + esc(doc.fisierNume) + '</a>' +
         '<span class="doc-file-del" data-remove-doc-file="' + site.id + '|' + tip + '" title="Șterge fișier">' + icon("trash", 13) + '</span>' +
       '</div>';
     }
@@ -979,7 +1019,7 @@
   }
 
   function proiectGeneralPanelHTML(site) {
-    var rows = PROJECT_DOCS.map(function (d) {
+    var rows = orderedProjectDocs().map(function (d) {
       var tip = d[0], label = d[1];
       var doc = findProjectDoc(site.id, tip);
       var key = docDraftKey(site.id, tip);
@@ -987,9 +1027,10 @@
       var inputVal = (draftVal !== undefined) ? draftVal : (doc ? doc.valoare : "");
       var uploading = !!state.siteForm.docUploading[key];
 
-      return '<div class="docrow">' +
+      return '<div class="docrow" draggable="true" data-doc-drag-tip="' + tip + '">' +
+        '<span class="docrow-grip" title="Trage pentru a reordona">' + icon("grip", 15) + '</span>' +
         '<div class="docrow-label">' + esc(label) + '</div>' +
-        '<input class="docrow-input" data-doc-valoare-key="' + key + '" placeholder="nr. / data" value="' + esc(inputVal) + '">' +
+        '<input class="docrow-input" draggable="false" data-doc-valoare-key="' + key + '" placeholder="nr. / data" value="' + esc(inputVal) + '">' +
         '<button class="btn btn-ghost btn-sm" data-save-doc-valoare="' + site.id + '|' + tip + '">Salvează</button>' +
         docFileSectionHTML(site, tip, doc, uploading) +
       '</div>';
@@ -1588,6 +1629,52 @@
         else if (ke.key === "Escape") { ke.preventDefault(); input.removeEventListener("blur", commitSidebarNameEdit); cancelSidebarNameEdit(); }
       });
     }
+  });
+
+  // Drag-to-reorder for the fixed "Date generale ale proiectului" rows.
+  // Visual feedback (dragging/insertion classes) is applied directly to the
+  // DOM instead of through render(), so the drag gesture isn't interrupted
+  // by a full rebuild on every dragover.
+  var dragState = { tip: null };
+  function clearDocDragClasses() {
+    document.querySelectorAll(".docrow.dragging, .docrow.drag-over-top, .docrow.drag-over-bottom").forEach(function (el) {
+      el.classList.remove("dragging", "drag-over-top", "drag-over-bottom");
+    });
+  }
+  document.getElementById("app").addEventListener("dragstart", function (e) {
+    var row = e.target.closest("[data-doc-drag-tip]");
+    if (!row) return;
+    dragState.tip = row.dataset.docDragTip;
+    row.classList.add("dragging");
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+  });
+  document.getElementById("app").addEventListener("dragover", function (e) {
+    var row = e.target.closest("[data-doc-drag-tip]");
+    if (!row || !dragState.tip) return;
+    e.preventDefault();
+    var rect = row.getBoundingClientRect();
+    var before = (e.clientY - rect.top) < rect.height / 2;
+    row.classList.toggle("drag-over-top", before);
+    row.classList.toggle("drag-over-bottom", !before);
+  });
+  document.getElementById("app").addEventListener("dragleave", function (e) {
+    var row = e.target.closest("[data-doc-drag-tip]");
+    if (row) row.classList.remove("drag-over-top", "drag-over-bottom");
+  });
+  document.getElementById("app").addEventListener("drop", function (e) {
+    var row = e.target.closest("[data-doc-drag-tip]");
+    if (!row || !dragState.tip) return;
+    e.preventDefault();
+    var before = row.classList.contains("drag-over-top");
+    var targetTip = row.dataset.docDragTip;
+    var draggedTip = dragState.tip;
+    dragState.tip = null;
+    clearDocDragClasses();
+    reorderProjectDocs(draggedTip, targetTip, before);
+  });
+  document.getElementById("app").addEventListener("dragend", function () {
+    dragState.tip = null;
+    clearDocDragClasses();
   });
 
   // If a save failed (offline / dropped request), retry automatically the moment
