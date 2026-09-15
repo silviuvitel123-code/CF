@@ -322,22 +322,19 @@
   .site-info-val { font-size: 13px; color: var(--ink); }
   .site-info-val.empty { color: var(--ink-faint); font-style: italic; }
   .doclist-docs { display: flex; flex-direction: column; }
-  .docrow { display: grid; grid-template-columns: 220px 1fr; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .docrow { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
   .docrow:last-child { border-bottom: none; }
-  .docrow-label { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); padding-top: 8px; }
-  .docrow-main { display: flex; flex-direction: column; gap: 10px; }
-  .docrow-value-row { display: flex; gap: 8px; align-items: center; }
-  .docrow-value-row input { flex: 1; border: 1px solid var(--border-strong); border-radius: 8px; padding: 8px 11px;
-    font-size: 13px; font-family: var(--sans); }
-  .doc-file-row { display: flex; align-items: center; }
-  .doc-uploading { font-size: 12px; color: var(--ink-faint); }
+  .docrow-label { flex: 0 0 140px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+  .docrow-input { flex: 1 1 220px; min-width: 120px; border: 1px solid var(--border-strong); border-radius: 8px;
+    padding: 8px 11px; font-size: 13px; font-family: var(--sans); }
+  .doc-uploading { font-size: 12px; color: var(--ink-faint); flex-shrink: 0; }
   .doc-file-chip { display: inline-flex; align-items: center; gap: 8px; background: var(--surface-2); border-radius: 8px;
-    padding: 7px 11px; font-size: 12.5px; }
+    padding: 7px 11px; font-size: 12.5px; flex-shrink: 0; }
   .doc-file-chip a { color: var(--navy); font-weight: 600; text-decoration: none; }
   .doc-file-chip a:hover { text-decoration: underline; }
   .doc-file-del { cursor: pointer; color: var(--ink-faint); display: flex; }
   .doc-file-del:hover { color: var(--red); }
-  .doc-upload-label { display: inline-flex; align-items: center; gap: 6px; width: fit-content; }
+  .doc-upload-label { display: inline-flex; align-items: center; gap: 6px; width: fit-content; flex-shrink: 0; }
 
   /* print sheet — hidden on screen, shown only via window.print() */
   #print-sheet { display: none; }
@@ -396,7 +393,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b18-2026-09-15";
+  var BUILD = "b19-2026-09-15";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -899,25 +896,25 @@
 
       var fileSection;
       if (uploading) {
-        fileSection = '<div class="doc-file-row"><span class="doc-uploading">Se încarcă…</span></div>';
+        fileSection = '<span class="doc-uploading">Se încarcă…</span>';
       } else if (doc && doc.fisierPath) {
         var publicUrl = sb.storage.from(DOC_BUCKET).getPublicUrl(doc.fisierPath).data.publicUrl;
-        fileSection = '<div class="doc-file-row"><div class="doc-file-chip">' + icon("doc", 14) +
+        fileSection = '<div class="doc-file-chip">' + icon("doc", 14) +
           '<a href="' + esc(publicUrl) + '" target="_blank" rel="noopener">' + esc(doc.fisierNume) + '</a>' +
           '<span class="doc-file-del" data-remove-doc-file="' + site.id + '|' + tip + '" title="Șterge fișier">' + icon("trash", 13) + '</span>' +
-        '</div></div>';
+        '</div>';
       } else {
         var inputId = "doc-file-" + tip + "-" + site.id;
-        fileSection = '<div class="doc-file-row"><label class="btn btn-ghost btn-sm doc-upload-label" for="' + inputId + '">' + icon("plus", 13) + 'Atașează fișier' +
-          '<input type="file" id="' + inputId + '" data-doc-file-input="' + site.id + '|' + tip + '" accept=".pdf,image/*" style="display:none"></label></div>';
+        fileSection = '<label class="btn btn-ghost btn-sm doc-upload-label" for="' + inputId + '">' + icon("plus", 13) + 'Atașează fișier' +
+          '<input type="file" id="' + inputId + '" data-doc-file-input="' + site.id + '|' + tip + '" accept=".pdf,image/*" style="display:none"></label>';
       }
 
-      return '<div class="docrow"><div class="docrow-label">' + esc(label) + '</div>' +
-        '<div class="docrow-main">' +
-          '<div class="docrow-value-row"><input data-doc-valoare-key="' + key + '" placeholder="nr. / data" value="' + esc(inputVal) + '">' +
-            '<button class="btn btn-ghost btn-sm" data-save-doc-valoare="' + site.id + '|' + tip + '">Salvează</button></div>' +
-          fileSection +
-        '</div></div>';
+      return '<div class="docrow">' +
+        '<div class="docrow-label">' + esc(label) + '</div>' +
+        '<input class="docrow-input" data-doc-valoare-key="' + key + '" placeholder="nr. / data" value="' + esc(inputVal) + '">' +
+        '<button class="btn btn-ghost btn-sm" data-save-doc-valoare="' + site.id + '|' + tip + '">Salvează</button>' +
+        fileSection +
+      '</div>';
     }).join("");
     return '<div class="panel"><div class="panel-title">Date generale ale proiectului</div>' +
       '<div class="panel-sub">Documentele oficiale ale proiectului — număr/dată și, opțional, fișierul scanat.</div>' +
