@@ -258,6 +258,9 @@
   .daycell { position: relative; cursor: pointer; }
   .daycell.selectable .cell { box-shadow: inset 0 0 0 1.5px var(--border-strong); }
   .daycell.cell-picked .cell { box-shadow: inset 0 0 0 2px var(--amber-strong); background: var(--amber-soft); }
+  .daycell.cell-failed .cell { box-shadow: inset 0 0 0 2px var(--red); }
+  .cell-failed-dot { position: absolute; top: -5px; right: -5px; width: 14px; height: 14px; border-radius: 50%;
+    background: var(--red); color: #fff; font-size: 10px; font-weight: 800; line-height: 14px; text-align: center; }
   .bulk-bar { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 40;
     background: var(--ink); color: white; border-radius: 100px; padding: 8px 8px 8px 16px;
     display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.25); font-size: 12.5px; }
@@ -312,6 +315,9 @@
   .loading-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); font-size: 13px; }
   .sync-error { position: fixed; top: 16px; right: 16px; background: var(--red); color: #fff; padding: 10px 16px; border-radius: 8px;
     font-size: 12.5px; font-weight: 600; z-index: 100; box-shadow: 0 8px 20px rgba(0,0,0,.18); }
+  .retry-banner { top: 60px; display: flex; align-items: center; gap: 8px; }
+  .retry-link { text-decoration: underline; cursor: pointer; font-weight: 700; }
+  .retry-link:hover { opacity: .85; }
   .logout-link { margin-left: auto; cursor: pointer; color: var(--ink-faint); }
   .logout-link:hover { color: var(--red); }
 
@@ -337,7 +343,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b11-2026-09-15";
+  var BUILD = "b12-2026-09-15";
   var todayD = new Date();
   var state = {
     view: "dashboard", selectedSiteId: "aurora", activeTab: "pontaj", globalSiteId: "aurora",
@@ -371,6 +377,10 @@
   var workers = [];
   var entries = {};
   var company = { name: "", cif: "" };
+  // Cells whose write to Supabase failed — kept until retried successfully, so a
+  // network blip can never silently drop a completed day (per user requirement:
+  // "nu vreau sa pierd ce completez").
+  var failedCells = {};
 
   function flashSyncError(msg) {
     syncError = msg;
@@ -443,17 +453,32 @@
   function setStatus(workerId, dk, status) {
     var key = workerId + "|" + dk;
     if (status === "empty") delete entries[key]; else entries[key] = status;
+    delete failedCells[key]; // this is a fresh attempt — clear any earlier failure mark
     if (String(workerId).indexOf("tmp-") === 0) return; // worker not yet persisted, nothing to sync
     var req = status === "empty"
       ? sb.from("pontaj_intrari").delete().match({ muncitor_id: workerId, data: dk })
       : sb.from("pontaj_intrari").upsert({ muncitor_id: workerId, data: dk, status: status }, { onConflict: "muncitor_id,data" });
-    req.then(function (res) { if (res.error) { flashSyncError("Nu am putut salva ziua pentru muncitor."); console.error(res.error); } });
+    req.then(function (res) {
+      if (res.error) {
+        failedCells[key] = status;
+        flashSyncError("Nu s-a putut salva o zi — va rămâne marcată până se reîncearcă.");
+        console.error(res.error);
+        render();
+      }
+    });
   }
   function setStatusBulk(cellKeys, status) {
     cellKeys.forEach(function (key) {
       var sep = key.indexOf("|");
       var workerId = key.slice(0, sep), dk = key.slice(sep + 1);
       setStatus(workerId, dk, status);
+    });
+  }
+  function retryFailedCells() {
+    Object.keys(failedCells).forEach(function (key) {
+      var status = failedCells[key];
+      var sep = key.indexOf("|");
+      setStatus(key.slice(0, sep), key.slice(sep + 1), status);
     });
   }
   function addWorkerFromInput() {
@@ -469,7 +494,16 @@
     workers.push({ id: tempId, name: name, functie: functie, salariu: salariu, metodaPlata: metodaPlata, telefon: telefon });
     sb.from("muncitori").insert({ nume: name, functie: functie, salariu: salariu, metoda_plata: metodaPlata, telefon: telefon })
       .select().single().then(function (res) {
-        if (res.error) { flashSyncError("Nu am putut salva muncitorul nou."); console.error(res.error); return; }
+        if (res.error) {
+          // roll back the optimistic row — leaving it would look "saved" while
+          // being purely local, and any pontaj entries typed against it would
+          // vanish silently since they were never sent to Supabase either
+          workers = workers.filter(function (x) { return x.id !== tempId; });
+          flashSyncError("Nu am putut salva muncitorul nou — încearcă din nou.");
+          console.error(res.error);
+          render();
+          return;
+        }
         var w = workers.filter(function (x) { return x.id === tempId; })[0];
         if (w) w.id = res.data.id;
         render();
@@ -651,6 +685,7 @@
         var cellKey = w.id + "|" + dk;
         var isOpen = state.pontaj.openCell === cellKey;
         var isPicked = state.pontaj.selectedCells.indexOf(cellKey) !== -1;
+        var isFailed = !!failedCells[cellKey];
         var pop = "";
         if (isOpen) {
           pop = '<div class="daypop">' +
@@ -661,8 +696,9 @@
             '<div class="daypop-opt" data-set-status="' + cellKey + '|empty">Șterge (necompletat)</div>' +
           '</div>';
         }
-        var cellCls = "day daycell" + (state.pontaj.selectMode ? " selectable" : "") + (isPicked ? " cell-picked" : "");
-        return '<td class="' + cellCls + '" data-cell-toggle="' + cellKey + '"><div class="cell ' + STATUS_CLS[status] + '">' + STATUS_LABEL[status] + '</div>' + pop + '</td>';
+        var cellCls = "day daycell" + (state.pontaj.selectMode ? " selectable" : "") + (isPicked ? " cell-picked" : "") + (isFailed ? " cell-failed" : "");
+        var failedMark = isFailed ? '<span class="cell-failed-dot" title="Nu s-a salvat — apasă din nou">!</span>' : "";
+        return '<td class="' + cellCls + '" data-cell-toggle="' + cellKey + '"><div class="cell ' + STATUS_CLS[status] + '">' + STATUS_LABEL[status] + failedMark + '</div>' + pop + '</td>';
       }).join("");
       return '<tr><td class="name"><b>' + esc(w.name) + '</b><span>' + esc(w.functie || "—") + '<span class="rm-worker" data-remove-worker="' + w.id + '">×</span></span></td>' + cells + '<td class="total">' + total + '</td></tr>';
     }).join("");
@@ -866,6 +902,12 @@
 
   function render() {
     var errorBanner = syncError ? '<div class="sync-error">' + esc(syncError) + '</div>' : "";
+    var failedCount = Object.keys(failedCells).length;
+    var retryBanner = failedCount > 0 ? '' +
+      '<div class="sync-error retry-banner">' +
+        (failedCount === 1 ? '1 zi nu s-a salvat.' : failedCount + ' zile nu s-au salvat.') +
+        ' <span class="retry-link" data-retry-failed="1">Reîncearcă acum</span>' +
+      '</div>' : '';
 
     if (!sb) { document.getElementById("app").innerHTML = sdkErrorScreenHTML(); return; }
     if (authState.loading) { document.getElementById("app").innerHTML = loadingScreenHTML(); return; }
@@ -876,7 +918,7 @@
     else if (state.view === "detail") main = detailHTML();
     else if (state.view === "pontaj-global") main = pontajGlobalHTML();
 
-    document.getElementById("app").innerHTML = errorBanner +
+    document.getElementById("app").innerHTML = errorBanner + retryBanner +
       '<div class="app">' + sidebarHTML() + '<div class="main"><div class="main-inner">' + main + '</div></div></div>';
     positionOpenPopover();
   }
@@ -899,7 +941,7 @@
       "[data-go],[data-open-site],[data-tab],[data-global-site]," +
       "[data-pontaj-prev],[data-pontaj-next],[data-pontaj-mode],[data-cell-toggle],[data-set-status]," +
       "[data-add-worker],[data-remove-worker],[data-print-pontaj],[data-toggle-company],[data-save-company],[data-logout]," +
-      "[data-toggle-select-mode],[data-bulk-status],[data-clear-selection]"
+      "[data-toggle-select-mode],[data-bulk-status],[data-clear-selection],[data-retry-failed]"
     );
 
     // Only re-render when something actually changes. A blanket render() on every
@@ -962,6 +1004,7 @@
       else if (t.dataset.clearSelection) {
         state.pontaj.selectedCells = [];
       }
+      else if (t.dataset.retryFailed) { retryFailedCells(); }
     }
 
     if (needsRender) {
@@ -988,6 +1031,17 @@
 
   document.addEventListener("submit", function (e) {
     if (e.target && e.target.id === "login-form") { e.preventDefault(); doLogin(); }
+  });
+
+  // If a save failed (offline / dropped request), retry automatically the moment
+  // the connection comes back, instead of waiting for the user to notice and tap.
+  window.addEventListener("online", function () {
+    if (Object.keys(failedCells).length > 0) retryFailedCells();
+  });
+
+  // Never let a completed-but-unsynced day get lost by an accidental tab close.
+  window.addEventListener("beforeunload", function (e) {
+    if (Object.keys(failedCells).length > 0) { e.preventDefault(); e.returnValue = ""; }
   });
 
   render();
