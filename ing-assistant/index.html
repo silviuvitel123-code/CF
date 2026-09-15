@@ -327,7 +327,9 @@
       month: todayD.getMonth() + 1,
       periodMode: todayD.getDate() <= 14 ? "avans" : "lichidare",
       openCell: null,
-      editingCompany: false
+      editingCompany: false,
+      newWorker: { name: "", functie: "", salariu: "", metoda: "CARD", telefon: "" },
+      companyDraft: { name: "", cif: "" }
     }
   };
 
@@ -427,18 +429,13 @@
     req.then(function (res) { if (res.error) { flashSyncError("Nu am putut salva ziua pentru muncitor."); console.error(res.error); } });
   }
   function addWorkerFromInput() {
-    var nameEl = document.getElementById("new-worker-name");
-    var functieEl = document.getElementById("new-worker-functie");
-    var salariuEl = document.getElementById("new-worker-salariu");
-    var metodaEl = document.getElementById("new-worker-metoda");
-    var telefonEl = document.getElementById("new-worker-telefon");
-    if (!nameEl) return;
-    var name = nameEl.value.trim();
+    var nw = state.pontaj.newWorker;
+    var name = (nw.name || "").trim();
     if (!name) return;
-    var functie = functieEl ? functieEl.value.trim() : "";
-    var salariu = salariuEl && salariuEl.value ? Number(salariuEl.value) : null;
-    var metodaPlata = metodaEl ? metodaEl.value : "CARD";
-    var telefon = telefonEl ? telefonEl.value.trim() : "";
+    var functie = (nw.functie || "").trim();
+    var salariu = nw.salariu ? Number(nw.salariu) : null;
+    var metodaPlata = nw.metoda || "CARD";
+    var telefon = (nw.telefon || "").trim();
 
     var tempId = "tmp-" + Date.now();
     workers.push({ id: tempId, name: name, functie: functie, salariu: salariu, metodaPlata: metodaPlata, telefon: telefon });
@@ -449,7 +446,7 @@
         if (w) w.id = res.data.id;
         render();
       });
-    nameEl.value = ""; if (functieEl) functieEl.value = ""; if (salariuEl) salariuEl.value = ""; if (telefonEl) telefonEl.value = "";
+    state.pontaj.newWorker = { name: "", functie: "", salariu: "", metoda: "CARD", telefon: "" };
   }
   function removeWorker(id) {
     workers = workers.filter(function (w) { return w.id !== id; });
@@ -459,10 +456,9 @@
     });
   }
   function saveCompanyFromInputs() {
-    var n = document.getElementById("company-name-input");
-    var c = document.getElementById("company-cif-input");
-    if (n && n.value.trim()) company.name = n.value.trim();
-    if (c && c.value.trim()) company.cif = c.value.trim();
+    var cd = state.pontaj.companyDraft;
+    if (cd.name && cd.name.trim()) company.name = cd.name.trim();
+    if (cd.cif && cd.cif.trim()) company.cif = cd.cif.trim();
     sb.from("companie").update({ nume: company.name, cod_fiscal: company.cif }).eq("id", 1).then(function (res) {
       if (res.error) { flashSyncError("Nu am putut salva datele firmei."); console.error(res.error); }
     });
@@ -779,10 +775,11 @@
   function pontajGlobalHTML() {
     var y = state.pontaj.year, m = state.pontaj.month, mode = state.pontaj.periodMode;
     var last = daysInMonth(y, m);
+    var nw = state.pontaj.newWorker;
     var companyEdit = state.pontaj.editingCompany
       ? '<div class="company-edit">' +
-          '<input id="company-name-input" value="' + esc(company.name) + '" placeholder="Nume firmă">' +
-          '<input id="company-cif-input" value="' + esc(company.cif) + '" placeholder="Cod fiscal">' +
+          '<input id="company-name-input" value="' + esc(state.pontaj.companyDraft.name) + '" placeholder="Nume firmă">' +
+          '<input id="company-cif-input" value="' + esc(state.pontaj.companyDraft.cif) + '" placeholder="Cod fiscal">' +
           '<button class="btn btn-primary btn-sm" data-save-company="1">Salvează</button>' +
         "</div>"
       : "";
@@ -802,15 +799,18 @@
       "</div>" +
       '<div class="panel pontaj-panel">' + pontajGridHTML() + "</div>" +
       '<div class="add-worker-row">' +
-        '<input id="new-worker-name" class="add-worker-input" placeholder="Nume și prenume" style="flex-basis:180px">' +
-        '<input id="new-worker-functie" class="add-worker-input" placeholder="Funcție (ex: Zidar)" list="functii-sugestii" style="flex-basis:150px">' +
+        '<input id="new-worker-name" class="add-worker-input" placeholder="Nume și prenume" style="flex-basis:180px" value="' + esc(nw.name) + '">' +
+        '<input id="new-worker-functie" class="add-worker-input" placeholder="Funcție (ex: Zidar)" list="functii-sugestii" style="flex-basis:150px" value="' + esc(nw.functie) + '">' +
         '<datalist id="functii-sugestii">' +
           '<option value="Zidar"></option><option value="Dulgher"></option><option value="Fierar-betonist"></option>' +
           '<option value="Zilier"></option><option value="Șef echipă"></option><option value="Instalator"></option><option value="Electrician"></option>' +
         "</datalist>" +
-        '<input id="new-worker-salariu" class="add-worker-input" type="number" placeholder="Salariu (lei)" style="flex-basis:130px">' +
-        '<select id="new-worker-metoda" class="add-worker-input" style="flex-basis:120px"><option value="CARD">CARD</option><option value="Numerar">Numerar</option></select>' +
-        '<input id="new-worker-telefon" class="add-worker-input" type="tel" placeholder="Telefon (opțional)" style="flex-basis:150px">' +
+        '<input id="new-worker-salariu" class="add-worker-input" type="number" placeholder="Salariu (lei)" style="flex-basis:130px" value="' + esc(nw.salariu) + '">' +
+        '<select id="new-worker-metoda" class="add-worker-input" style="flex-basis:120px">' +
+          '<option value="CARD"' + (nw.metoda === "CARD" ? " selected" : "") + '>CARD</option>' +
+          '<option value="Numerar"' + (nw.metoda === "Numerar" ? " selected" : "") + ">Numerar</option>" +
+        "</select>" +
+        '<input id="new-worker-telefon" class="add-worker-input" type="tel" placeholder="Telefon (opțional)" style="flex-basis:150px" value="' + esc(nw.telefon) + '">' +
         '<button class="btn btn-ghost btn-sm" data-add-worker="1">' + icon("plus", 14) + "Adaugă muncitor</button>" +
       "</div>";
   }
@@ -832,21 +832,29 @@
   }
 
   document.getElementById("app").addEventListener("click", function (e) {
-    if (e.target.closest("#login-form")) return; // handled by the dedicated submit listener below
-
     var t = e.target.closest(
       "[data-go],[data-open-site],[data-tab],[data-global-site]," +
       "[data-pontaj-prev],[data-pontaj-next],[data-pontaj-mode],[data-cell-toggle],[data-set-status]," +
       "[data-add-worker],[data-remove-worker],[data-print-pontaj],[data-toggle-company],[data-save-company],[data-logout]"
     );
 
+    // Only re-render when something actually changes. A blanket render() on every
+    // click would destroy-and-recreate any input/select the click just focused
+    // (e.g. clicking into "Nume și prenume" then re-rendering immediately after
+    // steals focus back off it), making it impossible to type. So: clicks on
+    // plain page furniture (inputs, whitespace, table cells with no data-action)
+    // must be a no-op here.
+    var needsRender = false;
+
     // clicking anywhere outside an open day-popover closes it
     if (state.pontaj.openCell && !(t && (t.dataset.cellToggle || t.dataset.setStatus))) {
       state.pontaj.openCell = null;
+      needsRender = true;
     }
 
     var isNav = false;
     if (t) {
+      needsRender = true;
       if (t.dataset.go) { state.view = t.dataset.go; isNav = true; }
       else if (t.dataset.openSite) { state.view = "detail"; state.selectedSiteId = t.dataset.openSite; state.activeTab = "pontaj"; isNav = true; }
       else if (t.dataset.tab) state.activeTab = t.dataset.tab;
@@ -863,13 +871,34 @@
       else if (t.dataset.addWorker) { addWorkerFromInput(); }
       else if (t.dataset.removeWorker) { removeWorker(t.dataset.removeWorker); }
       else if (t.dataset.printPontaj) { printPontaj(); return; }
-      else if (t.dataset.toggleCompany) { state.pontaj.editingCompany = !state.pontaj.editingCompany; }
+      else if (t.dataset.toggleCompany) {
+        state.pontaj.editingCompany = !state.pontaj.editingCompany;
+        if (state.pontaj.editingCompany) state.pontaj.companyDraft = { name: company.name, cif: company.cif };
+      }
       else if (t.dataset.saveCompany) { saveCompanyFromInputs(); state.pontaj.editingCompany = false; }
       else if (t.dataset.logout) { doLogout(); return; }
     }
 
-    render();
-    if (isNav) window.scrollTo(0, 0);
+    if (needsRender) {
+      render();
+      if (isNav) window.scrollTo(0, 0);
+    }
+  });
+
+  // Keep in-progress form fields (add-worker, company edit) in sync with state
+  // WITHOUT re-rendering — a render() here would steal focus back off the field
+  // on every keystroke, same failure mode as the click handler above.
+  document.getElementById("app").addEventListener("input", function (e) {
+    var id = e.target.id, nw = state.pontaj.newWorker, cd = state.pontaj.companyDraft;
+    if (id === "new-worker-name") nw.name = e.target.value;
+    else if (id === "new-worker-functie") nw.functie = e.target.value;
+    else if (id === "new-worker-salariu") nw.salariu = e.target.value;
+    else if (id === "new-worker-telefon") nw.telefon = e.target.value;
+    else if (id === "company-name-input") cd.name = e.target.value;
+    else if (id === "company-cif-input") cd.cif = e.target.value;
+  });
+  document.getElementById("app").addEventListener("change", function (e) {
+    if (e.target.id === "new-worker-metoda") state.pontaj.newWorker.metoda = e.target.value;
   });
 
   document.addEventListener("submit", function (e) {
