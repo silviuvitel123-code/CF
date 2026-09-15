@@ -374,7 +374,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b15-2026-09-15";
+  var BUILD = "b16-2026-09-15";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -564,8 +564,16 @@
       });
     state.pontaj.newWorker = { name: "", functie: "", salariu: "", metoda: "CARD", telefon: "" };
   }
+  // Every destructive delete in the app must ask before it happens — nothing
+  // disappears from a single accidental click.
+  function confirmDelete(msg) { return window.confirm(msg); }
+
   function removeWorker(id) {
-    workers = workers.filter(function (w) { return w.id !== id; });
+    var w = workers.filter(function (x) { return x.id === id; })[0];
+    if (!w) return;
+    if (!confirmDelete('Ștergi muncitorul "' + w.name + '"? Se șterge și tot pontajul lui înregistrat. Această acțiune nu poate fi anulată.')) return;
+    workers = workers.filter(function (x) { return x.id !== id; });
+    render();
     if (String(id).indexOf("tmp-") === 0) return;
     sb.from("muncitori").delete().eq("id", id).then(function (res) {
       if (res.error) { flashSyncError("Nu am putut șterge muncitorul."); console.error(res.error); }
@@ -633,7 +641,7 @@
   function removeSite(id) {
     var site = findSite(id);
     if (!site) return;
-    if (!window.confirm('Ștergi șantierul "' + site.nume + '"? Această acțiune nu poate fi anulată.')) return;
+    if (!confirmDelete('Ștergi șantierul "' + site.nume + '"? Această acțiune nu poate fi anulată.')) return;
     sites = sites.filter(function (s) { return s.id !== id; });
     if (state.selectedSiteId === id) { state.view = "sites"; state.selectedSiteId = null; }
     render();
