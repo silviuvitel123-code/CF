@@ -343,7 +343,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b12-2026-09-15";
+  var BUILD = "b13-2026-09-15";
   var todayD = new Date();
   var state = {
     view: "dashboard", selectedSiteId: "aurora", activeTab: "pontaj", globalSiteId: "aurora",
@@ -441,8 +441,8 @@
 
   function periodRange(mode, y, m) {
     var last = daysInMonth(y, m);
-    if (mode === "avans") return { start: 1, end: 14 };
-    if (mode === "lichidare") return { start: 15, end: last };
+    if (mode === "avans") return { start: 1, end: 15 };
+    if (mode === "lichidare") return { start: 16, end: last };
     return { start: 1, end: last };
   }
 
@@ -874,8 +874,8 @@
       '<div class="pontaj-top" style="padding:0 0 14px">' +
         '<div class="period"><div class="period-nav" data-pontaj-prev="1">' + icon("chevronLeft", 13) + '</div><div class="period-label">' + MONTHS_RO[m - 1] + " " + y + '</div><div class="period-nav" data-pontaj-next="1">' + icon("chevronRight", 13) + "</div></div>" +
         '<div class="mode-select">' +
-          '<div class="mode-chip' + (mode === "avans" ? " active" : "") + '" data-pontaj-mode="avans">Avans (1-14)</div>' +
-          '<div class="mode-chip' + (mode === "lichidare" ? " active" : "") + '" data-pontaj-mode="lichidare">Lichidare (15-' + last + ")</div>" +
+          '<div class="mode-chip' + (mode === "avans" ? " active" : "") + '" data-pontaj-mode="avans">Avans (1-15)</div>' +
+          '<div class="mode-chip' + (mode === "lichidare" ? " active" : "") + '" data-pontaj-mode="lichidare">Lichidare (16-' + last + ")</div>" +
           '<div class="mode-chip' + (mode === "full" ? " active" : "") + '" data-pontaj-mode="full">Luna completă</div>' +
         "</div>" +
         '<div class="select-toggle' + (state.pontaj.selectMode ? " active" : "") + '" data-toggle-select-mode="1">' + icon("pencil", 13) + (state.pontaj.selectMode ? "Gata cu selecția" : "Completează mai multe zile") + "</div>" +
