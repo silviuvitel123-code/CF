@@ -319,6 +319,7 @@
 (function () {
   "use strict";
 
+  var BUILD = "b9-2026-09-15";
   var todayD = new Date();
   var state = {
     view: "dashboard", selectedSiteId: "aurora", activeTab: "pontaj", globalSiteId: "aurora",
@@ -519,7 +520,7 @@
       '<div class="login-wrap"><div class="login-card">' +
         '<div class="login-mark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/><path d="M9 12h6"/></svg></div>' +
         '<div class="login-title">Ing. Assistant</div>' +
-        '<div class="login-sub">Autentificare</div>' +
+        '<div class="login-sub">Autentificare · build ' + BUILD + '</div>' +
         '<form id="login-form">' +
           '<div class="login-field"><input id="login-email" type="email" placeholder="Email" autocomplete="username" required></div>' +
           '<div class="login-field"><input id="login-password" type="password" placeholder="Parolă" autocomplete="current-password" required></div>' +
@@ -539,7 +540,7 @@
       '<div class="sidebar">' +
         '<div class="brand" data-go="dashboard">' +
           '<div class="brand-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/><path d="M9 12h6"/></svg></div>' +
-          '<div><div class="brand-name">Ing. Assistant</div><div class="brand-sub">Asistent digital de șantier</div></div>' +
+          '<div><div class="brand-name">Ing. Assistant</div><div class="brand-sub">build ' + BUILD + '</div></div>' +
         '</div>' +
         '<div class="nav">' +
           '<div class="nav-item' + (state.view === "dashboard" ? " active" : "") + '" data-go="dashboard">' + icon("home") + 'Dashboard</div>' +
