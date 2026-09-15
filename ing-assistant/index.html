@@ -50,6 +50,8 @@
   .dot-activ { background: var(--green); }
   .dot-final { background: var(--ink-faint); }
   .site-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .site-label-input { width: 100%; min-width: 0; border: 1px solid var(--navy); border-radius: 5px; padding: 2px 6px;
+    font-size: 12.5px; font-family: var(--sans); background: var(--surface); color: var(--ink); }
   .spacer { flex: 1 1 auto; }
   .user-box { margin: 10px; padding: 10px; border-radius: 9px; background: var(--surface-2);
     display: flex; align-items: center; gap: 9px; }
@@ -395,7 +397,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b21-2026-09-15";
+  var BUILD = "b22-2026-09-15";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -424,7 +426,8 @@
       docDrafts: {},
       docUploading: {},
       avizEtichetaDrafts: {}
-    }
+    },
+    sidebarNameEdit: { siteId: null, draft: "" }
   };
 
   // --- șantiere: persisted in Supabase, loaded via loadAllData() below ---
@@ -478,7 +481,8 @@
       id: s.id, nume: s.nume, adresa: s.adresa || "", numarProiect: s.numar_proiect || "",
       proiectant: s.proiectant || "", constructor: s.constructor || "", contract: s.contract || "",
       perioadaExecutie: s.perioada_executie || "", dataExpirareContract: s.data_expirare_contract || "",
-      garantie: s.garantie || "", ordinIncepere: s.ordin_incepere || "", status: s.status || "Activ"
+      garantie: s.garantie || "", ordinIncepere: s.ordin_incepere || "", status: s.status || "Activ",
+      numeScurt: s.nume_scurt || ""
     };
   }
 
@@ -683,6 +687,30 @@
       if (res.error) { flashSyncError("Nu am putut salva datele șantierului."); console.error(res.error); render(); }
     });
   }
+
+  // Sidebar-only short name: a separate field so it can be abbreviated to fit
+  // the narrow sidebar without touching the real name used everywhere else
+  // (cards, headers, procese-verbale, print).
+  var sidebarClickTimer = null;
+  function commitSidebarNameEdit() {
+    var edit = state.sidebarNameEdit;
+    if (!edit || !edit.siteId) return;
+    var site = findSite(edit.siteId);
+    if (site) {
+      var val = (edit.draft || "").trim();
+      site.numeScurt = val;
+      sb.from("santiere").update({ nume_scurt: val || null }).eq("id", site.id).then(function (res) {
+        if (res.error) { flashSyncError("Nu am putut salva numele din bară."); console.error(res.error); render(); }
+      });
+    }
+    state.sidebarNameEdit = { siteId: null, draft: "" };
+    render();
+  }
+  function cancelSidebarNameEdit() {
+    state.sidebarNameEdit = { siteId: null, draft: "" };
+    render();
+  }
+
   function removeSite(id) {
     var site = findSite(id);
     if (!site) return;
@@ -871,8 +899,12 @@
   function sidebarHTML() {
     var sitesHtml = sites.map(function (s) {
       var isActive = state.view === "detail" && s.id === state.selectedSiteId;
+      var isEditing = state.sidebarNameEdit.siteId === s.id;
+      var label = isEditing
+        ? '<input class="site-label-input" id="sidebar-name-input-' + s.id + '" data-sidebar-name-input="1" value="' + esc(state.sidebarNameEdit.draft) + '">'
+        : '<span class="site-label" data-sidebar-name-label="' + s.id + '" title="Dublu-click pentru a redenumi doar în bară">' + esc(s.numeScurt || s.nume) + '</span>';
       return '<div class="site-row' + (isActive ? " active" : "") + '" data-open-site="' + s.id + '">' +
-        '<span class="dot ' + statusDotCls(s.status) + '"></span><span class="site-label">' + esc(s.nume) + '</span></div>';
+        '<span class="dot ' + statusDotCls(s.status) + '"></span>' + label + '</div>';
     }).join("");
     return '' +
       '<div class="sidebar">' +
@@ -1396,7 +1428,25 @@
     if (t) {
       needsRender = true;
       if (t.dataset.go) { state.view = t.dataset.go; isNav = true; }
-      else if (t.dataset.openSite) { state.view = "detail"; state.selectedSiteId = t.dataset.openSite; state.activeTab = "date-santier"; state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; isNav = true; }
+      else if (t.dataset.openSite) {
+        if (e.target.dataset.sidebarNameInput) {
+          needsRender = false; // clicking inside the active rename input just places the cursor
+        } else if (e.target.closest("[data-sidebar-name-label]")) {
+          // might be the first half of a double-click-to-rename — delay
+          // navigation briefly so a following dblclick can cancel it instead
+          needsRender = false;
+          var deferSiteId = t.dataset.openSite;
+          clearTimeout(sidebarClickTimer);
+          sidebarClickTimer = setTimeout(function () {
+            state.view = "detail"; state.selectedSiteId = deferSiteId; state.activeTab = "date-santier";
+            state.siteForm.editing = false; state.siteForm.subTab = "sintetice";
+            render();
+            window.scrollTo(0, 0);
+          }, 260);
+        } else {
+          state.view = "detail"; state.selectedSiteId = t.dataset.openSite; state.activeTab = "date-santier"; state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; isNav = true;
+        }
+      }
       else if (t.dataset.tab) state.activeTab = t.dataset.tab;
       else if (t.dataset.globalSite) state.globalSiteId = t.dataset.globalSite;
       else if (t.dataset.pontajPrev) shiftMonth(-1);
@@ -1504,6 +1554,7 @@
     else if (id.indexOf("site-edit-") === 0) state.siteForm.editDraft[id.slice(10)] = e.target.value;
     else if (e.target.dataset.docValoareKey) state.siteForm.docDrafts[e.target.dataset.docValoareKey] = e.target.value;
     else if (e.target.dataset.avizEtichetaKey) state.siteForm.avizEtichetaDrafts[e.target.dataset.avizEtichetaKey] = e.target.value;
+    else if (e.target.dataset.sidebarNameInput) state.sidebarNameEdit.draft = e.target.value;
   });
   document.getElementById("app").addEventListener("change", function (e) {
     if (e.target.id === "new-worker-metoda") state.pontaj.newWorker.metoda = e.target.value;
@@ -1517,6 +1568,26 @@
 
   document.addEventListener("submit", function (e) {
     if (e.target && e.target.id === "login-form") { e.preventDefault(); doLogin(); }
+  });
+
+  document.getElementById("app").addEventListener("dblclick", function (e) {
+    var t = e.target.closest("[data-sidebar-name-label]");
+    if (!t) return;
+    clearTimeout(sidebarClickTimer); // cancel the pending single-click navigation
+    var site = findSite(t.dataset.sidebarNameLabel);
+    if (!site) return;
+    state.sidebarNameEdit = { siteId: site.id, draft: site.numeScurt || site.nume };
+    render();
+    var input = document.getElementById("sidebar-name-input-" + site.id);
+    if (input) {
+      input.focus();
+      input.select();
+      input.addEventListener("blur", commitSidebarNameEdit);
+      input.addEventListener("keydown", function (ke) {
+        if (ke.key === "Enter") { ke.preventDefault(); input.blur(); }
+        else if (ke.key === "Escape") { ke.preventDefault(); input.removeEventListener("blur", commitSidebarNameEdit); cancelSidebarNameEdit(); }
+      });
+    }
   });
 
   // If a save failed (offline / dropped request), retry automatically the moment
