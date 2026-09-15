@@ -417,13 +417,13 @@
 
   function cellStatus(workerId, y, m, d) {
     if (isWeekend(y, m, d)) return "weekend";
-    return entries[workerId + "|" + dateKey(y, m, d)] || "normal";
+    return entries[workerId + "|" + dateKey(y, m, d)] || "empty"; // "empty" = nothing recorded yet — never assume worked
   }
   function setStatus(workerId, dk, status) {
     var key = workerId + "|" + dk;
-    if (status === "normal") delete entries[key]; else entries[key] = status;
+    if (status === "empty") delete entries[key]; else entries[key] = status;
     if (String(workerId).indexOf("tmp-") === 0) return; // worker not yet persisted, nothing to sync
-    var req = status === "normal"
+    var req = status === "empty"
       ? sb.from("pontaj_intrari").delete().match({ muncitor_id: workerId, data: dk })
       : sb.from("pontaj_intrari").upsert({ muncitor_id: workerId, data: dk, status: status }, { onConflict: "muncitor_id,data" });
     req.then(function (res) { if (res.error) { flashSyncError("Nu am putut salva ziua pentru muncitor."); console.error(res.error); } });
@@ -593,8 +593,8 @@
       return '<th class="' + (isWeekend(y, m, dd) ? "weekend" : "") + '"><div class="daynum">' + dd + '</div><div class="daydow">' + dowShort(y, m, dd) + '</div></th>';
     }).join("");
 
-    var STATUS_LABEL = { normal: "8", co: "CO", cm: "CM", liber: "L" };
-    var STATUS_CLS = { normal: "cw", co: "cleave", cm: "csick", liber: "coff" };
+    var STATUS_LABEL = { empty: "—", normal: "8", co: "CO", cm: "CM", liber: "L" };
+    var STATUS_CLS = { empty: "cempty", normal: "cw", co: "cleave", cm: "csick", liber: "coff" };
 
     var rows = workers.map(function (w) {
       var total = 0;
@@ -614,6 +614,7 @@
             '<div class="daypop-opt" data-set-status="' + cellKey + '|co">CO</div>' +
             '<div class="daypop-opt" data-set-status="' + cellKey + '|cm">CM</div>' +
             '<div class="daypop-opt" data-set-status="' + cellKey + '|liber">Liber</div>' +
+            '<div class="daypop-opt" data-set-status="' + cellKey + '|empty">Șterge (necompletat)</div>' +
           '</div>';
         }
         return '<td class="day daycell" data-cell-toggle="' + cellKey + '"><div class="cell ' + STATUS_CLS[status] + '">' + STATUS_LABEL[status] + '</div>' + pop + '</td>';
@@ -642,7 +643,8 @@
           else if (status === "co") val = "CO";
           else if (status === "cm") val = "CM";
           else if (status === "liber") val = "L";
-          else val = ["08:00", "12:00-13:00", "17:00", "8"][li];
+          else if (status === "normal") val = ["08:00", "12:00-13:00", "17:00", "8"][li];
+          else val = ""; // "empty" — never printed as if the person worked
           return '<td class="' + (status === "weekend" ? "ps-weekend" : "") + '">' + esc(val) + "</td>";
         }).join("");
         var programLucru = (w.salariu ? esc(String(w.salariu)) + "<br>" : "") + esc(w.metodaPlata || "CARD");
