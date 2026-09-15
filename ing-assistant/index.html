@@ -362,7 +362,9 @@
       sb.from("companie").select("*").eq("id", 1).single()
     ]).then(function (results) {
       var mRes = results[0], eRes = results[1], cRes = results[2];
-      workers = (mRes.data || []).map(function (w) { return { id: w.id, name: w.nume, program: w.program_lucru || "" }; });
+      workers = (mRes.data || []).map(function (w) {
+        return { id: w.id, name: w.nume, functie: w.functie || "", salariu: w.salariu, metodaPlata: w.metoda_plata || "CARD", telefon: w.telefon || "" };
+      });
       entries = {};
       (eRes.data || []).forEach(function (e) { entries[e.muncitor_id + "|" + e.data] = e.status; });
       if (cRes.data) company = { name: cRes.data.nume, cif: cRes.data.cod_fiscal };
@@ -425,18 +427,29 @@
     req.then(function (res) { if (res.error) { flashSyncError("Nu am putut salva ziua pentru muncitor."); console.error(res.error); } });
   }
   function addWorkerFromInput() {
-    var el = document.getElementById("new-worker-name");
-    if (!el) return;
-    var name = el.value.trim();
+    var nameEl = document.getElementById("new-worker-name");
+    var functieEl = document.getElementById("new-worker-functie");
+    var salariuEl = document.getElementById("new-worker-salariu");
+    var metodaEl = document.getElementById("new-worker-metoda");
+    var telefonEl = document.getElementById("new-worker-telefon");
+    if (!nameEl) return;
+    var name = nameEl.value.trim();
     if (!name) return;
+    var functie = functieEl ? functieEl.value.trim() : "";
+    var salariu = salariuEl && salariuEl.value ? Number(salariuEl.value) : null;
+    var metodaPlata = metodaEl ? metodaEl.value : "CARD";
+    var telefon = telefonEl ? telefonEl.value.trim() : "";
+
     var tempId = "tmp-" + Date.now();
-    workers.push({ id: tempId, name: name, program: "CARD" });
-    sb.from("muncitori").insert({ nume: name, program_lucru: "CARD" }).select().single().then(function (res) {
-      if (res.error) { flashSyncError("Nu am putut salva muncitorul nou."); console.error(res.error); return; }
-      var w = workers.filter(function (x) { return x.id === tempId; })[0];
-      if (w) w.id = res.data.id;
-      render();
-    });
+    workers.push({ id: tempId, name: name, functie: functie, salariu: salariu, metodaPlata: metodaPlata, telefon: telefon });
+    sb.from("muncitori").insert({ nume: name, functie: functie, salariu: salariu, metoda_plata: metodaPlata, telefon: telefon })
+      .select().single().then(function (res) {
+        if (res.error) { flashSyncError("Nu am putut salva muncitorul nou."); console.error(res.error); return; }
+        var w = workers.filter(function (x) { return x.id === tempId; })[0];
+        if (w) w.id = res.data.id;
+        render();
+      });
+    nameEl.value = ""; if (functieEl) functieEl.value = ""; if (salariuEl) salariuEl.value = ""; if (telefonEl) telefonEl.value = "";
   }
   function removeWorker(id) {
     workers = workers.filter(function (w) { return w.id !== id; });
@@ -609,7 +622,7 @@
         }
         return '<td class="day daycell" data-cell-toggle="' + cellKey + '"><div class="cell ' + STATUS_CLS[status] + '">' + STATUS_LABEL[status] + '</div>' + pop + '</td>';
       }).join("");
-      return '<tr><td class="name"><b>' + esc(w.name) + '</b><span>' + esc(w.program) + '<span class="rm-worker" data-remove-worker="' + w.id + '">×</span></span></td>' + cells + '<td class="total">' + total + '</td></tr>';
+      return '<tr><td class="name"><b>' + esc(w.name) + '</b><span>' + esc(w.functie || "—") + '<span class="rm-worker" data-remove-worker="' + w.id + '">×</span></span></td>' + cells + '<td class="total">' + total + '</td></tr>';
     }).join("");
 
     return '' +
@@ -636,8 +649,9 @@
           else val = ["08:00", "12:00-13:00", "17:00", "8"][li];
           return '<td class="' + (status === "weekend" ? "ps-weekend" : "") + '">' + esc(val) + "</td>";
         }).join("");
+        var programLucru = (w.salariu ? esc(String(w.salariu)) + "<br>" : "") + esc(w.metodaPlata || "CARD");
         var firstCols = li === 0
-          ? '<td rowspan="4">' + (idx + 1) + '</td><td class="ps-nume" rowspan="4">' + esc(w.name) + '</td><td rowspan="4">' + esc(w.program) + '</td><td class="ps-label">' + label + "</td>"
+          ? '<td rowspan="4">' + (idx + 1) + '</td><td class="ps-nume" rowspan="4">' + esc(w.name) + '</td><td rowspan="4">' + programLucru + '</td><td class="ps-label">' + label + "</td>"
           : '<td class="ps-label">' + label + "</td>";
         return "<tr>" + firstCols + cells + "</tr>";
       }).join("");
@@ -788,7 +802,15 @@
       "</div>" +
       '<div class="panel pontaj-panel">' + pontajGridHTML() + "</div>" +
       '<div class="add-worker-row">' +
-        '<input id="new-worker-name" class="add-worker-input" placeholder="Nume muncitor nou">' +
+        '<input id="new-worker-name" class="add-worker-input" placeholder="Nume și prenume" style="flex-basis:180px">' +
+        '<input id="new-worker-functie" class="add-worker-input" placeholder="Funcție (ex: Zidar)" list="functii-sugestii" style="flex-basis:150px">' +
+        '<datalist id="functii-sugestii">' +
+          '<option value="Zidar"></option><option value="Dulgher"></option><option value="Fierar-betonist"></option>' +
+          '<option value="Zilier"></option><option value="Șef echipă"></option><option value="Instalator"></option><option value="Electrician"></option>' +
+        "</datalist>" +
+        '<input id="new-worker-salariu" class="add-worker-input" type="number" placeholder="Salariu (lei)" style="flex-basis:130px">' +
+        '<select id="new-worker-metoda" class="add-worker-input" style="flex-basis:120px"><option value="CARD">CARD</option><option value="Numerar">Numerar</option></select>' +
+        '<input id="new-worker-telefon" class="add-worker-input" type="tel" placeholder="Telefon (opțional)" style="flex-basis:150px">' +
         '<button class="btn btn-ghost btn-sm" data-add-worker="1">' + icon("plus", 14) + "Adaugă muncitor</button>" +
       "</div>";
   }
