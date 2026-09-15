@@ -335,6 +335,8 @@
   .doc-file-del { cursor: pointer; color: var(--ink-faint); display: flex; }
   .doc-file-del:hover { color: var(--red); }
   .doc-upload-label { display: inline-flex; align-items: center; gap: 6px; width: fit-content; flex-shrink: 0; }
+  .docrow-input-narrow { flex: 0 0 170px; }
+  .doclist-empty { font-size: 12.5px; color: var(--ink-faint); padding: 6px 0; }
 
   /* print sheet — hidden on screen, shown only via window.print() */
   #print-sheet { display: none; }
@@ -393,7 +395,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b19-2026-09-15";
+  var BUILD = "b20-2026-09-15";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -420,7 +422,8 @@
       editDraft: emptySiteDraft(),
       subTab: "sintetice",
       docDrafts: {},
-      docUploading: {}
+      docUploading: {},
+      avizEtichetaDrafts: {}
     }
   };
 
@@ -433,11 +436,13 @@
   // --- Date generale ale proiectului: nr/dată + fișier scanat, per tip de document ---
   var DOC_BUCKET = "santier-documente";
   var PROJECT_DOCS = [
-    ["autorizatie", "Autorizație"]
+    ["autorizatie", "Autorizație"],
+    ["certificat_urbanism", "Certificat de Urbanism"],
+    ["ordin_incepere", "Ordin de începere"]
   ];
   var projectDocs = [];
   function docFromRow(d) {
-    return { id: d.id, santierId: d.santier_id, tip: d.tip, valoare: d.valoare || "", fisierPath: d.fisier_path || "", fisierNume: d.fisier_nume || "", fisierMarime: d.fisier_marime || null };
+    return { id: d.id, santierId: d.santier_id, tip: d.tip, eticheta: d.eticheta || "", valoare: d.valoare || "", fisierPath: d.fisier_path || "", fisierNume: d.fisier_nume || "", fisierMarime: d.fisier_marime || null };
   }
   function findProjectDoc(santierId, tip) {
     for (var i = 0; i < projectDocs.length; i++) if (projectDocs[i].santierId === santierId && projectDocs[i].tip === tip) return projectDocs[i];
@@ -753,6 +758,48 @@
     });
   }
 
+  // Avize: a free-form, repeatable list (Mediu, Ape Române, Drumuri Naționale, ...) —
+  // each gets its own generated tip so it can hold an independent eticheta + valoare + file.
+  function addAvizRow(siteId) {
+    var tip = "aviz-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
+    projectDocs.push({ id: "tmp-" + Date.now(), santierId: siteId, tip: tip, eticheta: "", valoare: "", fisierPath: "", fisierNume: "", fisierMarime: null });
+  }
+
+  function saveAviz(siteId, tip) {
+    var key = docDraftKey(siteId, tip);
+    var eticheta = (state.siteForm.avizEtichetaDrafts[key] || "").trim();
+    var valoare = (state.siteForm.docDrafts[key] || "").trim();
+    var existing = findProjectDoc(siteId, tip);
+    if (existing) { existing.eticheta = eticheta; existing.valoare = valoare; }
+    else { existing = { id: "tmp-" + Date.now(), santierId: siteId, tip: tip, eticheta: eticheta, valoare: valoare, fisierPath: "", fisierNume: "", fisierMarime: null }; projectDocs.push(existing); }
+    delete state.siteForm.avizEtichetaDrafts[key];
+    delete state.siteForm.docDrafts[key];
+    sb.from("santier_documente").upsert({ santier_id: siteId, tip: tip, eticheta: eticheta, valoare: valoare }, { onConflict: "santier_id,tip" })
+      .select().single().then(function (res) {
+        if (res.error) { flashSyncError("Nu am putut salva avizul."); console.error(res.error); render(); return; }
+        if (String(existing.id).indexOf("tmp-") === 0) existing.id = res.data.id;
+        render();
+      });
+  }
+
+  function removeAviz(site, tip) {
+    var existing = findProjectDoc(site.id, tip);
+    if (!existing) return;
+    var label = existing.eticheta ? ('avizul "' + existing.eticheta + '"') : "acest aviz";
+    if (!confirmDelete("Ștergi " + label + "? Această acțiune nu poate fi anulată.")) return;
+    var oldPath = existing.fisierPath;
+    var key = docDraftKey(site.id, tip);
+    projectDocs = projectDocs.filter(function (d) { return d !== existing; });
+    delete state.siteForm.avizEtichetaDrafts[key];
+    delete state.siteForm.docDrafts[key];
+    render();
+    if (oldPath) sb.storage.from(DOC_BUCKET).remove([oldPath]);
+    if (String(existing.id).indexOf("tmp-") === 0) return; // never persisted, nothing to delete server-side
+    sb.from("santier_documente").delete().eq("id", existing.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut șterge avizul."); console.error(res.error); }
+    });
+  }
+
   function shiftMonth(delta) {
     var m = state.pontaj.month + delta, y = state.pontaj.year;
     if (m < 1) { m = 12; y -= 1; } else if (m > 12) { m = 1; y += 1; }
@@ -885,6 +932,20 @@
       '</div>';
   }
 
+  function docFileSectionHTML(site, tip, doc, uploading) {
+    if (uploading) return '<span class="doc-uploading">Se încarcă…</span>';
+    if (doc && doc.fisierPath) {
+      var publicUrl = sb.storage.from(DOC_BUCKET).getPublicUrl(doc.fisierPath).data.publicUrl;
+      return '<div class="doc-file-chip">' + icon("doc", 14) +
+        '<a href="' + esc(publicUrl) + '" target="_blank" rel="noopener">' + esc(doc.fisierNume) + '</a>' +
+        '<span class="doc-file-del" data-remove-doc-file="' + site.id + '|' + tip + '" title="Șterge fișier">' + icon("trash", 13) + '</span>' +
+      '</div>';
+    }
+    var inputId = "doc-file-" + tip;
+    return '<label class="btn btn-ghost btn-sm doc-upload-label" for="' + inputId + '">' + icon("plus", 13) + 'Atașează fișier' +
+      '<input type="file" id="' + inputId + '" data-doc-file-input="' + site.id + '|' + tip + '" accept=".pdf,image/*" style="display:none"></label>';
+  }
+
   function proiectGeneralPanelHTML(site) {
     var rows = PROJECT_DOCS.map(function (d) {
       var tip = d[0], label = d[1];
@@ -894,31 +955,42 @@
       var inputVal = (draftVal !== undefined) ? draftVal : (doc ? doc.valoare : "");
       var uploading = !!state.siteForm.docUploading[key];
 
-      var fileSection;
-      if (uploading) {
-        fileSection = '<span class="doc-uploading">Se încarcă…</span>';
-      } else if (doc && doc.fisierPath) {
-        var publicUrl = sb.storage.from(DOC_BUCKET).getPublicUrl(doc.fisierPath).data.publicUrl;
-        fileSection = '<div class="doc-file-chip">' + icon("doc", 14) +
-          '<a href="' + esc(publicUrl) + '" target="_blank" rel="noopener">' + esc(doc.fisierNume) + '</a>' +
-          '<span class="doc-file-del" data-remove-doc-file="' + site.id + '|' + tip + '" title="Șterge fișier">' + icon("trash", 13) + '</span>' +
-        '</div>';
-      } else {
-        var inputId = "doc-file-" + tip + "-" + site.id;
-        fileSection = '<label class="btn btn-ghost btn-sm doc-upload-label" for="' + inputId + '">' + icon("plus", 13) + 'Atașează fișier' +
-          '<input type="file" id="' + inputId + '" data-doc-file-input="' + site.id + '|' + tip + '" accept=".pdf,image/*" style="display:none"></label>';
-      }
-
       return '<div class="docrow">' +
         '<div class="docrow-label">' + esc(label) + '</div>' +
         '<input class="docrow-input" data-doc-valoare-key="' + key + '" placeholder="nr. / data" value="' + esc(inputVal) + '">' +
         '<button class="btn btn-ghost btn-sm" data-save-doc-valoare="' + site.id + '|' + tip + '">Salvează</button>' +
-        fileSection +
+        docFileSectionHTML(site, tip, doc, uploading) +
       '</div>';
     }).join("");
+
+    var avize = projectDocs.filter(function (d) { return d.santierId === site.id && d.tip.indexOf("aviz-") === 0; });
+    var avizeRows = avize.map(function (doc) {
+      var tip = doc.tip;
+      var key = docDraftKey(site.id, tip);
+      var etichetaDraft = state.siteForm.avizEtichetaDrafts[key];
+      var etichetaVal = (etichetaDraft !== undefined) ? etichetaDraft : doc.eticheta;
+      var valoareDraft = state.siteForm.docDrafts[key];
+      var valoareVal = (valoareDraft !== undefined) ? valoareDraft : doc.valoare;
+      var uploading = !!state.siteForm.docUploading[key];
+
+      return '<div class="docrow">' +
+        '<input class="docrow-input docrow-input-narrow" data-aviz-eticheta-key="' + key + '" placeholder="Tip aviz (ex: Mediu)" value="' + esc(etichetaVal) + '">' +
+        '<input class="docrow-input" data-doc-valoare-key="' + key + '" placeholder="nr. / data" value="' + esc(valoareVal) + '">' +
+        '<button class="btn btn-ghost btn-sm" data-save-aviz="' + site.id + '|' + tip + '">Salvează</button>' +
+        docFileSectionHTML(site, tip, doc, uploading) +
+        '<span class="doc-file-del" data-remove-aviz="' + site.id + '|' + tip + '" title="Șterge aviz">' + icon("trash", 14) + '</span>' +
+      '</div>';
+    }).join("");
+    var avizeEmpty = avize.length === 0 ? '<div class="doclist-empty">Niciun aviz adăugat încă.</div>' : "";
+
     return '<div class="panel"><div class="panel-title">Date generale ale proiectului</div>' +
       '<div class="panel-sub">Documentele oficiale ale proiectului — număr/dată și, opțional, fișierul scanat.</div>' +
       '<div class="doclist-docs">' + rows + '</div>' +
+    '</div>' +
+    '<div class="panel" style="margin-top:16px"><div class="panel-title">Avize</div>' +
+      '<div class="panel-sub">Mediu, Ape Române, Drumuri Naționale etc. — adaugă câte e nevoie.</div>' +
+      '<div class="doclist-docs">' + avizeRows + avizeEmpty + '</div>' +
+      '<button class="btn btn-ghost btn-sm" style="margin-top:10px" data-add-aviz="' + site.id + '">' + icon("plus", 13) + 'Adaugă aviz</button>' +
     '</div>';
   }
 
@@ -1303,7 +1375,7 @@
       "[data-add-worker],[data-remove-worker],[data-print-pontaj],[data-toggle-company],[data-save-company],[data-logout]," +
       "[data-toggle-select-mode],[data-bulk-status],[data-clear-selection],[data-retry-failed]," +
       "[data-open-add-site],[data-close-add-site],[data-save-new-site],[data-edit-site],[data-save-site-edit],[data-cancel-site-edit],[data-delete-site]," +
-      "[data-site-subtab],[data-save-doc-valoare],[data-remove-doc-file]"
+      "[data-site-subtab],[data-save-doc-valoare],[data-remove-doc-file],[data-add-aviz],[data-save-aviz],[data-remove-aviz]"
     );
 
     // Only re-render when something actually changes. A blanket render() on every
@@ -1399,6 +1471,16 @@
         var rdSite = findSite(rdParts[0]);
         if (rdSite) removeDocFile(rdSite, rdParts[1]);
       }
+      else if (t.dataset.addAviz) { addAvizRow(t.dataset.addAviz); }
+      else if (t.dataset.saveAviz) {
+        var saParts = t.dataset.saveAviz.split("|");
+        saveAviz(saParts[0], saParts[1]);
+      }
+      else if (t.dataset.removeAviz) {
+        var raParts = t.dataset.removeAviz.split("|");
+        var raSite = findSite(raParts[0]);
+        if (raSite) removeAviz(raSite, raParts[1]);
+      }
     }
 
     if (needsRender) {
@@ -1421,6 +1503,7 @@
     else if (id.indexOf("new-site-") === 0) state.siteForm.addDraft[id.slice(9)] = e.target.value;
     else if (id.indexOf("site-edit-") === 0) state.siteForm.editDraft[id.slice(10)] = e.target.value;
     else if (e.target.dataset.docValoareKey) state.siteForm.docDrafts[e.target.dataset.docValoareKey] = e.target.value;
+    else if (e.target.dataset.avizEtichetaKey) state.siteForm.avizEtichetaDrafts[e.target.dataset.avizEtichetaKey] = e.target.value;
   });
   document.getElementById("app").addEventListener("change", function (e) {
     if (e.target.id === "new-worker-metoda") state.pontaj.newWorker.metoda = e.target.value;
