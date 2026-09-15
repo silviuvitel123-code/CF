@@ -6,6 +6,7 @@
 <title>Ing. Assistant</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root{
     --bg:oklch(98% 0.004 250); --surface:oklch(100% 0 0); --surface-2:oklch(96.5% 0.005 250);
@@ -278,6 +279,24 @@
   .ps-label { text-align: left; font-weight: 400; }
   .ps-weekend { background: #4472c4; color: #fff; font-weight: 600; }
 
+  /* auth */
+  .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); padding: 20px; }
+  .login-card { width: 340px; max-width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 32px 28px; box-shadow: 0 20px 50px rgba(20,20,30,.08); }
+  .login-mark { width: 44px; height: 44px; border-radius: 10px; background: var(--navy); display: flex; align-items: center;
+    justify-content: center; margin: 0 auto 16px; }
+  .login-title { text-align: center; font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .login-sub { text-align: center; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 22px; }
+  .login-field { margin-bottom: 12px; }
+  .login-field input { width: 100%; border: 1px solid var(--border-strong); border-radius: 9px; padding: 10px 12px;
+    font-size: 13.5px; font-family: var(--sans); }
+  .login-error { color: var(--red); font-size: 12px; margin-top: 10px; text-align: center; min-height: 16px; }
+  .loading-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); font-size: 13px; }
+  .sync-error { position: fixed; top: 16px; right: 16px; background: var(--red); color: #fff; padding: 10px 16px; border-radius: 8px;
+    font-size: 12.5px; font-weight: 600; z-index: 100; box-shadow: 0 8px 20px rgba(0,0,0,.18); }
+  .logout-link { margin-left: auto; cursor: pointer; color: var(--ink-faint); }
+  .logout-link:hover { color: var(--red); }
+
   @media print {
     body * { visibility: hidden; }
     #print-sheet, #print-sheet * { visibility: visible; }
@@ -318,27 +337,63 @@
     { id: "florilor", name: "Bloc P+4 Str. Florilor", address: "Str. Florilor nr. 8, Sibiu", beneficiar: "Florilor Residence SRL", statusLabel: "Finalizat", statusCls: "badge-final", dotCls: "dot-final", progress: 100, progressLabel: "100%", updated: "3 sept." }
   ];
 
-  // --- pontaj: persisted in localStorage (workers, daily statuses, company header) ---
-  var LS_WORKERS = "ia_pontaj_workers_v1";
-  var LS_ENTRIES = "ia_pontaj_entries_v1";
-  var LS_COMPANY = "ia_pontaj_company_v1";
+  // --- pontaj: persisted in Supabase (workers, daily statuses, company header) ---
+  var SUPABASE_URL = "https://rwxsvsqoohepcfbawfng.supabase.co";
+  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3eHN2c3Fvb2hlcGNmYmF3Zm5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0NTM4NjksImV4cCI6MjEwNTAyOTg2OX0.kQDsm-LvaKf9iNg9g8fdzdpaHBznK94-_S3jfukKyCs";
+  var sb = (window.supabase && window.supabase.createClient) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-  function loadLS(key, fallback) {
-    try { var raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
-    catch (e) { return fallback; }
-  }
-  function saveLS(key, val) {
-    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+  var authState = { loading: true, session: null, loginError: "", loggingIn: false };
+  var syncError = null;
+
+  var workers = [];
+  var entries = {};
+  var company = { name: "", cif: "" };
+
+  function flashSyncError(msg) {
+    syncError = msg;
+    render();
+    setTimeout(function () { syncError = null; render(); }, 4000);
   }
 
-  var workers = loadLS(LS_WORKERS, [
-    { id: "w1", name: "Ing. Vitel Silviu", program: "CARD" },
-    { id: "w2", name: "Simonescu Gabriel", program: "5500 CARD" },
-    { id: "w3", name: "Midvichi Mateo", program: "4500 CARD" },
-    { id: "w4", name: "Haluta Vladuț", program: "CARD" }
-  ]);
-  var entries = loadLS(LS_ENTRIES, {});
-  var company = loadLS(LS_COMPANY, { name: "S.C. CORNELL floor S.R.L.", cif: "24616580" });
+  function loadAllData() {
+    return Promise.all([
+      sb.from("muncitori").select("*").order("created_at"),
+      sb.from("pontaj_intrari").select("*"),
+      sb.from("companie").select("*").eq("id", 1).single()
+    ]).then(function (results) {
+      var mRes = results[0], eRes = results[1], cRes = results[2];
+      workers = (mRes.data || []).map(function (w) { return { id: w.id, name: w.nume, program: w.program_lucru || "" }; });
+      entries = {};
+      (eRes.data || []).forEach(function (e) { entries[e.muncitor_id + "|" + e.data] = e.status; });
+      if (cRes.data) company = { name: cRes.data.nume, cif: cRes.data.cod_fiscal };
+    }).catch(function (err) {
+      flashSyncError("Nu am putut încărca datele din Supabase.");
+      console.error(err);
+    });
+  }
+
+  function doLogin() {
+    var emailEl = document.getElementById("login-email");
+    var passEl = document.getElementById("login-password");
+    if (!emailEl || !passEl) return;
+    authState.loginError = "";
+    authState.loggingIn = true;
+    render();
+    sb.auth.signInWithPassword({ email: emailEl.value.trim(), password: passEl.value }).then(function (res) {
+      authState.loggingIn = false;
+      if (res.error) { authState.loginError = "Email sau parolă greșită."; render(); return; }
+      authState.session = res.data.session;
+      loadAllData().then(render);
+    });
+  }
+
+  function doLogout() {
+    sb.auth.signOut().then(function () {
+      authState.session = null;
+      workers = []; entries = {}; company = { name: "", cif: "" };
+      render();
+    });
+  }
 
   var MONTHS_RO = ["Ianuarie","Februarie","Martie","Aprilie","Mai","Iunie","Iulie","August","Septembrie","Octombrie","Noiembrie","Decembrie"];
 
@@ -363,26 +418,41 @@
   function setStatus(workerId, dk, status) {
     var key = workerId + "|" + dk;
     if (status === "normal") delete entries[key]; else entries[key] = status;
-    saveLS(LS_ENTRIES, entries);
+    if (String(workerId).indexOf("tmp-") === 0) return; // worker not yet persisted, nothing to sync
+    var req = status === "normal"
+      ? sb.from("pontaj_intrari").delete().match({ muncitor_id: workerId, data: dk })
+      : sb.from("pontaj_intrari").upsert({ muncitor_id: workerId, data: dk, status: status }, { onConflict: "muncitor_id,data" });
+    req.then(function (res) { if (res.error) { flashSyncError("Nu am putut salva ziua pentru muncitor."); console.error(res.error); } });
   }
   function addWorkerFromInput() {
     var el = document.getElementById("new-worker-name");
     if (!el) return;
     var name = el.value.trim();
     if (!name) return;
-    workers.push({ id: "w" + Date.now(), name: name, program: "CARD" });
-    saveLS(LS_WORKERS, workers);
+    var tempId = "tmp-" + Date.now();
+    workers.push({ id: tempId, name: name, program: "CARD" });
+    sb.from("muncitori").insert({ nume: name, program_lucru: "CARD" }).select().single().then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva muncitorul nou."); console.error(res.error); return; }
+      var w = workers.filter(function (x) { return x.id === tempId; })[0];
+      if (w) w.id = res.data.id;
+      render();
+    });
   }
   function removeWorker(id) {
     workers = workers.filter(function (w) { return w.id !== id; });
-    saveLS(LS_WORKERS, workers);
+    if (String(id).indexOf("tmp-") === 0) return;
+    sb.from("muncitori").delete().eq("id", id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut șterge muncitorul."); console.error(res.error); }
+    });
   }
   function saveCompanyFromInputs() {
     var n = document.getElementById("company-name-input");
     var c = document.getElementById("company-cif-input");
     if (n && n.value.trim()) company.name = n.value.trim();
     if (c && c.value.trim()) company.cif = c.value.trim();
-    saveLS(LS_COMPANY, company);
+    sb.from("companie").update({ nume: company.name, cod_fiscal: company.cif }).eq("id", 1).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva datele firmei."); console.error(res.error); }
+    });
   }
   function shiftMonth(delta) {
     var m = state.pontaj.month + delta, y = state.pontaj.year;
@@ -424,6 +494,32 @@
     return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' + icons[name] + '</svg>';
   }
 
+  function loadingScreenHTML() {
+    return '<div class="loading-wrap">Se încarcă…</div>';
+  }
+
+  function sdkErrorScreenHTML() {
+    return '<div class="loading-wrap" style="flex-direction:column;gap:10px;text-align:center;padding:20px">' +
+      '<div>Nu am putut încărca serviciul de autentificare (conexiune blocată sau CDN indisponibil).</div>' +
+      '<button class="btn btn-primary btn-sm" onclick="location.reload()">Reîncearcă</button>' +
+    '</div>';
+  }
+
+  function loginScreenHTML() {
+    return '' +
+      '<div class="login-wrap"><div class="login-card">' +
+        '<div class="login-mark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/><path d="M9 12h6"/></svg></div>' +
+        '<div class="login-title">Ing. Assistant</div>' +
+        '<div class="login-sub">Autentificare</div>' +
+        '<form id="login-form">' +
+          '<div class="login-field"><input id="login-email" type="email" placeholder="Email" autocomplete="username" required></div>' +
+          '<div class="login-field"><input id="login-password" type="password" placeholder="Parolă" autocomplete="current-password" required></div>' +
+          '<button type="submit" class="btn btn-primary btn-block"' + (authState.loggingIn ? " disabled" : "") + '>' + (authState.loggingIn ? "Se conectează…" : "Intră") + '</button>' +
+        '</form>' +
+        '<div class="login-error">' + esc(authState.loginError) + '</div>' +
+      '</div></div>';
+  }
+
   function sidebarHTML() {
     var sitesHtml = rawSites.map(function (s) {
       var isActive = state.view === "detail" && s.id === state.selectedSiteId;
@@ -445,7 +541,9 @@
         '</div>' +
         '<div class="spacer"></div>' +
         '<div class="nav" style="padding-top:0"><div class="nav-item">' + icon("gear") + 'Setări</div></div>' +
-        '<div class="user-box"><div class="avatar">IP</div><div><div class="user-name">Inginer Popescu</div><div class="user-role">Inginer șef șantier</div></div></div>' +
+        '<div class="user-box"><div class="avatar">IP</div><div><div class="user-name">Inginer Popescu</div><div class="user-role">Inginer șef șantier</div></div>' +
+          '<span class="logout-link" data-logout="1" title="Ieși din cont"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>' +
+        '</div>' +
       '</div>';
   }
 
@@ -696,20 +794,28 @@
   }
 
   function render() {
+    var errorBanner = syncError ? '<div class="sync-error">' + esc(syncError) + '</div>' : "";
+
+    if (!sb) { document.getElementById("app").innerHTML = sdkErrorScreenHTML(); return; }
+    if (authState.loading) { document.getElementById("app").innerHTML = loadingScreenHTML(); return; }
+    if (!authState.session) { document.getElementById("app").innerHTML = errorBanner + loginScreenHTML(); return; }
+
     var main = "";
     if (state.view === "dashboard") main = dashboardHTML();
     else if (state.view === "detail") main = detailHTML();
     else if (state.view === "pontaj-global") main = pontajGlobalHTML();
 
-    document.getElementById("app").innerHTML =
+    document.getElementById("app").innerHTML = errorBanner +
       '<div class="app">' + sidebarHTML() + '<div class="main"><div class="main-inner">' + main + '</div></div></div>';
   }
 
   document.getElementById("app").addEventListener("click", function (e) {
+    if (e.target.closest("#login-form")) return; // handled by the dedicated submit listener below
+
     var t = e.target.closest(
       "[data-go],[data-open-site],[data-tab],[data-global-site]," +
       "[data-pontaj-prev],[data-pontaj-next],[data-pontaj-mode],[data-cell-toggle],[data-set-status]," +
-      "[data-add-worker],[data-remove-worker],[data-print-pontaj],[data-toggle-company],[data-save-company]"
+      "[data-add-worker],[data-remove-worker],[data-print-pontaj],[data-toggle-company],[data-save-company],[data-logout]"
     );
 
     // clicking anywhere outside an open day-popover closes it
@@ -737,13 +843,30 @@
       else if (t.dataset.printPontaj) { printPontaj(); return; }
       else if (t.dataset.toggleCompany) { state.pontaj.editingCompany = !state.pontaj.editingCompany; }
       else if (t.dataset.saveCompany) { saveCompanyFromInputs(); state.pontaj.editingCompany = false; }
+      else if (t.dataset.logout) { doLogout(); return; }
     }
 
     render();
     if (isNav) window.scrollTo(0, 0);
   });
 
+  document.addEventListener("submit", function (e) {
+    if (e.target && e.target.id === "login-form") { e.preventDefault(); doLogin(); }
+  });
+
   render();
+  if (sb) {
+    sb.auth.getSession().then(function (res) {
+      authState.loading = false;
+      var session = res.data && res.data.session;
+      if (session) {
+        authState.session = session;
+        loadAllData().then(render);
+      } else {
+        render();
+      }
+    });
+  }
 })();
 </script>
 </body>
