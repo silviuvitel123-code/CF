@@ -178,7 +178,7 @@
   .edit-note { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-soft); margin-left: auto; }
   .edit-note svg { color: var(--amber-strong); flex-shrink: 0; }
 
-  /* proces verbal */
+  /* proces-verbal */
   .cols { display: grid; grid-template-columns: 400px 1fr; gap: 20px; align-items: start; }
   .panel-title { font-size: 13.5px; font-weight: 700; margin-bottom: 3px; }
   .panel-sub { font-size: 12px; color: var(--ink-faint); margin-bottom: 14px; }
@@ -395,7 +395,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b20-2026-09-15";
+  var BUILD = "b21-2026-09-15";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -1064,7 +1064,7 @@
       : "";
 
     return '' +
-      '<div class="topbar"><div><div class="h1">Dashboard</div><div class="h1-sub">Prezentare generală — pontaj, procese verbale și progres, la firul ierbii</div></div></div>' +
+      '<div class="topbar"><div><div class="h1">Dashboard</div><div class="h1-sub">Prezentare generală — pontaj, procese-verbale și progres, la firul ierbii</div></div></div>' +
       '<div class="stats">' +
         '<div class="stat"><div class="stat-val">' + sites.length + '</div><div class="stat-label">Șantiere active</div></div>' +
         '<div class="stat"><div class="stat-val">17</div><div class="stat-label">Muncitori pontați azi</div></div>' +
@@ -1193,7 +1193,7 @@
           '<div class="field-label">Ce s-a lucrat astăzi<span class="mic">' + icon("mic", 13) + 'Dictează</span></div>' +
           '<textarea placeholder="ex: azi am turnat fundația la corp B, au fost 6 muncitori, vremea a fost bună...">azi am turnat fundația la corp B, au fost 6 muncitori pe șantier, betonul a fost livrat de la stația Holcim, vremea a fost bună, fără întreruperi.</textarea>' +
           '<div class="chips"><span class="chip">Turnare fundație</span><span class="chip">Recepție lucrări</span><span class="chip">Livrare materiale</span><span class="chip">Incident șantier</span></div>' +
-          '<button class="btn btn-primary btn-block">' + icon("sparkle", 15) + 'Generează proces verbal cu AI</button>' +
+          '<button class="btn btn-primary btn-block">' + icon("sparkle", 15) + 'Generează proces-verbal cu AI</button>' +
           '<div class="helper">AI-ul completează automat data, șantierul, participanții și formatul oficial — pe baza notițelor tale și a pontajului zilei.</div>' +
         '</div>' +
         '<div class="panel doc-panel">' +
@@ -1202,7 +1202,7 @@
           '</div>' +
           '<div class="doc-page">' +
             '<div class="doc-letterhead"><div class="doc-logo"><span class="doc-logo-mark"></span>[NUME FIRMĂ CONSTRUCTOR]</div><div class="doc-nr">Nr. 24 / 15.08.2026</div></div>' +
-            '<div class="doc-title">Proces verbal de lucrări</div>' +
+            '<div class="doc-title">Proces-verbal de lucrări</div>' +
             '<div class="doc-meta"><span>Șantier: ' + esc(site.nume) + '</span><span>Data: 15.08.2026</span></div>' +
             '<div class="doc-body">Astăzi, 15.08.2026, s-a executat turnarea fundației la Corpul B al obiectivului ' + esc(site.nume) + '. Lucrările s-au desfășurat cu un efectiv de 6 muncitori, în condiții meteorologice favorabile, fără întreruperi. Betonul a fost furnizat de stația Holcim, conform comenzii aferente etapei de fundare. Nu au fost înregistrate incidente sau neconformități pe parcursul zilei.</div>' +
             '<table class="doc-table"><thead><tr><th>Participant</th><th>Funcție</th><th>Prezență</th></tr></thead><tbody>' +
@@ -1260,7 +1260,7 @@
     }
     var tabs = [
       ["date-santier", "info", "Date șantier"],
-      ["pv", "doc", "Procese Verbale"],
+      ["pv", "doc", "Procese-verbale"],
       ["progres", "chart", "Progres Șantier"],
       ["documente", "docLines", "Documente"]
     ].map(function (t) {
