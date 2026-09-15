@@ -250,7 +250,22 @@
     font-size: 12px; font-weight: 600; color: var(--ink-soft); cursor: pointer; }
   .mode-chip:hover { border-color: var(--border-strong); }
   .mode-chip.active { background: var(--navy); border-color: var(--navy); color: white; }
+  .select-toggle { display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 100px;
+    border: 1px solid var(--border-strong); background: var(--surface); font-size: 12px; font-weight: 600;
+    color: var(--ink-soft); cursor: pointer; }
+  .select-toggle:hover { border-color: var(--border-strong); }
+  .select-toggle.active { background: var(--amber-soft); border-color: var(--amber-strong); color: oklch(45% 0.14 50); }
   .daycell { position: relative; cursor: pointer; }
+  .daycell.selectable .cell { box-shadow: inset 0 0 0 1.5px var(--border-strong); }
+  .daycell.cell-picked .cell { box-shadow: inset 0 0 0 2px var(--amber-strong); background: var(--amber-soft); }
+  .bulk-bar { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 40;
+    background: var(--ink); color: white; border-radius: 100px; padding: 8px 8px 8px 16px;
+    display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.25); font-size: 12.5px; }
+  .bulk-bar b { font-weight: 700; }
+  .bulk-opt { padding: 7px 12px; border-radius: 100px; background: rgba(255,255,255,.12); cursor: pointer; font-weight: 600; white-space: nowrap; }
+  .bulk-opt:hover { background: rgba(255,255,255,.22); }
+  .bulk-cancel { padding: 7px 10px; cursor: pointer; color: rgba(255,255,255,.7); }
+  .bulk-cancel:hover { color: white; }
   /* fixed (not absolute) so it escapes .tbl-wrap's scroll clipping — position set in JS via
      positionOpenPopover(), since overflow-x:auto on an ancestor forces overflow-y:auto too
      (a real CSS quirk), which would otherwise clip an absolutely-positioned popover. */
@@ -322,7 +337,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b10-2026-09-15";
+  var BUILD = "b11-2026-09-15";
   var todayD = new Date();
   var state = {
     view: "dashboard", selectedSiteId: "aurora", activeTab: "pontaj", globalSiteId: "aurora",
@@ -333,7 +348,9 @@
       openCell: null,
       editingCompany: false,
       newWorker: { name: "", functie: "", salariu: "", metoda: "CARD", telefon: "" },
-      companyDraft: { name: "", cif: "" }
+      companyDraft: { name: "", cif: "" },
+      selectMode: false,
+      selectedCells: []
     }
   };
 
@@ -431,6 +448,13 @@
       ? sb.from("pontaj_intrari").delete().match({ muncitor_id: workerId, data: dk })
       : sb.from("pontaj_intrari").upsert({ muncitor_id: workerId, data: dk, status: status }, { onConflict: "muncitor_id,data" });
     req.then(function (res) { if (res.error) { flashSyncError("Nu am putut salva ziua pentru muncitor."); console.error(res.error); } });
+  }
+  function setStatusBulk(cellKeys, status) {
+    cellKeys.forEach(function (key) {
+      var sep = key.indexOf("|");
+      var workerId = key.slice(0, sep), dk = key.slice(sep + 1);
+      setStatus(workerId, dk, status);
+    });
   }
   function addWorkerFromInput() {
     var nw = state.pontaj.newWorker;
@@ -587,6 +611,21 @@
       '</div>';
   }
 
+  function bulkBarHTML() {
+    var n = state.pontaj.selectedCells.length;
+    if (n === 0) return "";
+    return '' +
+      '<div class="bulk-bar">' +
+        "<b>" + n + (n === 1 ? " zi selectată" : " zile selectate") + "</b>" +
+        '<div class="bulk-opt" data-bulk-status="normal">Normal (8h)</div>' +
+        '<div class="bulk-opt" data-bulk-status="co">CO</div>' +
+        '<div class="bulk-opt" data-bulk-status="cm">CM</div>' +
+        '<div class="bulk-opt" data-bulk-status="liber">Liber</div>' +
+        '<div class="bulk-opt" data-bulk-status="empty">Șterge</div>' +
+        '<div class="bulk-cancel" data-clear-selection="1">Anulează</div>' +
+      "</div>";
+  }
+
   function pontajGridHTML() {
     var y = state.pontaj.year, m = state.pontaj.month, mode = state.pontaj.periodMode;
     var range = periodRange(mode, y, m);
@@ -611,6 +650,7 @@
         var dk = dateKey(y, m, dd);
         var cellKey = w.id + "|" + dk;
         var isOpen = state.pontaj.openCell === cellKey;
+        var isPicked = state.pontaj.selectedCells.indexOf(cellKey) !== -1;
         var pop = "";
         if (isOpen) {
           pop = '<div class="daypop">' +
@@ -621,7 +661,8 @@
             '<div class="daypop-opt" data-set-status="' + cellKey + '|empty">Șterge (necompletat)</div>' +
           '</div>';
         }
-        return '<td class="day daycell" data-cell-toggle="' + cellKey + '"><div class="cell ' + STATUS_CLS[status] + '">' + STATUS_LABEL[status] + '</div>' + pop + '</td>';
+        var cellCls = "day daycell" + (state.pontaj.selectMode ? " selectable" : "") + (isPicked ? " cell-picked" : "");
+        return '<td class="' + cellCls + '" data-cell-toggle="' + cellKey + '"><div class="cell ' + STATUS_CLS[status] + '">' + STATUS_LABEL[status] + '</div>' + pop + '</td>';
       }).join("");
       return '<tr><td class="name"><b>' + esc(w.name) + '</b><span>' + esc(w.functie || "—") + '<span class="rm-worker" data-remove-worker="' + w.id + '">×</span></span></td>' + cells + '<td class="total">' + total + '</td></tr>';
     }).join("");
@@ -801,9 +842,11 @@
           '<div class="mode-chip' + (mode === "lichidare" ? " active" : "") + '" data-pontaj-mode="lichidare">Lichidare (15-' + last + ")</div>" +
           '<div class="mode-chip' + (mode === "full" ? " active" : "") + '" data-pontaj-mode="full">Luna completă</div>' +
         "</div>" +
+        '<div class="select-toggle' + (state.pontaj.selectMode ? " active" : "") + '" data-toggle-select-mode="1">' + icon("pencil", 13) + (state.pontaj.selectMode ? "Gata cu selecția" : "Completează mai multe zile") + "</div>" +
         '<button class="btn btn-primary btn-sm" data-print-pontaj="1">' + icon("printer", 14) + "Generează PDF / Printează</button>" +
       "</div>" +
       '<div class="panel pontaj-panel">' + pontajGridHTML() + "</div>" +
+      bulkBarHTML() +
       '<div class="add-worker-row">' +
         '<input id="new-worker-name" class="add-worker-input" placeholder="Nume și prenume" style="flex-basis:180px" value="' + esc(nw.name) + '">' +
         '<input id="new-worker-functie" class="add-worker-input" placeholder="Funcție (ex: Zidar)" list="functii-sugestii" style="flex-basis:150px" value="' + esc(nw.functie) + '">' +
@@ -855,7 +898,8 @@
     var t = e.target.closest(
       "[data-go],[data-open-site],[data-tab],[data-global-site]," +
       "[data-pontaj-prev],[data-pontaj-next],[data-pontaj-mode],[data-cell-toggle],[data-set-status]," +
-      "[data-add-worker],[data-remove-worker],[data-print-pontaj],[data-toggle-company],[data-save-company],[data-logout]"
+      "[data-add-worker],[data-remove-worker],[data-print-pontaj],[data-toggle-company],[data-save-company],[data-logout]," +
+      "[data-toggle-select-mode],[data-bulk-status],[data-clear-selection]"
     );
 
     // Only re-render when something actually changes. A blanket render() on every
@@ -882,7 +926,16 @@
       else if (t.dataset.pontajPrev) shiftMonth(-1);
       else if (t.dataset.pontajNext) shiftMonth(1);
       else if (t.dataset.pontajMode) state.pontaj.periodMode = t.dataset.pontajMode;
-      else if (t.dataset.cellToggle) state.pontaj.openCell = (state.pontaj.openCell === t.dataset.cellToggle) ? null : t.dataset.cellToggle;
+      else if (t.dataset.cellToggle) {
+        if (state.pontaj.selectMode) {
+          var key = t.dataset.cellToggle;
+          var idx = state.pontaj.selectedCells.indexOf(key);
+          if (idx === -1) state.pontaj.selectedCells.push(key);
+          else state.pontaj.selectedCells.splice(idx, 1);
+        } else {
+          state.pontaj.openCell = (state.pontaj.openCell === t.dataset.cellToggle) ? null : t.dataset.cellToggle;
+        }
+      }
       else if (t.dataset.setStatus) {
         var parts = t.dataset.setStatus.split("|"); // workerId|yyyy-mm-dd|status
         setStatus(parts[0], parts[1], parts[2]);
@@ -897,6 +950,18 @@
       }
       else if (t.dataset.saveCompany) { saveCompanyFromInputs(); state.pontaj.editingCompany = false; }
       else if (t.dataset.logout) { doLogout(); return; }
+      else if (t.dataset.toggleSelectMode) {
+        state.pontaj.selectMode = !state.pontaj.selectMode;
+        state.pontaj.selectedCells = [];
+        state.pontaj.openCell = null;
+      }
+      else if (t.dataset.bulkStatus) {
+        setStatusBulk(state.pontaj.selectedCells, t.dataset.bulkStatus);
+        state.pontaj.selectedCells = [];
+      }
+      else if (t.dataset.clearSelection) {
+        state.pontaj.selectedCells = [];
+      }
     }
 
     if (needsRender) {
