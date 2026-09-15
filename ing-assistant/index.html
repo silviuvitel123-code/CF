@@ -131,6 +131,11 @@
     display: flex; align-items: center; gap: 7px; cursor: pointer; }
   .tab:hover { color: var(--ink); }
   .tab.active { color: var(--navy); border-bottom-color: var(--navy); }
+  .subtabs { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
+  .subtab { padding: 8px 14px; font-size: 12.5px; font-weight: 600; color: var(--ink-faint); border-bottom: 2px solid transparent;
+    cursor: pointer; }
+  .subtab:hover { color: var(--ink-soft); }
+  .subtab.active { color: var(--navy); border-bottom-color: var(--navy); }
   .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; }
 
   /* pontaj */
@@ -374,7 +379,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b16-2026-09-15";
+  var BUILD = "b17-2026-09-15";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -398,7 +403,8 @@
       addOpen: false,
       addDraft: emptySiteDraft(),
       editing: false,
-      editDraft: emptySiteDraft()
+      editDraft: emptySiteDraft(),
+      subTab: "sintetice"
     }
   };
 
@@ -782,8 +788,20 @@
   }
 
   function dateSantierPanelHTML(site) {
+    var subTab = state.siteForm.subTab;
+    var subtabsNav = '<div class="subtabs">' +
+      '<div class="subtab' + (subTab === "sintetice" ? " active" : "") + '" data-site-subtab="sintetice">Date sintetice</div>' +
+      '<div class="subtab' + (subTab === "general" ? " active" : "") + '" data-site-subtab="general">Date generale ale proiectului</div>' +
+    '</div>';
+
+    if (subTab === "general") {
+      return subtabsNav + '<div class="panel" style="text-align:center;padding:40px 20px">' +
+        '<div style="font-size:13px;color:var(--ink-soft)">Acest sub-tab nu este încă configurat.</div>' +
+      '</div>';
+    }
+
     if (state.siteForm.editing) {
-      return '<div class="panel"><div class="panel-title">Date șantier</div>' +
+      return subtabsNav + '<div class="panel"><div class="panel-title">Date sintetice</div>' +
         '<div class="panel-sub">Aceste informații vor fi folosite automat la generarea proceselor verbale.</div>' +
         '<div class="site-field-grid">' + siteFieldInputsHTML("site-edit", state.siteForm.editDraft) + '</div>' +
         '<div class="modal-actions" style="justify-content:flex-start;margin-top:16px">' +
@@ -796,7 +814,7 @@
       return '<div class="site-info-row"><div class="site-info-label">' + label + '</div>' +
         '<div class="site-info-val' + (val ? '' : ' empty') + '">' + (val ? esc(val) : "Neconfigurat încă") + '</div></div>';
     }).join("");
-    return '<div class="panel"><div class="panel-title">Date șantier</div>' +
+    return subtabsNav + '<div class="panel"><div class="panel-title">Date sintetice</div>' +
       '<div class="panel-sub">Aceste informații vor fi folosite automat la generarea proceselor verbale.</div>' +
       '<div class="site-info-list">' + rows + '</div>' +
       '<button class="btn btn-ghost btn-sm" style="margin-top:16px" data-edit-site="' + site.id + '">' + icon("pencil", 13) + 'Editează</button>' +
@@ -1153,7 +1171,8 @@
       "[data-pontaj-prev],[data-pontaj-next],[data-pontaj-mode],[data-cell-toggle],[data-set-status]," +
       "[data-add-worker],[data-remove-worker],[data-print-pontaj],[data-toggle-company],[data-save-company],[data-logout]," +
       "[data-toggle-select-mode],[data-bulk-status],[data-clear-selection],[data-retry-failed]," +
-      "[data-open-add-site],[data-close-add-site],[data-save-new-site],[data-edit-site],[data-save-site-edit],[data-cancel-site-edit],[data-delete-site]"
+      "[data-open-add-site],[data-close-add-site],[data-save-new-site],[data-edit-site],[data-save-site-edit],[data-cancel-site-edit],[data-delete-site]," +
+      "[data-site-subtab]"
     );
 
     // Only re-render when something actually changes. A blanket render() on every
@@ -1174,7 +1193,7 @@
     if (t) {
       needsRender = true;
       if (t.dataset.go) { state.view = t.dataset.go; isNav = true; }
-      else if (t.dataset.openSite) { state.view = "detail"; state.selectedSiteId = t.dataset.openSite; state.activeTab = "date-santier"; state.siteForm.editing = false; isNav = true; }
+      else if (t.dataset.openSite) { state.view = "detail"; state.selectedSiteId = t.dataset.openSite; state.activeTab = "date-santier"; state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; isNav = true; }
       else if (t.dataset.tab) state.activeTab = t.dataset.tab;
       else if (t.dataset.globalSite) state.globalSiteId = t.dataset.globalSite;
       else if (t.dataset.pontajPrev) shiftMonth(-1);
@@ -1239,6 +1258,7 @@
       else if (t.dataset.saveSiteEdit) { saveSiteEditFromInput(t.dataset.saveSiteEdit); state.siteForm.editing = false; }
       else if (t.dataset.cancelSiteEdit) { state.siteForm.editing = false; }
       else if (t.dataset.deleteSite) { removeSite(t.dataset.deleteSite); }
+      else if (t.dataset.siteSubtab) { state.siteForm.subTab = t.dataset.siteSubtab; }
     }
 
     if (needsRender) {
