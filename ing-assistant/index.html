@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ing. Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:oklch(98% 0.004 250); --surface:oklch(100% 0 0); --surface-2:oklch(96.5% 0.005 250);
+    --border:oklch(90% 0.008 250); --border-strong:oklch(82% 0.01 250);
+    --ink:oklch(24% 0.02 255); --ink-soft:oklch(46% 0.02 255); --ink-faint:oklch(62% 0.015 255);
+    --navy:oklch(30% 0.07 258); --navy-hover:oklch(24% 0.07 258); --navy-soft:oklch(94% 0.025 258);
+    --amber:oklch(72% 0.16 55); --amber-soft:oklch(95% 0.04 65); --amber-strong:oklch(62% 0.17 50);
+    --green:oklch(64% 0.15 150); --green-soft:oklch(94% 0.05 150);
+    --red:oklch(58% 0.19 25); --red-soft:oklch(94% 0.05 25);
+    --gray-soft:oklch(95% 0.004 250);
+    --sans:'IBM Plex Sans', system-ui, sans-serif; --mono:'IBM Plex Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--ink); }
+  a { color: var(--navy); } a:hover { color: var(--navy-hover); }
+  button { font-family: inherit; }
+  .app { display: flex; width: 100%; min-height: 100vh; }
+
+  /* sidebar */
+  .sidebar { width: 260px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 20px 18px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .brand-mark { width: 34px; height: 34px; border-radius: 8px; background: var(--navy); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; }
+  .brand-name { font-weight: 700; font-size: 15px; color: var(--ink); line-height: 1.2; }
+  .brand-sub { font-size: 11px; color: var(--ink-faint); margin-top: 1px; }
+  .nav { padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 7px;
+    font-size: 13.5px; font-weight: 500; color: var(--ink-soft); cursor: pointer; }
+  .nav-item:hover { background: var(--surface-2); }
+  .nav-item svg { flex-shrink: 0; color: var(--ink-faint); }
+  .nav-item.active { background: var(--navy-soft); color: var(--navy); }
+  .nav-item.active svg { color: var(--navy); }
+  .sites { display: flex; flex-direction: column; gap: 1px; padding: 0 10px; }
+  .site-row { display: flex; align-items: center; gap: 9px; padding: 8px 10px 8px 34px; border-radius: 7px;
+    font-size: 12.5px; color: var(--ink-soft); cursor: pointer; }
+  .site-row:hover { background: var(--surface-2); }
+  .site-row.active { background: var(--surface-2); color: var(--ink); font-weight: 600; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+  .dot-activ { background: var(--green); }
+  .dot-final { background: var(--ink-faint); }
+  .site-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .spacer { flex: 1 1 auto; }
+  .user-box { margin: 10px; padding: 10px; border-radius: 9px; background: var(--surface-2);
+    display: flex; align-items: center; gap: 9px; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--navy); color: white;
+    display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 700; font-family: var(--mono); flex-shrink: 0; }
+  .user-name { font-size: 12.5px; font-weight: 600; color: var(--ink); line-height: 1.3; }
+  .user-role { font-size: 11px; color: var(--ink-faint); }
+
+  /* main */
+  .main { flex: 1 1 auto; padding: 26px 32px 40px; min-width: 0; }
+  .main-inner { max-width: 1220px; }
+  .crumb { font-size: 12px; color: var(--ink-faint); margin-bottom: 10px; }
+  .crumb b { color: var(--ink-soft); font-weight: 600; }
+  .crumb-link { cursor: pointer; text-decoration: underline; text-decoration-color: transparent; }
+  .crumb-link:hover { text-decoration-color: var(--ink-faint); }
+  .h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .h1-sub { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
+  .btn { display: inline-flex; align-items: center; gap: 7px; border-radius: 8px; font-family: var(--sans);
+    font-size: 13px; font-weight: 600; cursor: pointer; padding: 10px 16px; border: none; }
+  .btn-primary { background: var(--navy); color: white; }
+  .btn-ghost { border: 1px solid var(--border-strong); background: var(--surface); color: var(--ink); }
+  .btn-sm { padding: 6px 11px; font-size: 11.5px; }
+
+  /* dashboard */
+  .topbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 15px 18px; }
+  .stat-val { font-family: var(--mono); font-size: 24px; font-weight: 600; }
+  .stat-label { font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+    display: flex; flex-direction: column; cursor: pointer; transition: border-color .12s ease, box-shadow .12s ease; }
+  .card:hover { border-color: var(--border-strong); box-shadow: 0 3px 14px oklch(30% 0.07 258 / 0.08); }
+  .thumb { height: 108px; position: relative; background-image:
+      linear-gradient(oklch(94% 0.01 258 / 0.9), oklch(94% 0.01 258 / 0.9)),
+      linear-gradient(rgba(30,50,90,.09) 1px, transparent 1px), linear-gradient(90deg, rgba(30,50,90,.09) 1px, transparent 1px);
+    background-size: 100% 100%, 16px 16px, 16px 16px; display: flex; align-items: center; justify-content: center; }
+  .thumb svg { color: var(--navy); opacity: 0.55; }
+  .card-body { padding: 15px 16px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .card-title { font-size: 14.5px; font-weight: 700; line-height: 1.3; }
+  .card-addr { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ink-soft); }
+  .card-addr svg { flex-shrink: 0; color: var(--ink-faint); }
+  .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 3px 9px;
+    border-radius: 100px; width: fit-content; }
+  .badge-activ { background: var(--green-soft); color: oklch(38% 0.1 150); }
+  .badge-final { background: var(--surface-2); color: var(--ink-soft); }
+  .prog-row { display: flex; align-items: center; gap: 9px; }
+  .prog-track { flex: 1; height: 6px; border-radius: 100px; background: var(--surface-2); overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 100px; background: var(--navy); }
+  .prog-pct { font-family: var(--mono); font-size: 11.5px; font-weight: 600; color: var(--ink-soft); width: 32px; text-align: right; }
+  .card-foot { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border);
+    padding-top: 10px; margin-top: 2px; }
+  .card-date { font-size: 11px; color: var(--ink-faint); }
+  .card-open { display: flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 600; color: var(--navy); }
+  .card-new { border: 1.5px dashed var(--border-strong); background: transparent; align-items: center;
+    justify-content: center; flex-direction: column; gap: 8px; min-height: 240px; color: var(--ink-faint); cursor: default; }
+  .card-new:hover { border-color: var(--border-strong); box-shadow: none; }
+  .card-new-label { font-size: 13px; font-weight: 600; }
+
+  /* detail header + tabs */
+  .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding-bottom: 20px;
+    border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .h1row { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 10px; }
+  .head-sub { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); margin-top: 6px; }
+  .head-meta { display: flex; align-items: center; gap: 18px; }
+  .ring { position: relative; width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .ring::before { content: ''; position: absolute; inset: 4px; border-radius: 50%; background: var(--surface); }
+  .ring-val { position: relative; font-family: var(--mono); font-size: 11px; font-weight: 700; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 22px; border-bottom: 1px solid var(--border); }
+  .tab { padding: 10px 16px; font-size: 13px; font-weight: 600; color: var(--ink-soft); border-bottom: 2px solid transparent;
+    display: flex; align-items: center; gap: 7px; cursor: pointer; }
+  .tab:hover { color: var(--ink); }
+  .tab.active { color: var(--navy); border-bottom-color: var(--navy); }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; }
+
+  /* pontaj */
+  .pontaj-panel { padding: 0; }
+  .pontaj-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 20px 0; flex-wrap: wrap; }
+  .period { display: flex; align-items: center; gap: 10px; }
+  .period-nav { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border-strong); display: flex;
+    align-items: center; justify-content: center; color: var(--ink-soft); background: var(--surface); }
+  .period-label { font-family: var(--mono); font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+  .tbl-wrap { overflow-x: auto; margin-top: 16px; }
+  table { border-collapse: collapse; font-size: 12px; min-width: 100%; }
+  th, td { padding: 0; text-align: center; }
+  th.name-h, td.name { position: sticky; left: 0; background: var(--surface); z-index: 2; box-shadow: 1px 0 0 var(--border); }
+  th { font-weight: 600; padding: 8px 4px 6px; border-bottom: 1px solid var(--border); border-top: 1px solid var(--border); background: var(--surface-2); }
+  th.name-h { text-align: left; padding-left: 14px; background: var(--surface-2); }
+  .daynum { font-family: var(--mono); font-size: 12.5px; }
+  .daydow { font-size: 9.5px; color: var(--ink-faint); font-weight: 500; margin-top: 1px; }
+  th.weekend { background: oklch(94% 0.006 250); }
+  td.name { padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--border); min-width: 168px; }
+  td.name b { display: block; font-size: 12.5px; font-weight: 600; }
+  td.name span { display: block; font-size: 10.5px; color: var(--ink-faint); margin-top: 1px; }
+  td.day { border-bottom: 1px solid var(--border); border-left: 1px solid var(--border); width: 42px; padding: 4px 2px; }
+  .cell { position: relative; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 6px;
+    font-family: var(--mono); font-weight: 600; font-size: 12px; margin: 0 2px; }
+  .cw { color: var(--ink); }
+  .coff { color: var(--ink-faint); font-weight: 500; }
+  .cleave { background: var(--navy-soft); color: var(--navy); }
+  .csick { background: var(--red-soft); color: var(--red); }
+  .cempty { color: var(--border-strong); font-weight: 400; }
+  .covertime { background: var(--amber-soft); color: oklch(45% 0.14 50); box-shadow: inset 0 0 0 1.5px var(--amber-strong); }
+  .edited-ring { box-shadow: inset 0 0 0 1.5px var(--amber-strong); }
+  .pencil-badge { position: absolute; top: -5px; right: -5px; width: 14px; height: 14px; border-radius: 50%;
+    background: var(--amber-strong); color: white; display: flex; align-items: center; justify-content: center; }
+  td.total { border-bottom: 1px solid var(--border); border-left: 1px solid var(--border); font-family: var(--mono);
+    font-weight: 700; font-size: 12.5px; background: var(--surface-2); width: 56px; }
+  .foot-note { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 14px 20px; margin-top: 4px;
+    border-top: 1px solid var(--border); background: var(--surface-2); }
+  .legend { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-soft); }
+  .legend .sw { width: 16px; height: 16px; border-radius: 4px; display: inline-block; }
+  .edit-note { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-soft); margin-left: auto; }
+  .edit-note svg { color: var(--amber-strong); flex-shrink: 0; }
+
+  /* proces verbal */
+  .cols { display: grid; grid-template-columns: 400px 1fr; gap: 20px; align-items: start; }
+  .panel-title { font-size: 13.5px; font-weight: 700; margin-bottom: 3px; }
+  .panel-sub { font-size: 12px; color: var(--ink-faint); margin-bottom: 14px; }
+  .field-label { font-size: 12px; font-weight: 600; color: var(--ink-soft); margin-bottom: 7px; display: flex;
+    align-items: center; justify-content: space-between; }
+  .mic { display: flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--navy); }
+  textarea { width: 100%; min-height: 150px; border: 1px solid var(--border-strong); border-radius: 9px; padding: 12px;
+    font-family: var(--sans); font-size: 13px; color: var(--ink); resize: none; line-height: 1.5; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 16px; }
+  .chip { font-size: 11px; font-weight: 600; padding: 5px 10px; border-radius: 100px; border: 1px solid var(--border-strong);
+    color: var(--ink-soft); background: var(--surface-2); }
+  .btn-block { width: 100%; justify-content: center; }
+  .helper { font-size: 11.5px; color: var(--ink-faint); margin-top: 9px; line-height: 1.4; }
+  .doc-panel { padding: 0; overflow: hidden; }
+  .doc-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1px solid var(--border); background: var(--surface-2); flex-wrap: wrap; gap: 8px; }
+  .ai-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: oklch(45% 0.14 50);
+    background: var(--amber-soft); padding: 4px 10px; border-radius: 100px; }
+  .doc-actions { display: flex; gap: 8px; }
+  .doc-page { padding: 34px 40px; }
+  .doc-letterhead { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 2px solid var(--ink); margin-bottom: 18px; }
+  .doc-logo { display: flex; align-items: center; gap: 9px; font-size: 12.5px; font-weight: 700; color: var(--ink-faint); }
+  .doc-logo-mark { width: 26px; height: 26px; border-radius: 6px; border: 1.5px dashed var(--border-strong); }
+  .doc-nr { font-family: var(--mono); font-size: 11.5px; color: var(--ink-soft); text-align: right; }
+  .doc-title { text-align: center; font-size: 16px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 18px; }
+  .doc-meta { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 16px; }
+  .doc-body { font-size: 13px; line-height: 1.7; color: var(--ink); margin-bottom: 18px; }
+  .doc-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 20px; }
+  .doc-table th, .doc-table td { border: 1px solid var(--border-strong); padding: 6px 9px; text-align: left; }
+  .doc-table th { background: var(--surface-2); font-weight: 600; font-size: 11px; }
+  .doc-sign { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px; }
+  .doc-sign-line { border-top: 1px solid var(--ink-faint); padding-top: 6px; font-size: 11.5px; color: var(--ink-soft); }
+
+  /* progres */
+  .summary { display: flex; align-items: center; gap: 28px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 22px 26px; margin-bottom: 20px; }
+  .big-ring { position: relative; width: 104px; height: 104px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .big-ring::before { content: ''; position: absolute; inset: 9px; border-radius: 50%; background: var(--surface); }
+  .big-ring-val { position: relative; font-family: var(--mono); font-size: 25px; font-weight: 700; }
+  .summary-meta { display: flex; gap: 36px; flex-wrap: wrap; }
+  .meta-item .mv { font-family: var(--mono); font-size: 19px; font-weight: 700; }
+  .meta-item .ml { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .stages { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .stage-row { display: grid; grid-template-columns: 190px 1fr 90px 110px 130px 90px; align-items: center; gap: 14px;
+    padding: 15px 22px; border-bottom: 1px solid var(--border); }
+  .stage-row:last-child { border-bottom: none; }
+  .stage-head { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-faint);
+    background: var(--surface-2); }
+  .stage-name { font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 9px; }
+  .stage-num { width: 22px; height: 22px; border-radius: 50%; background: var(--surface-2); color: var(--ink-soft);
+    font-family: var(--mono); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .stages .prog-track { height: 7px; }
+  .stage-pct { font-family: var(--mono); font-size: 12.5px; font-weight: 600; text-align: right; }
+  .badge-done { background: var(--green-soft); color: oklch(38% 0.1 150); }
+  .badge-progress { background: var(--amber-soft); color: oklch(45% 0.14 50); }
+  .badge-notstarted { background: var(--surface-2); color: var(--ink-faint); }
+  .stage-date { font-size: 12px; color: var(--ink-soft); }
+  .stage-link { font-size: 12px; font-weight: 600; color: var(--navy); text-align: right; cursor: pointer; }
+
+  /* documente */
+  .doclist { display: flex; flex-direction: column; }
+  .doc-row { display: flex; align-items: center; gap: 12px; padding: 13px 4px; border-bottom: 1px solid var(--border); }
+  .doc-row:last-child { border-bottom: none; }
+  .doc-ic { width: 34px; height: 34px; border-radius: 8px; background: var(--surface-2); display: flex; align-items: center;
+    justify-content: center; color: var(--ink-soft); flex-shrink: 0; }
+  .doc-name { font-size: 13px; font-weight: 600; }
+  .doc-meta2 { font-size: 11.5px; color: var(--ink-faint); margin-top: 1px; }
+  .doc-row-spacer { flex: 1; }
+
+  /* pontaj global */
+  .site-select { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .site-chip { padding: 8px 14px; border-radius: 100px; border: 1px solid var(--border-strong); background: var(--surface);
+    font-size: 12.5px; font-weight: 600; color: var(--ink-soft); cursor: pointer; display: flex; align-items: center; gap: 7px; }
+  .site-chip:hover { border-color: var(--border-strong); }
+  .site-chip.active { background: var(--navy); border-color: var(--navy); color: white; }
+  .site-chip.active .dot { background: white; }
+  .empty-state { padding: 60px 20px; text-align: center; color: var(--ink-faint); font-size: 13px; }
+  .empty-state svg { color: var(--border-strong); margin-bottom: 10px; }
+
+  @media (max-width: 900px) {
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; position: static; }
+    .cols { grid-template-columns: 1fr; }
+    .grid, .stats { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function () {
+  "use strict";
+
+  var state = { view: "dashboard", selectedSiteId: "aurora", activeTab: "pontaj", globalSiteId: "aurora" };
+
+  var rawSites = [
+    { id: "aurora", name: "Rezidențial Aurora — Corp B", address: "Str. Eroilor nr. 12, Cluj-Napoca", beneficiar: "Aurora Development SRL", statusLabel: "Activ", statusCls: "badge-activ", dotCls: "dot-activ", progress: 62, progressLabel: "62%", updated: "azi, 09:40" },
+    { id: "hala-nord", name: "Hala Industrială Nord", address: "Șos. Centura Est km 4, Oradea", beneficiar: "Nord Logistic SRL", statusLabel: "Activ", statusCls: "badge-activ", dotCls: "dot-activ", progress: 34, progressLabel: "34%", updated: "ieri, 17:05" },
+    { id: "florilor", name: "Bloc P+4 Str. Florilor", address: "Str. Florilor nr. 8, Sibiu", beneficiar: "Florilor Residence SRL", statusLabel: "Finalizat", statusCls: "badge-final", dotCls: "dot-final", progress: 100, progressLabel: "100%", updated: "3 sept." }
+  ];
+
+  var days = [
+    [15, "S", true], [16, "D", true], [17, "L", false], [18, "Ma", false], [19, "Mi", false], [20, "J", false], [21, "V", false],
+    [22, "S", true], [23, "D", true], [24, "L", false], [25, "Ma", false], [26, "Mi", false], [27, "J", false], [28, "V", false],
+    [29, "S", true], [30, "D", true], [31, "L", false]
+  ].map(function (d) { return { num: d[0], dow: d[1], headCls: d[2] ? "weekend" : "" }; });
+
+  function mk(v, type, edited) {
+    var clsMap = { work: "cw", off: "coff", leave: "cleave", sick: "csick", empty: "cempty", overtime: "covertime" };
+    return { v: v, cls: clsMap[type] + (edited ? " edited-ring" : ""), edited: !!edited };
+  }
+
+  var rawWorkers = [
+    { name: "Vasile Ionescu", role: "Zidar", vals: [
+      ["L","off"],["L","off"],["8","work"],["8","work"],["8","work"],["8","work"],["8","work",true],
+      ["L","off"],["L","off"],["8","work"],["8","work"],["CO","leave"],["CO","leave"],["8","work"],
+      ["L","off"],["L","off"],["8","work"] ] },
+    { name: "Ion Popescu", role: "Dulgher", vals: [
+      ["L","off"],["L","off"],["8","work"],["8","work"],["8","work"],["8","work"],["8","work"],
+      ["L","off"],["L","off"],["8","work"],["CM","sick"],["CM","sick"],["8","work"],["8","work"],
+      ["L","off"],["L","off"],["8","work"] ] },
+    { name: "Gheorghe Marin", role: "Fierar-betonist", vals: [
+      ["L","off"],["L","off"],["8","work"],["8","work"],["8","work"],["8","work"],["8","work"],
+      ["8","overtime"],["L","off"],["8","work"],["8","work"],["8","work"],["8","work"],["8","work"],
+      ["L","off"],["L","off"],["8","work"] ] },
+    { name: "Andrei Stoica", role: "Zilier", vals: [
+      ["L","off"],["L","off"],["8","work"],["—","empty"],["8","work"],["8","work"],["—","empty"],
+      ["L","off"],["L","off"],["8","work"],["8","work"],["—","empty"],["8","work"],["8","work"],
+      ["L","off"],["L","off"],["8","work"] ] },
+    { name: "Mihai Radu", role: "Zilier", vals: [
+      ["L","off"],["L","off"],["—","empty"],["8","work"],["8","work"],["8","work"],["8","work"],
+      ["L","off"],["L","off"],["—","empty"],["8","work"],["8","work"],["8","work"],["8","work"],
+      ["L","off"],["L","off"],["8","work"] ] },
+    { name: "Constantin Dumitru", role: "Șef echipă", vals: [
+      ["L","off"],["L","off"],["8","work"],["8","work"],["8","work"],["8","work"],["8","work"],
+      ["L","off"],["L","off"],["8","work"],["8","work"],["8","work"],["8","work"],["CO","leave"],
+      ["L","off"],["L","off"],["8","work"] ] }
+  ];
+
+  var workers = rawWorkers.map(function (w) {
+    var cells = w.vals.map(function (row) { return mk(row[0], row[1], row[2]); });
+    var total = w.vals.reduce(function (sum, row) { return sum + (row[0] === "8" ? 8 : 0); }, 0);
+    return { name: w.name, role: w.role, cells: cells, total: String(total) };
+  });
+
+  var pontajBySite = { "aurora": workers, "hala-nord": workers.slice(0, 4), "florilor": [] };
+
+  var stages = [
+    { idx: 1, name: "Fundație", pct: 100, badgeCls: "badge-done", badgeLabel: "Finalizat", date: "2 aug." },
+    { idx: 2, name: "Structură", pct: 100, badgeCls: "badge-done", badgeLabel: "Finalizat", date: "28 aug." },
+    { idx: 3, name: "Zidărie", pct: 70, badgeCls: "badge-progress", badgeLabel: "În lucru", date: "azi" },
+    { idx: 4, name: "Instalații electrice și sanitare", pct: 25, badgeCls: "badge-progress", badgeLabel: "În lucru", date: "azi" },
+    { idx: 5, name: "Finisaje", pct: 0, badgeCls: "badge-notstarted", badgeLabel: "Neînceput", date: "—" },
+    { idx: 6, name: "Recepție lucrări", pct: 0, badgeCls: "badge-notstarted", badgeLabel: "Neînceput", date: "—" }
+  ];
+
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function findSite(id) { for (var i = 0; i < rawSites.length; i++) if (rawSites[i].id === id) return rawSites[i]; return rawSites[0]; }
+
+  function icon(name, size) {
+    size = size || 17;
+    var icons = {
+      home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1V9.5"/>',
+      building: '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 21v-4h6v4"/><path d="M8 7h.01M12 7h.01M16 7h.01M8 11h.01M12 11h.01M16 11h.01M8 15h.01M16 15h.01"/>',
+      clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+      chart: '<path d="M4 20V4"/><path d="M4 20h16"/><rect x="7" y="12" width="3" height="8"/><rect x="12" y="8" width="3" height="12"/><rect x="17" y="14" width="3" height="6"/>',
+      gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+      plus: '<path d="M12 5v14M5 12h14"/>',
+      printer: '<path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1"/><path d="M6 17v4h12v-4"/>',
+      pin: '<path d="M12 21s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/>',
+      chevronRight: '<path d="M9 6l6 6-6 6"/>',
+      chevronLeft: '<path d="M15 6l-6 6 6 6"/>',
+      pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+      mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/>',
+      sparkle: '<path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5Z"/><path d="M18.5 15l.6 1.8 1.8.6-1.8.6-.6 1.8-.6-1.8-1.8-.6 1.8-.6Z"/>',
+      doc: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5"/>',
+      docLines: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>'
+    };
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' + icons[name] + '</svg>';
+  }
+
+  function sidebarHTML() {
+    var sitesHtml = rawSites.map(function (s) {
+      var isActive = state.view === "detail" && s.id === state.selectedSiteId;
+      return '<div class="site-row' + (isActive ? " active" : "") + '" data-open-site="' + s.id + '">' +
+        '<span class="dot ' + s.dotCls + '"></span><span class="site-label">' + esc(s.name) + '</span></div>';
+    }).join("");
+    return '' +
+      '<div class="sidebar">' +
+        '<div class="brand" data-go="dashboard">' +
+          '<div class="brand-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/><path d="M9 12h6"/></svg></div>' +
+          '<div><div class="brand-name">Ing. Assistant</div><div class="brand-sub">Asistent digital de șantier</div></div>' +
+        '</div>' +
+        '<div class="nav">' +
+          '<div class="nav-item' + (state.view === "dashboard" ? " active" : "") + '" data-go="dashboard">' + icon("home") + 'Dashboard</div>' +
+          '<div class="nav-item' + (state.view === "detail" ? " active" : "") + '" data-go="dashboard">' + icon("building") + 'Șantiere</div>' +
+          '<div class="sites">' + sitesHtml + '</div>' +
+          '<div class="nav-item' + (state.view === "pontaj-global" ? " active" : "") + '" style="margin-top:10px" data-go="pontaj-global">' + icon("clock") + 'Pontaj global</div>' +
+          '<div class="nav-item">' + icon("chart") + 'Rapoarte</div>' +
+        '</div>' +
+        '<div class="spacer"></div>' +
+        '<div class="nav" style="padding-top:0"><div class="nav-item">' + icon("gear") + 'Setări</div></div>' +
+        '<div class="user-box"><div class="avatar">IP</div><div><div class="user-name">Inginer Popescu</div><div class="user-role">Inginer șef șantier</div></div></div>' +
+      '</div>';
+  }
+
+  function dashboardHTML() {
+    var cards = rawSites.map(function (s) {
+      return '' +
+        '<div class="card" data-open-site="' + s.id + '">' +
+          '<div class="thumb"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/><path d="M9 12h6"/></svg></div>' +
+          '<div class="card-body">' +
+            '<div class="card-title">' + esc(s.name) + '</div>' +
+            '<div class="card-addr">' + icon("pin", 13) + esc(s.address) + '</div>' +
+            '<span class="badge ' + s.statusCls + '">' + s.statusLabel + '</span>' +
+            '<div class="prog-row"><div class="prog-track"><div class="prog-fill" style="width:' + s.progress + '%"></div></div><div class="prog-pct">' + s.progressLabel + '</div></div>' +
+            '<div class="card-foot"><div class="card-date">Actualizat ' + s.updated + '</div><div class="card-open">Deschide ' + icon("chevronRight", 13) + '</div></div>' +
+          '</div>' +
+        '</div>';
+    }).join("");
+    return '' +
+      '<div class="topbar"><div><div class="h1">Șantierele mele</div><div class="h1-sub">Pontaj, procese verbale și progres — totul într-un singur loc</div></div>' +
+        '<button class="btn btn-primary">' + icon("plus", 15) + 'Adaugă șantier</button></div>' +
+      '<div class="stats">' +
+        '<div class="stat"><div class="stat-val">2</div><div class="stat-label">Șantiere active</div></div>' +
+        '<div class="stat"><div class="stat-val">17</div><div class="stat-label">Muncitori pontați azi</div></div>' +
+        '<div class="stat"><div class="stat-val">3</div><div class="stat-label">PV-uri generate luna asta</div></div>' +
+      '</div>' +
+      '<div class="grid">' + cards +
+        '<div class="card card-new">' + icon("plus", 26) + '<div class="card-new-label">Adaugă șantier nou</div></div>' +
+      '</div>';
+  }
+
+  function pontajTableHTML(workersForTable) {
+    var headCells = days.map(function (d) {
+      return '<th class="' + d.headCls + '"><div class="daynum">' + d.num + '</div><div class="daydow">' + d.dow + '</div></th>';
+    }).join("");
+    var rows = workersForTable.map(function (w) {
+      var cells = w.cells.map(function (c) {
+        var badge = c.edited ? '<span class="pencil-badge">' + icon("pencil", 8).replace('stroke-width="1.75"', 'stroke-width="3"').replace('stroke="currentColor"', 'stroke="white"') + '</span>' : "";
+        return '<td class="day"><div class="cell ' + c.cls + '">' + esc(c.v) + badge + '</div></td>';
+      }).join("");
+      return '<tr><td class="name"><b>' + esc(w.name) + '</b><span>' + esc(w.role) + '</span></td>' + cells + '<td class="total">' + w.total + '</td></tr>';
+    }).join("");
+    return '' +
+      '<div class="tbl-wrap"><table><thead><tr><th class="name-h">Muncitor</th>' + headCells + '<th style="width:56px">Total</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>';
+  }
+
+  function pontajPanelHTML(workersForTable) {
+    return '' +
+      '<div class="panel pontaj-panel">' +
+        '<div class="pontaj-top">' +
+          '<div class="period"><div class="period-nav">' + icon("chevronLeft", 13) + '</div><div class="period-label">15 – 31 august 2026</div><div class="period-nav">' + icon("chevronRight", 13) + '</div></div>' +
+          '<div style="display:flex;gap:10px">' +
+            '<button class="btn btn-ghost btn-sm">' + icon("plus", 14) + 'Adaugă muncitor</button>' +
+            '<button class="btn btn-primary btn-sm">' + icon("printer", 14) + 'Generează PDF / Printează</button>' +
+          '</div>' +
+        '</div>' +
+        pontajTableHTML(workersForTable) +
+        '<div class="foot-note">' +
+          '<div class="legend"><span class="sw" style="background:var(--navy-soft)"></span>CO — concediu odihnă</div>' +
+          '<div class="legend"><span class="sw" style="background:var(--red-soft)"></span>CM — concediu medical</div>' +
+          '<div class="legend"><span class="sw" style="background:var(--surface)"></span>L — liber (weekend)</div>' +
+          '<div class="legend"><span class="sw" style="background:var(--amber-soft);box-shadow:inset 0 0 0 1.5px var(--amber-strong)"></span>lucru în weekend</div>' +
+          '<div class="edit-note">' + icon("pencil", 15) + 'Celulele marcate au fost editate ulterior — poți completa retroactiv orice zi uitată.</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function pvPanelHTML(site) {
+    return '' +
+      '<div class="cols">' +
+        '<div class="panel">' +
+          '<div class="panel-title">Notițe de șantier</div><div class="panel-sub">15 august 2026, ' + esc(site.name) + '</div>' +
+          '<div class="field-label">Ce s-a lucrat astăzi<span class="mic">' + icon("mic", 13) + 'Dictează</span></div>' +
+          '<textarea placeholder="ex: azi am turnat fundația la corp B, au fost 6 muncitori, vremea a fost bună...">azi am turnat fundația la corp B, au fost 6 muncitori pe șantier, betonul a fost livrat de la stația Holcim, vremea a fost bună, fără întreruperi.</textarea>' +
+          '<div class="chips"><span class="chip">Turnare fundație</span><span class="chip">Recepție lucrări</span><span class="chip">Livrare materiale</span><span class="chip">Incident șantier</span></div>' +
+          '<button class="btn btn-primary btn-block">' + icon("sparkle", 15) + 'Generează proces verbal cu AI</button>' +
+          '<div class="helper">AI-ul completează automat data, șantierul, participanții și formatul oficial — pe baza notițelor tale și a pontajului zilei.</div>' +
+        '</div>' +
+        '<div class="panel doc-panel">' +
+          '<div class="doc-toolbar"><span class="ai-badge">' + icon("sparkle", 11) + 'Generat cu AI</span>' +
+            '<div class="doc-actions"><button class="btn btn-ghost btn-sm">Editează manual</button><button class="btn btn-ghost btn-sm">Trimite spre semnătură</button><button class="btn btn-primary btn-sm">Descarcă PDF</button></div>' +
+          '</div>' +
+          '<div class="doc-page">' +
+            '<div class="doc-letterhead"><div class="doc-logo"><span class="doc-logo-mark"></span>[NUME FIRMĂ CONSTRUCTOR]</div><div class="doc-nr">Nr. 24 / 15.08.2026</div></div>' +
+            '<div class="doc-title">Proces verbal de lucrări</div>' +
+            '<div class="doc-meta"><span>Șantier: ' + esc(site.name) + '</span><span>Data: 15.08.2026</span></div>' +
+            '<div class="doc-body">Astăzi, 15.08.2026, s-a executat turnarea fundației la Corpul B al obiectivului ' + esc(site.name) + '. Lucrările s-au desfășurat cu un efectiv de 6 muncitori, în condiții meteorologice favorabile, fără întreruperi. Betonul a fost furnizat de stația Holcim, conform comenzii aferente etapei de fundare. Nu au fost înregistrate incidente sau neconformități pe parcursul zilei.</div>' +
+            '<table class="doc-table"><thead><tr><th>Participant</th><th>Funcție</th><th>Prezență</th></tr></thead><tbody>' +
+              '<tr><td>Vasile Ionescu</td><td>Zidar</td><td>8 ore</td></tr>' +
+              '<tr><td>Ion Popescu</td><td>Dulgher</td><td>8 ore</td></tr>' +
+              '<tr><td>Gheorghe Marin</td><td>Fierar-betonist</td><td>8 ore</td></tr>' +
+              '<tr><td>+ 3 muncitori</td><td>—</td><td>8 ore</td></tr>' +
+            '</tbody></table>' +
+            '<div class="doc-sign"><div class="doc-sign-line">Inginer șantier — Popescu I.</div><div class="doc-sign-line">Reprezentant beneficiar</div></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function progresPanelHTML(site) {
+    var rows = stages.map(function (s) {
+      return '<div class="stage-row"><div class="stage-name"><span class="stage-num">' + s.idx + '</span>' + esc(s.name) + '</div>' +
+        '<div class="prog-track"><div class="prog-fill" style="width:' + s.pct + '%"></div></div>' +
+        '<div class="stage-pct">' + s.pct + '%</div><span class="badge ' + s.badgeCls + '">' + s.badgeLabel + '</span>' +
+        '<div class="stage-date">' + s.date + '</div><div class="stage-link">Actualizează</div></div>';
+    }).join("");
+    return '' +
+      '<div class="summary">' +
+        '<div class="big-ring" style="background:conic-gradient(var(--navy) 0% ' + site.progress + '%, var(--gray-soft) ' + site.progress + '% 100%)"><div class="big-ring-val">' + site.progressLabel + '</div></div>' +
+        '<div class="summary-meta">' +
+          '<div class="meta-item"><div class="mv">2 / 6</div><div class="ml">Etape finalizate</div></div>' +
+          '<div class="meta-item"><div class="mv">~48</div><div class="ml">Zile rămase estimate</div></div>' +
+          '<div class="meta-item"><div class="mv">azi</div><div class="ml">Ultima actualizare</div></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="stages"><div class="stage-row stage-head"><div>Etapă</div><div>Progres</div><div style="text-align:right">%</div><div>Status</div><div>Ultima actualizare</div><div></div></div>' + rows + '</div>';
+  }
+
+  function docsPanelHTML(site) {
+    var docs = [
+      ["Autorizație de construire", "PDF · 1.2 MB · încărcat 3 iun. 2026"],
+      ["Plan arhitectură — Corp B", "PDF · 8.4 MB · încărcat 3 iun. 2026"],
+      ["Contract execuție lucrări", "PDF · 640 KB · încărcat 5 iun. 2026"]
+    ].map(function (d) {
+      return '<div class="doc-row"><div class="doc-ic">' + icon("doc", 16) + '</div><div><div class="doc-name">' + d[0] + '</div><div class="doc-meta2">' + d[1] + '</div></div><div class="doc-row-spacer"></div></div>';
+    }).join("");
+    return '' +
+      '<div class="panel"><div class="panel-title">Documente șantier</div><div class="panel-sub">Autorizații, planuri și contracte legate de ' + esc(site.name) + '</div>' +
+      '<div class="doclist">' + docs + '</div>' +
+      '<button class="btn btn-ghost" style="margin-top:16px">' + icon("plus", 14) + 'Încarcă document</button></div>';
+  }
+
+  function detailHTML() {
+    var site = findSite(state.selectedSiteId);
+    var tabs = [
+      ["pontaj", "clock", "Pontaj"],
+      ["pv", "doc", "Procese Verbale"],
+      ["progres", "chart", "Progres Șantier"],
+      ["documente", "docLines", "Documente"]
+    ].map(function (t) {
+      return '<div class="tab' + (state.activeTab === t[0] ? " active" : "") + '" data-tab="' + t[0] + '">' + icon(t[1], 15) + t[2] + '</div>';
+    }).join("");
+
+    var tabContent = "";
+    if (state.activeTab === "pontaj") tabContent = pontajPanelHTML(pontajBySite[site.id] || []);
+    else if (state.activeTab === "pv") tabContent = pvPanelHTML(site);
+    else if (state.activeTab === "progres") tabContent = progresPanelHTML(site);
+    else if (state.activeTab === "documente") tabContent = docsPanelHTML(site);
+
+    return '' +
+      '<div class="crumb"><span class="crumb-link" data-go="dashboard">Șantiere</span> / <b>' + esc(site.name) + '</b></div>' +
+      '<div class="head">' +
+        '<div><div class="h1row">' + esc(site.name) + ' <span class="badge ' + site.statusCls + '">' + site.statusLabel + '</span></div>' +
+          '<div class="head-sub">' + icon("pin", 13) + esc(site.address) + ' · Beneficiar: ' + esc(site.beneficiar) + '</div></div>' +
+        '<div class="head-meta">' +
+          '<div class="ring" style="background:conic-gradient(var(--navy) 0% ' + site.progress + '%, var(--surface-2) ' + site.progress + '% 100%)"><div class="ring-val">' + site.progressLabel + '</div></div>' +
+          '<button class="btn btn-ghost">' + icon("pencil", 13) + 'Editează</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="tabs">' + tabs + '</div>' +
+      tabContent;
+  }
+
+  function pontajGlobalHTML() {
+    var chips = rawSites.map(function (s) {
+      return '<div class="site-chip' + (s.id === state.globalSiteId ? " active" : "") + '" data-global-site="' + s.id + '"><span class="dot ' + s.dotCls + '"></span>' + esc(s.name) + '</div>';
+    }).join("");
+    var w = pontajBySite[state.globalSiteId] || [];
+    var body = w.length > 0
+      ? pontajPanelHTML(w)
+      : '<div class="panel"><div class="empty-state">' + icon("clock", 34) + '<div>Șantier finalizat — fără pontaj activ pentru perioada curentă.</div></div></div>';
+    return '' +
+      '<div class="topbar"><div><div class="h1">Pontaj global</div><div class="h1-sub">Centralizatorul de pontaj pe fiecare șantier, într-un singur loc</div></div></div>' +
+      '<div class="site-select">' + chips + '</div>' +
+      body;
+  }
+
+  function render() {
+    var main = "";
+    if (state.view === "dashboard") main = dashboardHTML();
+    else if (state.view === "detail") main = detailHTML();
+    else if (state.view === "pontaj-global") main = pontajGlobalHTML();
+
+    document.getElementById("app").innerHTML =
+      '<div class="app">' + sidebarHTML() + '<div class="main"><div class="main-inner">' + main + '</div></div></div>';
+  }
+
+  document.getElementById("app").addEventListener("click", function (e) {
+    var t = e.target.closest("[data-go],[data-open-site],[data-tab],[data-global-site]");
+    if (!t) return;
+    if (t.dataset.go) state.view = t.dataset.go;
+    if (t.dataset.openSite) { state.view = "detail"; state.selectedSiteId = t.dataset.openSite; state.activeTab = "pontaj"; }
+    if (t.dataset.tab) state.activeTab = t.dataset.tab;
+    if (t.dataset.globalSite) state.globalSiteId = t.dataset.globalSite;
+    render();
+    window.scrollTo(0, 0);
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
