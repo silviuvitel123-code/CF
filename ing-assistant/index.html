@@ -251,7 +251,10 @@
   .mode-chip:hover { border-color: var(--border-strong); }
   .mode-chip.active { background: var(--navy); border-color: var(--navy); color: white; }
   .daycell { position: relative; cursor: pointer; }
-  .daypop { position: absolute; top: calc(100% + 4px); left: 50%; transform: translateX(-50%); background: var(--surface);
+  /* fixed (not absolute) so it escapes .tbl-wrap's scroll clipping — position set in JS via
+     positionOpenPopover(), since overflow-x:auto on an ancestor forces overflow-y:auto too
+     (a real CSS quirk), which would otherwise clip an absolutely-positioned popover. */
+  .daypop { position: fixed; background: var(--surface);
     border: 1px solid var(--border-strong); border-radius: 8px; box-shadow: 0 8px 24px rgba(20,20,30,.18); padding: 4px; z-index: 30; min-width: 116px; }
   .daypop-opt { padding: 7px 10px; font-size: 12px; font-weight: 600; color: var(--ink); border-radius: 6px; white-space: nowrap; cursor: pointer; }
   .daypop-opt:hover { background: var(--surface-2); }
@@ -319,7 +322,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b9-2026-09-15";
+  var BUILD = "b10-2026-09-15";
   var todayD = new Date();
   var state = {
     view: "dashboard", selectedSiteId: "aurora", activeTab: "pontaj", globalSiteId: "aurora",
@@ -832,6 +835,20 @@
 
     document.getElementById("app").innerHTML = errorBanner +
       '<div class="app">' + sidebarHTML() + '<div class="main"><div class="main-inner">' + main + '</div></div></div>';
+    positionOpenPopover();
+  }
+
+  function positionOpenPopover() {
+    if (!state.pontaj.openCell) return;
+    var pop = document.querySelector(".daypop");
+    var cell = document.querySelector('[data-cell-toggle="' + state.pontaj.openCell + '"]');
+    if (!pop || !cell) return;
+    var r = cell.getBoundingClientRect();
+    var pw = pop.offsetWidth, ph = pop.offsetHeight;
+    var left = Math.min(Math.max(r.left, 8), window.innerWidth - pw - 8);
+    var top = (r.bottom + 4 + ph <= window.innerHeight) ? (r.bottom + 4) : Math.max(8, r.top - ph - 4);
+    pop.style.left = left + "px";
+    pop.style.top = top + "px";
   }
 
   document.getElementById("app").addEventListener("click", function (e) {
