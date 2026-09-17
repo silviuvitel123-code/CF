@@ -215,41 +215,65 @@
 
   /* progres */
   .summary { display: flex; align-items: center; gap: 28px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; padding: 22px 26px; margin-bottom: 20px; }
-  .big-ring { position: relative; width: 104px; height: 104px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-  .big-ring::before { content: ''; position: absolute; inset: 9px; border-radius: 50%; background: var(--surface); }
-  .big-ring-val { position: relative; font-family: var(--mono); font-size: 25px; font-weight: 700; }
+    border-radius: 12px; padding: 18px 26px; margin-bottom: 16px; }
   .summary-meta { display: flex; gap: 36px; flex-wrap: wrap; }
   .meta-item .mv { font-family: var(--mono); font-size: 19px; font-weight: 700; }
   .meta-item .ml { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
-  .stages { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
-  .stage-row { display: grid; grid-template-columns: 26px 200px 1fr 60px 100px 90px 24px; align-items: center; gap: 14px;
-    padding: 15px 22px; border-bottom: 1px solid var(--border); position: relative; }
-  .stage-row:last-child { border-bottom: none; }
-  .stage-row[draggable="true"] { cursor: default; }
-  .stage-row.dragging { opacity: .4; }
-  .stage-row.drag-over-top { border-top: 2px solid var(--navy); }
-  .stage-row.drag-over-bottom { border-bottom: 2px solid var(--navy); }
-  .stage-grip { justify-self: start; }
-  .stage-head { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-faint);
-    background: var(--surface-2); }
-  .stage-name { font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 9px; cursor: pointer;
-    border-radius: 3px; padding: 2px 4px; margin: -2px -4px; }
-  .stage-name:hover { background: var(--surface-2); }
-  .stage-name-input { field-sizing: content; min-width: 160px; max-width: 280px; font-size: 13.5px; font-weight: 700;
-    font-family: var(--sans); border: 1px solid var(--navy); border-radius: 3px; padding: 4px 6px; }
-  .stage-num { width: 22px; height: 22px; border-radius: 50%; background: var(--surface-2); color: var(--ink-soft);
-    font-family: var(--mono); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .stages .prog-track { height: 7px; }
-  .stage-pct { font-family: var(--mono); font-size: 12.5px; font-weight: 600; text-align: right; cursor: pointer;
-    border-radius: 3px; padding: 3px 4px; }
-  .stage-pct:hover { background: var(--surface-2); }
-  .stage-pct-input { width: 54px; font-family: var(--mono); font-size: 12.5px; font-weight: 600; text-align: right;
-    border: 1px solid var(--navy); border-radius: 3px; padding: 3px 4px; }
   .badge-done { background: var(--green-soft); color: oklch(38% 0.1 150); }
   .badge-progress { background: var(--amber-soft); color: oklch(45% 0.14 50); }
   .badge-notstarted { background: var(--surface-2); color: var(--ink-faint); }
-  .stage-date { font-size: 12px; color: var(--ink-soft); }
+
+  /* progres: grid liber (coloane + rânduri configurabile) */
+  .progrid-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow-x: auto; max-width: 100%; }
+  table.progrid { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  .progrid th, .progrid td { border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); white-space: nowrap; }
+  .progrid th:last-child, .progrid td:last-child { border-right: none; }
+  .progrid thead th { background: var(--surface-2); font-size: 10.5px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .04em; color: var(--ink-faint); padding: 0; text-align: left; }
+  .progrid-th-inner { display: flex; align-items: center; gap: 5px; padding: 8px 10px; }
+  .progrid-col-grip { cursor: grab; color: var(--ink-faint); flex-shrink: 0; display: flex; }
+  .progrid-col-label { cursor: pointer; border-radius: 3px; padding: 2px 4px; margin: -2px -4px; flex: 1; }
+  .progrid-col-label:hover { background: var(--border); }
+  .progrid-col-input { font-size: 10.5px; font-weight: 600; font-family: var(--sans); text-transform: none; letter-spacing: normal;
+    border: 1px solid var(--navy); border-radius: 3px; padding: 3px 5px; min-width: 100px; field-sizing: content; }
+  .progrid-col-tag { color: var(--ink-faint); font-weight: 700; }
+  .progrid-col-del { cursor: pointer; color: var(--ink-faint); flex-shrink: 0; display: flex; }
+  .progrid-col-del:hover { color: oklch(55% 0.18 25); }
+  .progrid th[draggable="true"] { cursor: default; }
+  .progrid th.dragging { opacity: .4; }
+  .progrid th.drag-over-left { box-shadow: inset 2px 0 0 var(--navy); }
+  .progrid th.drag-over-right { box-shadow: inset -2px 0 0 var(--navy); }
+  .progrid tbody tr[draggable="true"] { cursor: default; }
+  .progrid tbody tr.dragging { opacity: .4; }
+  .progrid tbody tr.drag-over-top td { box-shadow: inset 0 2px 0 var(--navy); }
+  .progrid tbody tr.drag-over-bottom td { box-shadow: inset 0 -2px 0 var(--navy); }
+  .progrid tbody tr.progrow-group td { background: var(--surface-2); font-weight: 700; }
+  .progrid tbody tr.progrow-total td { background: var(--surface-2); font-weight: 700; border-top: 2px solid var(--border-strong); }
+  .progrid td { padding: 8px 10px; color: var(--ink); }
+  .progrid td.progrid-cell-editable { cursor: pointer; }
+  .progrid td.progrid-cell-editable:hover { background: var(--surface-2); }
+  .progrid td.progrid-cell-computed { color: var(--ink-soft); font-style: italic; }
+  .progrid .progrid-grip { text-align: center; width: 22px; padding: 8px 6px; color: var(--ink-faint); cursor: grab; }
+  .progrid .progrid-num { font-family: var(--mono); text-align: right; }
+  .progrid .progrid-del-cell { text-align: center; width: 30px; padding: 8px 6px; }
+  .progrid-del { color: var(--ink-faint); cursor: pointer; display: inline-flex; }
+  .progrid-del:hover { color: oklch(55% 0.18 25); }
+  .progrid-cell-input { width: 100%; box-sizing: border-box; border: 1px solid var(--navy); border-radius: 3px;
+    padding: 3px 5px; font-family: inherit; font-size: inherit; }
+  .progrid-num-input { text-align: right; font-family: var(--mono); }
+  .doclist-empty.progrid-empty-cell { padding: 16px 22px; text-align: left; }
+
+  .progrid-toolbar { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .addcol-form { border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 12px;
+    background: var(--surface-2); display: flex; flex-direction: column; gap: 10px; max-width: 420px; }
+  .addcol-row { display: flex; flex-direction: column; gap: 4px; }
+  .addcol-row label { font-size: 11.5px; font-weight: 600; color: var(--ink-soft); }
+  .addcol-row input, .addcol-row select { border: 1px solid var(--border-strong); border-radius: 3px; padding: 8px 10px;
+    font-size: 12.5px; font-family: var(--sans); background: var(--surface); }
+  .addcol-checks { display: flex; flex-direction: column; gap: 6px; max-height: 140px; overflow-y: auto;
+    border: 1px solid var(--border); border-radius: 3px; padding: 8px 10px; background: var(--surface); }
+  .addcol-check { display: flex; align-items: center; gap: 7px; font-size: 12.5px; cursor: pointer; }
+  .addcol-actions { display: flex; gap: 8px; margin-top: 4px; }
 
   /* documente */
   .doclist { display: flex; flex-direction: column; }
@@ -420,7 +444,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b28-2026-09-17";
+  var BUILD = "b29-2026-09-17";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -449,8 +473,9 @@
       docDrafts: {},
       docUploading: {},
       labelEdit: { tip: null, siteId: null, draft: "" },
-      stageLabelEdit: { id: null, draft: "" },
-      stagePercentEdit: { id: null, draft: "" }
+      gridCellEdit: { rowId: null, colId: null, draft: "" },
+      gridColLabelEdit: { colId: null, draft: "" },
+      addColForm: { open: false, label: "", tip: "numar", numarator: "", numitor: "", surseSuma: {} }
     },
     sidebarNameEdit: { siteId: null, draft: "" }
   };
@@ -552,7 +577,7 @@
       proiectant: s.proiectant || "", constructor: s.constructor || "", contract: s.contract || "",
       perioadaExecutie: s.perioada_executie || "", dataExpirareContract: s.data_expirare_contract || "",
       garantie: s.garantie || "", ordinIncepere: s.ordin_incepere || "", status: s.status || "Activ",
-      numeScurt: s.nume_scurt || "", etapeOrder: s.etape_order || null
+      numeScurt: s.nume_scurt || "", progresColoaneOrder: s.progres_coloane_order || null, progresRanduriOrder: s.progres_randuri_order || null
     };
   }
 
@@ -563,9 +588,10 @@
       sb.from("companie").select("*").eq("id", 1).single(),
       sb.from("santiere").select("*").order("created_at"),
       sb.from("santier_documente").select("*"),
-      sb.from("santier_etape").select("*")
+      sb.from("santier_progres_coloane").select("*"),
+      sb.from("santier_progres_randuri").select("*")
     ]).then(function (results) {
-      var mRes = results[0], eRes = results[1], cRes = results[2], sRes = results[3], dRes = results[4], stRes = results[5];
+      var mRes = results[0], eRes = results[1], cRes = results[2], sRes = results[3], dRes = results[4], pcRes = results[5], prRes = results[6];
       workers = (mRes.data || []).map(function (w) {
         return { id: w.id, name: w.nume, functie: w.functie || "", salariu: w.salariu, metodaPlata: w.metoda_plata || "CARD", telefon: w.telefon || "" };
       });
@@ -574,7 +600,8 @@
       if (cRes.data) company = { name: cRes.data.nume, cif: cRes.data.cod_fiscal, docTipOrder: cRes.data.doc_tip_order || null, docTipLabels: cRes.data.doc_tip_labels || null };
       sites = (sRes.data || []).map(siteFromRow);
       projectDocs = (dRes.data || []).map(docFromRow);
-      siteStages = (stRes.data || []).map(stageFromRow);
+      progresColoane = (pcRes.data || []).map(progresColFromRow);
+      progresRanduri = (prRes.data || []).map(progresRandFromRow);
     }).catch(function (err) {
       flashSyncError("Nu am putut încărca datele din Supabase.");
       console.error(err);
@@ -599,7 +626,8 @@
   function doLogout() {
     sb.auth.signOut().then(function () {
       authState.session = null;
-      workers = []; entries = {}; company = { name: "", cif: "", docTipOrder: null, docTipLabels: null }; sites = []; projectDocs = []; siteStages = [];
+      workers = []; entries = {}; company = { name: "", cif: "", docTipOrder: null, docTipLabels: null }; sites = []; projectDocs = [];
+      progresColoane = []; progresRanduri = []; progresSeededSites = {};
       state.view = "dashboard"; state.selectedSiteId = null;
       render();
     });
@@ -925,91 +953,196 @@
     state.pontaj.month = m; state.pontaj.year = y;
   }
 
-  // --- Progres șantier: etape, persistate per șantier ---
-  var siteStages = [];
-  function stageFromRow(r) {
-    return { id: r.id, santierId: r.santier_id, nume: r.nume || "", procent: r.procent || 0, updatedAt: r.updated_at || null };
+  // --- Progres șantier: grid liber (coloane + rânduri configurabile per șantier) ---
+  var progresColoane = [];
+  var progresRanduri = [];
+  var progresSeededSites = {};
+
+  function progresColFromRow(r) {
+    return { id: r.id, santierId: r.santier_id, label: r.label || "", tip: r.tip || "numar", formula: r.formula || null, surse: r.surse || [] };
   }
-  function stagesForSite(site) { return siteStages.filter(function (s) { return s.santierId === site.id; }); }
-  function orderedStageIds(site) { return orderedTipsFor(stagesForSite(site).map(function (s) { return s.id; }), site.etapeOrder); }
-  function stageStatusInfo(procent) {
-    if (procent >= 100) return { cls: "badge-done", label: "Finalizat" };
-    if (procent <= 0) return { cls: "badge-notstarted", label: "Neînceput" };
-    return { cls: "badge-progress", label: "În lucru" };
+  function progresRandFromRow(r) {
+    return { id: r.id, santierId: r.santier_id, grup: !!r.grup, valori: r.valori || {} };
   }
-  var STAGE_MONTHS_SHORT = ["ian.", "feb.", "mar.", "apr.", "mai", "iun.", "iul.", "aug.", "sep.", "oct.", "nov.", "dec."];
-  function formatStageDate(iso) {
-    if (!iso) return "—";
-    var d = new Date(iso);
-    var now = new Date();
-    if (d.toDateString() === now.toDateString()) return "azi";
-    return d.getDate() + " " + STAGE_MONTHS_SHORT[d.getMonth()];
+  function coloaneForSite(site) { return progresColoane.filter(function (c) { return c.santierId === site.id; }); }
+  function randuriForSite(site) { return progresRanduri.filter(function (r) { return r.santierId === site.id; }); }
+  function orderedColIds(site) { return orderedTipsFor(coloaneForSite(site).map(function (c) { return c.id; }), site.progresColoaneOrder); }
+  function orderedRandIds(site) { return orderedTipsFor(randuriForSite(site).map(function (r) { return r.id; }), site.progresRanduriOrder); }
+
+  function emptyAddColForm() { return { open: false, label: "", tip: "numar", numarator: "", numitor: "", surseSuma: {} }; }
+
+  // A brand-new site (never touched) gets seeded once with the column layout
+  // matching the centralizator cantități/valori template, so the grid isn't
+  // blank on first open. No rows are seeded — real progress is never fabricated.
+  function seedDefaultProgresColumns(site) {
+    if (progresSeededSites[site.id]) return;
+    progresSeededSites[site.id] = true;
+    if (coloaneForSite(site).length > 0 || randuriForSite(site).length > 0) return;
+
+    var ids = {};
+    ["descriere", "um", "cantContract", "valContract", "cantSl1", "valSl1", "cantTotal", "valTotal", "pct"].forEach(function (k) {
+      ids[k] = crypto.randomUUID();
+    });
+    var rows = [
+      { id: ids.descriere, santier_id: site.id, label: "Descriere", tip: "text" },
+      { id: ids.um, santier_id: site.id, label: "U.M.", tip: "text" },
+      { id: ids.cantContract, santier_id: site.id, label: "Cantitate contract", tip: "numar" },
+      { id: ids.valContract, santier_id: site.id, label: "Valoare contract", tip: "numar" },
+      { id: ids.cantSl1, santier_id: site.id, label: "Realizat SL1 - Cantitate", tip: "numar" },
+      { id: ids.valSl1, santier_id: site.id, label: "Realizat SL1 - Valoare", tip: "numar" },
+      { id: ids.cantTotal, santier_id: site.id, label: "Realizat total - Cantitate", tip: "calculat", formula: "suma", surse: [ids.cantSl1] },
+      { id: ids.valTotal, santier_id: site.id, label: "Realizat total - Valoare", tip: "calculat", formula: "suma", surse: [ids.valSl1] },
+      { id: ids.pct, santier_id: site.id, label: "Realizat total %", tip: "calculat", formula: "procent", surse: [ids.valTotal, ids.valContract] }
+    ];
+    rows.forEach(function (r) {
+      progresColoane.push({ id: r.id, santierId: site.id, label: r.label, tip: r.tip, formula: r.formula || null, surse: r.surse || [] });
+    });
+    site.progresColoaneOrder = rows.map(function (r) { return r.id; });
+    render();
+    sb.from("santier_progres_coloane").insert(rows).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut crea coloanele implicite."); console.error(res.error); }
+    });
+    sb.from("santiere").update({ progres_coloane_order: site.progresColoaneOrder }).eq("id", site.id).then(function (res) {
+      if (res.error) console.error(res.error);
+    });
   }
 
-  function addStage(siteId) {
-    var tempId = "tmp-" + Date.now();
-    siteStages.push({ id: tempId, santierId: siteId, nume: "", procent: 0, updatedAt: null });
-    render();
-    sb.from("santier_etape").insert({ santier_id: siteId, nume: "", procent: 0 }).select().single().then(function (res) {
-      if (res.error) {
-        siteStages = siteStages.filter(function (s) { return s.id !== tempId; });
-        flashSyncError("Nu am putut adăuga etapa."); console.error(res.error); render(); return;
+  function cellNumber(row, colId) {
+    var v = row.valori[colId];
+    var n = typeof v === "number" ? v : parseFloat(v);
+    return isNaN(n) ? 0 : n;
+  }
+  function computeCalcValue(col, valori) {
+    if (col.formula === "suma") {
+      return (col.surse || []).reduce(function (sum, srcId) {
+        var v = valori[srcId];
+        var n = typeof v === "number" ? v : parseFloat(v);
+        return sum + (isNaN(n) ? 0 : n);
+      }, 0);
+    }
+    if (col.formula === "procent") {
+      var numV = valori[col.surse[0]]; var num = typeof numV === "number" ? numV : (parseFloat(numV) || 0);
+      var denV = valori[col.surse[1]]; var den = typeof denV === "number" ? denV : (parseFloat(denV) || 0);
+      return den ? (num / den * 100) : 0;
+    }
+    return 0;
+  }
+  function formatGridNumber(n) {
+    if (n === null || n === undefined || isNaN(n)) return "";
+    var rounded = Math.round(n * 100) / 100;
+    return rounded.toLocaleString("ro-RO", { maximumFractionDigits: 2 });
+  }
+
+  // Builds the fully-resolved grid for a site: column/row order applied,
+  // group rows summed from their children (numar cols) and recomputed
+  // (calculat cols), plus a grand-total row across all item rows.
+  function progresGridData(site) {
+    var colsById = {};
+    coloaneForSite(site).forEach(function (c) { colsById[c.id] = c; });
+    var orderedCols = orderedColIds(site).map(function (id) { return colsById[id]; }).filter(Boolean);
+
+    var rowsById = {};
+    randuriForSite(site).forEach(function (r) { rowsById[r.id] = r; });
+    var orderedRows = orderedRandIds(site).map(function (id) { return rowsById[id]; }).filter(Boolean);
+
+    var numarCols = orderedCols.filter(function (c) { return c.tip === "numar"; });
+    var calcCols = orderedCols.filter(function (c) { return c.tip === "calculat"; });
+    var displayValori = {};
+
+    orderedRows.forEach(function (row) {
+      if (row.grup) return;
+      var vals = {};
+      orderedCols.forEach(function (col) {
+        // pass the accumulating `vals` (not raw row.valori) so a calculated
+        // column can reference another calculated column that appears
+        // earlier in the column order (e.g. a "%" column dividing by a
+        // "total" column that is itself a sum of other columns).
+        vals[col.id] = col.tip === "calculat" ? computeCalcValue(col, vals) : row.valori[col.id];
+      });
+      displayValori[row.id] = vals;
+    });
+
+    for (var i = 0; i < orderedRows.length; i++) {
+      if (!orderedRows[i].grup) continue;
+      var groupRow = orderedRows[i];
+      var sums = {};
+      orderedCols.forEach(function (c) { if (c.tip === "text") sums[c.id] = groupRow.valori[c.id]; });
+      numarCols.forEach(function (c) { sums[c.id] = 0; });
+      for (var j = i + 1; j < orderedRows.length && !orderedRows[j].grup; j++) {
+        numarCols.forEach(function (c) { sums[c.id] += cellNumber(orderedRows[j], c.id); });
       }
-      var s = siteStages.filter(function (x) { return x.id === tempId; })[0];
-      if (s) s.id = res.data.id;
+      calcCols.forEach(function (c) { sums[c.id] = computeCalcValue(c, sums); });
+      displayValori[groupRow.id] = sums;
+    }
+
+    var grandTotals = null;
+    var itemCount = orderedRows.filter(function (r) { return !r.grup; }).length;
+    if (itemCount > 0) {
+      var gsums = {};
+      numarCols.forEach(function (c) { gsums[c.id] = 0; });
+      orderedRows.forEach(function (row) { if (!row.grup) numarCols.forEach(function (c) { gsums[c.id] += cellNumber(row, c.id); }); });
+      calcCols.forEach(function (c) { gsums[c.id] = computeCalcValue(c, gsums); });
+      grandTotals = gsums;
+    }
+
+    return { orderedCols: orderedCols, orderedRows: orderedRows, displayValori: displayValori, grandTotals: grandTotals };
+  }
+
+  function rowDisplayLabel(site, row) {
+    var labelCol = coloaneForSite(site).filter(function (c) { return c.tip === "text"; })[0];
+    return labelCol ? (row.valori[labelCol.id] || "") : "";
+  }
+
+  // --- Coloane: adăugare / ștergere / redenumire / reordonare ---
+  function addColumn(site, spec) {
+    var tempId = "tmp-" + Date.now();
+    var col = { id: tempId, santierId: site.id, label: spec.label, tip: spec.tip, formula: spec.formula || null, surse: spec.surse || [] };
+    progresColoane.push(col);
+    state.siteForm.addColForm = emptyAddColForm();
+    render();
+    var payload = { santier_id: site.id, label: spec.label, tip: spec.tip };
+    if (spec.formula) payload.formula = spec.formula;
+    if (spec.surse && spec.surse.length) payload.surse = spec.surse;
+    sb.from("santier_progres_coloane").insert(payload).select().single().then(function (res) {
+      if (res.error) {
+        progresColoane = progresColoane.filter(function (c) { return c.id !== tempId; });
+        flashSyncError("Nu am putut adăuga coloana."); console.error(res.error); render(); return;
+      }
+      col.id = res.data.id;
       render();
     });
   }
-  function removeStage(site, stageId) {
-    var stage = siteStages.filter(function (s) { return s.id === stageId; })[0];
-    if (!stage) return;
-    var label = stage.nume ? ('etapa "' + stage.nume + '"') : "această etapă";
-    if (!confirmDelete("Ștergi " + label + "? Această acțiune nu poate fi anulată.")) return;
-    siteStages = siteStages.filter(function (s) { return s !== stage; });
+  function removeColumn(site, colId) {
+    var col = progresColoane.filter(function (c) { return c.id === colId; })[0];
+    if (!col) return;
+    var label = col.label ? ('coloana "' + col.label + '"') : "această coloană";
+    if (!confirmDelete("Ștergi " + label + "? Se pierd toate valorile completate pe această coloană.")) return;
+    progresColoane = progresColoane.filter(function (c) { return c !== col; });
     render();
-    if (String(stage.id).indexOf("tmp-") === 0) return;
-    sb.from("santier_etape").delete().eq("id", stage.id).then(function (res) {
-      if (res.error) { flashSyncError("Nu am putut șterge etapa."); console.error(res.error); }
+    if (String(col.id).indexOf("tmp-") === 0) return;
+    sb.from("santier_progres_coloane").delete().eq("id", col.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut șterge coloana."); console.error(res.error); }
     });
   }
-  function startStageNameEdit(stageId, currentName) { state.siteForm.stageLabelEdit = { id: stageId, draft: currentName }; }
-  function commitStageNameEdit() {
-    var edit = state.siteForm.stageLabelEdit;
-    if (!edit.id) return;
-    var stage = siteStages.filter(function (s) { return s.id === edit.id; })[0];
-    var name = (edit.draft || "").trim();
-    state.siteForm.stageLabelEdit = { id: null, draft: "" };
-    if (!stage || !name) { render(); return; } // never blank out a stage name
-    stage.nume = name;
+  function startColLabelEdit(colId, currentLabel) { state.siteForm.gridColLabelEdit = { colId: colId, draft: currentLabel }; }
+  function commitColLabelEdit() {
+    var edit = state.siteForm.gridColLabelEdit;
+    if (!edit.colId) return;
+    var col = progresColoane.filter(function (c) { return c.id === edit.colId; })[0];
+    var label = (edit.draft || "").trim();
+    state.siteForm.gridColLabelEdit = { colId: null, draft: "" };
+    if (!col || !label) { render(); return; } // never blank out a column name
+    col.label = label;
     render();
-    sb.from("santier_etape").update({ nume: name }).eq("id", stage.id).then(function (res) {
-      if (res.error) { flashSyncError("Nu am putut salva denumirea etapei."); console.error(res.error); render(); }
+    sb.from("santier_progres_coloane").update({ label: label }).eq("id", col.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut redenumi coloana."); console.error(res.error); render(); }
     });
   }
-  function cancelStageNameEdit() { state.siteForm.stageLabelEdit = { id: null, draft: "" }; render(); }
+  function cancelColLabelEdit() { state.siteForm.gridColLabelEdit = { colId: null, draft: "" }; render(); }
 
-  function startStagePercentEdit(stageId, currentPercent) { state.siteForm.stagePercentEdit = { id: stageId, draft: String(currentPercent) }; }
-  function commitStagePercentEdit() {
-    var edit = state.siteForm.stagePercentEdit;
-    if (!edit.id) return;
-    var stage = siteStages.filter(function (s) { return s.id === edit.id; })[0];
-    state.siteForm.stagePercentEdit = { id: null, draft: "" };
-    if (!stage) { render(); return; }
-    var n = parseInt(edit.draft, 10);
-    if (isNaN(n)) n = stage.procent;
-    n = Math.max(0, Math.min(100, n));
-    stage.procent = n;
-    stage.updatedAt = new Date().toISOString();
-    render();
-    sb.from("santier_etape").update({ procent: n, updated_at: stage.updatedAt }).eq("id", stage.id).then(function (res) {
-      if (res.error) { flashSyncError("Nu am putut salva progresul."); console.error(res.error); render(); }
-    });
-  }
-  function cancelStagePercentEdit() { state.siteForm.stagePercentEdit = { id: null, draft: "" }; render(); }
-
-  function reorderStages(site, draggedId, targetId, before) {
+  function reorderColumns(site, draggedId, targetId, before) {
     if (draggedId === targetId) return;
-    var current = orderedStageIds(site);
+    var current = orderedColIds(site);
     var fromIdx = current.indexOf(draggedId);
     if (fromIdx === -1) return;
     current.splice(fromIdx, 1);
@@ -1017,12 +1150,84 @@
     if (toIdx === -1) return;
     if (!before) toIdx += 1;
     current.splice(toIdx, 0, draggedId);
-    site.etapeOrder = current;
+    site.progresColoaneOrder = current;
     render();
-    sb.from("santiere").update({ etape_order: current }).eq("id", site.id).then(function (res) {
-      if (res.error) { flashSyncError("Nu am putut salva ordinea etapelor."); console.error(res.error); }
+    sb.from("santiere").update({ progres_coloane_order: current }).eq("id", site.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva ordinea coloanelor."); console.error(res.error); }
     });
   }
+
+  // --- Rânduri: adăugare / ștergere / reordonare ---
+  function addRow(site, isGrup) {
+    var tempId = "tmp-" + Date.now();
+    progresRanduri.push({ id: tempId, santierId: site.id, grup: !!isGrup, valori: {} });
+    render();
+    sb.from("santier_progres_randuri").insert({ santier_id: site.id, grup: !!isGrup, valori: {} }).select().single().then(function (res) {
+      if (res.error) {
+        progresRanduri = progresRanduri.filter(function (r) { return r.id !== tempId; });
+        flashSyncError("Nu am putut adăuga rândul."); console.error(res.error); render(); return;
+      }
+      var row = progresRanduri.filter(function (r) { return r.id === tempId; })[0];
+      if (row) row.id = res.data.id;
+      render();
+    });
+  }
+  function removeRow(site, rowId) {
+    var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
+    if (!row) return;
+    var text = rowDisplayLabel(site, row);
+    var label = text ? ('rândul "' + text + '"') : (row.grup ? "acest grup" : "acest rând");
+    if (!confirmDelete("Ștergi " + label + "? Această acțiune nu poate fi anulată.")) return;
+    progresRanduri = progresRanduri.filter(function (r) { return r !== row; });
+    render();
+    if (String(row.id).indexOf("tmp-") === 0) return;
+    sb.from("santier_progres_randuri").delete().eq("id", row.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut șterge rândul."); console.error(res.error); }
+    });
+  }
+  function reorderRows(site, draggedId, targetId, before) {
+    if (draggedId === targetId) return;
+    var current = orderedRandIds(site);
+    var fromIdx = current.indexOf(draggedId);
+    if (fromIdx === -1) return;
+    current.splice(fromIdx, 1);
+    var toIdx = current.indexOf(targetId);
+    if (toIdx === -1) return;
+    if (!before) toIdx += 1;
+    current.splice(toIdx, 0, draggedId);
+    site.progresRanduriOrder = current;
+    render();
+    sb.from("santiere").update({ progres_randuri_order: current }).eq("id", site.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva ordinea rândurilor."); console.error(res.error); }
+    });
+  }
+
+  // --- Celule: editare in-place (text pe orice rând, număr doar pe rânduri normale) ---
+  function startCellEdit(rowId, colId, currentValue) {
+    state.siteForm.gridCellEdit = { rowId: rowId, colId: colId, draft: currentValue === undefined || currentValue === null ? "" : String(currentValue) };
+  }
+  function commitCellEdit() {
+    var edit = state.siteForm.gridCellEdit;
+    if (!edit.rowId) return;
+    var row = progresRanduri.filter(function (r) { return r.id === edit.rowId; })[0];
+    var col = progresColoane.filter(function (c) { return c.id === edit.colId; })[0];
+    state.siteForm.gridCellEdit = { rowId: null, colId: null, draft: "" };
+    if (!row || !col) { render(); return; }
+    var value;
+    if (col.tip === "numar") {
+      var n = parseFloat(edit.draft);
+      value = isNaN(n) ? 0 : n;
+    } else {
+      value = (edit.draft || "").trim();
+    }
+    row.valori = Object.assign({}, row.valori);
+    row.valori[col.id] = value;
+    render();
+    sb.from("santier_progres_randuri").update({ valori: row.valori }).eq("id", row.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva valoarea."); console.error(res.error); render(); }
+    });
+  }
+  function cancelCellEdit() { state.siteForm.gridCellEdit = { rowId: null, colId: null, draft: "" }; render(); }
 
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function findSite(id) { for (var i = 0; i < sites.length; i++) if (sites[i].id === id) return sites[i]; return null; }
@@ -1444,56 +1649,124 @@
       '</div>';
   }
 
-  function progresPanelHTML(site) {
-    var byId = {};
-    stagesForSite(site).forEach(function (s) { byId[s.id] = s; });
-    var orderedStages = orderedStageIds(site).map(function (id) { return byId[id]; }).filter(Boolean);
-    var total = orderedStages.length;
-    var avgPct = total ? Math.round(orderedStages.reduce(function (a, s) { return a + s.procent; }, 0) / total) : 0;
-    var doneCount = orderedStages.filter(function (s) { return s.procent >= 100; }).length;
-    var lastUpdated = orderedStages.reduce(function (latest, s) {
-      if (!s.updatedAt) return latest;
-      if (!latest || new Date(s.updatedAt) > new Date(latest)) return s.updatedAt;
-      return latest;
-    }, null);
+  function addColFormHTML(site, orderedCols) {
+    var f = state.siteForm.addColForm;
+    var numericCols = orderedCols.filter(function (c) { return c.tip === "numar" || c.tip === "calculat"; });
+    var tipOptions = '<option value="text"' + (f.tip === "text" ? " selected" : "") + '>Text</option>' +
+      '<option value="numar"' + (f.tip === "numar" ? " selected" : "") + '>Număr</option>' +
+      '<option value="calculat_procent"' + (f.tip === "calculat_procent" ? " selected" : "") + '>Calculat — procent (A / B × 100)</option>' +
+      '<option value="calculat_suma"' + (f.tip === "calculat_suma" ? " selected" : "") + '>Calculat — sumă</option>';
 
-    var rows = orderedStages.map(function (s, idx) {
-      var isEditingName = state.siteForm.stageLabelEdit.id === s.id;
-      var isEditingPct = state.siteForm.stagePercentEdit.id === s.id;
-      var status = stageStatusInfo(s.procent);
-      var displayName = s.nume || "Denumire etapă (dublu-click)";
-      var nameCls = s.nume ? "" : " docrow-label-empty";
+    var extra = "";
+    if (f.tip === "calculat_procent") {
+      var numOpts = numericCols.map(function (c) { return '<option value="' + c.id + '"' + (f.numarator === c.id ? " selected" : "") + '>' + esc(c.label) + '</option>'; }).join("");
+      var denOpts = numericCols.map(function (c) { return '<option value="' + c.id + '"' + (f.numitor === c.id ? " selected" : "") + '>' + esc(c.label) + '</option>'; }).join("");
+      extra = '<div class="addcol-row"><label>Numărător</label><select id="addcol-numarator"><option value="">— alege —</option>' + numOpts + '</select></div>' +
+        '<div class="addcol-row"><label>Numitor</label><select id="addcol-numitor"><option value="">— alege —</option>' + denOpts + '</select></div>';
+    } else if (f.tip === "calculat_suma") {
+      var checks = numericCols.map(function (c) {
+        var checked = f.surseSuma[c.id] ? " checked" : "";
+        return '<label class="addcol-check"><input type="checkbox" data-addcol-suma-check="' + c.id + '"' + checked + '> ' + esc(c.label) + '</label>';
+      }).join("");
+      extra = '<div class="addcol-row"><label>Coloane de adunat</label><div class="addcol-checks">' +
+        (checks || '<span style="color:var(--ink-faint);font-size:12px">Nu există coloane numerice.</span>') + '</div></div>';
+    }
 
-      var nameHtml = isEditingName
-        ? '<input class="stage-name-input" id="stage-name-edit-' + s.id + '" draggable="false" data-stage-name-input="1" value="' + esc(s.nume) + '">'
-        : '<div class="stage-name' + nameCls + '" draggable="false" data-edit-stage-name="' + s.id + '" title="Dublu-click pentru a redenumi"><span class="stage-num">' + (idx + 1) + '</span>' + esc(displayName) + '</div>';
-
-      var pctHtml = isEditingPct
-        ? '<input type="number" min="0" max="100" class="stage-pct-input" id="stage-pct-edit-' + s.id + '" draggable="false" data-stage-pct-input="1" value="' + esc(String(s.procent)) + '">'
-        : '<div class="stage-pct" draggable="false" data-edit-stage-pct="' + s.id + '" title="Dublu-click pentru a actualiza">' + s.procent + '%</div>';
-
-      return '<div class="stage-row" draggable="true" data-stage-drag-id="' + s.id + '">' +
-        '<span class="docrow-grip stage-grip" title="Trage pentru a reordona">' + icon("grip", 15) + '</span>' +
-        nameHtml +
-        '<div class="prog-track"><div class="prog-fill" style="width:' + s.procent + '%"></div></div>' +
-        pctHtml +
-        '<span class="badge ' + status.cls + '">' + status.label + '</span>' +
-        '<div class="stage-date">' + formatStageDate(s.updatedAt) + '</div>' +
-        '<span class="doc-file-del" data-remove-stage="' + site.id + '|' + s.id + '" title="Șterge etapă">' + icon("trash", 14) + '</span>' +
-      '</div>';
-    }).join("");
-    var empty = total === 0 ? '<div class="doclist-empty" style="padding:16px 22px">Nicio etapă adăugată încă.</div>' : "";
-
-    return '' +
-      '<div class="summary">' +
-        '<div class="big-ring" style="background:conic-gradient(var(--navy) 0% ' + avgPct + '%, var(--gray-soft) ' + avgPct + '% 100%)"><div class="big-ring-val">' + avgPct + '%</div></div>' +
-        '<div class="summary-meta">' +
-          '<div class="meta-item"><div class="mv">' + doneCount + ' / ' + total + '</div><div class="ml">Etape finalizate</div></div>' +
-          '<div class="meta-item"><div class="mv">' + formatStageDate(lastUpdated) + '</div><div class="ml">Ultima actualizare</div></div>' +
-        '</div>' +
+    return '<div class="addcol-form">' +
+      '<div class="addcol-row"><label>Denumire coloană</label><input id="addcol-label-input" data-addcol-label-input="1" value="' + esc(f.label) + '" placeholder="ex. Termen limită"></div>' +
+      '<div class="addcol-row"><label>Tip</label><select id="addcol-tip-select">' + tipOptions + '</select></div>' +
+      extra +
+      '<div class="addcol-actions">' +
+        '<button class="btn btn-primary btn-sm" data-submit-addcol="' + site.id + '">Adaugă</button>' +
+        '<button class="btn btn-ghost btn-sm" data-cancel-addcol="1">Anulează</button>' +
       '</div>' +
-      '<div class="stages"><div class="stage-row stage-head"><div></div><div>Etapă</div><div>Progres</div><div>%</div><div>Status</div><div>Ultima actualizare</div><div></div></div>' + rows + empty + '</div>' +
-      '<button class="btn btn-ghost btn-sm" style="margin-top:12px" data-add-stage="' + site.id + '">' + icon("plus", 13) + 'Adaugă etapă</button>';
+    '</div>';
+  }
+
+  function progresPanelHTML(site) {
+    var data = progresGridData(site);
+    var orderedCols = data.orderedCols, orderedRows = data.orderedRows, displayValori = data.displayValori;
+    var labelColId = null;
+    for (var li = 0; li < orderedCols.length; li++) { if (orderedCols[li].tip === "text") { labelColId = orderedCols[li].id; break; } }
+
+    var headCells = orderedCols.map(function (col) {
+      var isEditing = state.siteForm.gridColLabelEdit.colId === col.id;
+      var labelHtml = isEditing
+        ? '<input class="progrid-col-input" id="progcol-edit-' + col.id + '" draggable="false" data-progcol-label-input="1" value="' + esc(col.label) + '">'
+        : '<span class="progrid-col-label" draggable="false" data-edit-col-label="' + col.id + '" title="Dublu-click pentru a redenumi">' + esc(col.label || "(fără nume)") + '</span>';
+      var typeTag = "";
+      if (col.tip === "calculat") {
+        var tagSymbol = col.formula === "procent" ? "%" : "Σ";
+        if (col.label.indexOf(tagSymbol) === -1) typeTag = " " + tagSymbol;
+      }
+      return '<th draggable="true" data-progcol-drag-id="' + col.id + '"><div class="progrid-th-inner">' +
+        '<span class="progrid-col-grip" title="Trage pentru a reordona">' + icon("grip", 13) + '</span>' +
+        labelHtml + (typeTag ? '<span class="progrid-col-tag">' + esc(typeTag) + '</span>' : "") +
+        '<span class="progrid-col-del" data-remove-col="' + site.id + '|' + col.id + '" title="Șterge coloana">' + icon("trash", 12) + '</span>' +
+      '</div></th>';
+    }).join("");
+
+    var bodyRows = orderedRows.map(function (row) {
+      var vals = displayValori[row.id] || {};
+      var cellsHtml = orderedCols.map(function (col) {
+        var editable = col.tip === "text" || (!row.grup && col.tip === "numar");
+        var isEditingCell = editable && state.siteForm.gridCellEdit.rowId === row.id && state.siteForm.gridCellEdit.colId === col.id;
+        var raw = vals[col.id];
+        var isNumCol = col.tip === "numar" || col.tip === "calculat";
+        var display = isNumCol ? (formatGridNumber(raw || 0) + (col.tip === "calculat" && col.formula === "procent" ? "%" : "")) : esc(raw || "");
+        var cls = "progrid-cell" + (isNumCol ? " progrid-num" : "") + (col.tip === "calculat" ? " progrid-cell-computed" : "") + (editable ? " progrid-cell-editable" : "");
+
+        if (isEditingCell) {
+          var inputCls = "progrid-cell-input" + (col.tip === "numar" ? " progrid-num-input" : "");
+          var inputType = col.tip === "numar" ? ' type="number"' : "";
+          return '<td class="' + cls + '"><input class="' + inputCls + '"' + inputType + ' id="progcell-edit-' + row.id + '-' + col.id + '" draggable="false" data-progcell-input="1" value="' + esc(raw === undefined || raw === null ? "" : String(raw)) + '"></td>';
+        }
+        var attrs = editable ? ' draggable="false" data-edit-cell="' + row.id + '|' + col.id + '" title="Dublu-click pentru a edita"' : "";
+        return '<td class="' + cls + '"' + attrs + '>' + display + '</td>';
+      }).join("");
+
+      var rowCls = row.grup ? "progrow-group" : "";
+      return '<tr class="' + rowCls + '" draggable="true" data-progrow-drag-id="' + row.id + '">' +
+        '<td class="progrid-grip" title="Trage pentru a reordona">' + icon("grip", 13) + '</td>' +
+        cellsHtml +
+        '<td class="progrid-del-cell"><span class="progrid-del" data-remove-row="' + site.id + '|' + row.id + '" title="Șterge rândul">' + icon("trash", 13) + '</span></td>' +
+      '</tr>';
+    }).join("");
+
+    var colspan = orderedCols.length + 2;
+    var emptyRow = orderedRows.length === 0 ? '<tr><td colspan="' + colspan + '" class="doclist-empty progrid-empty-cell">Niciun rând adăugat încă.</td></tr>' : "";
+
+    var totalRow = "";
+    if (data.grandTotals) {
+      var totalCells = orderedCols.map(function (col) {
+        if (col.tip === "text") return "<td>" + (col.id === labelColId ? "TOTAL GENERAL" : "") + "</td>";
+        var v = data.grandTotals[col.id];
+        var display = formatGridNumber(v || 0) + (col.tip === "calculat" && col.formula === "procent" ? "%" : "");
+        return '<td class="progrid-num">' + display + '</td>';
+      }).join("");
+      totalRow = '<tr class="progrow-total"><td></td>' + totalCells + '<td></td></tr>';
+    }
+
+    var summaryHtml = "";
+    if (data.grandTotals) {
+      var pctCol = orderedCols.filter(function (c) { return c.tip === "calculat" && c.formula === "procent"; })[0];
+      var itemRows = orderedRows.filter(function (r) { return !r.grup; }).length;
+      var stats = '<div class="meta-item"><div class="mv">' + itemRows + '</div><div class="ml">Linii</div></div>';
+      if (pctCol) stats += '<div class="meta-item"><div class="mv">' + formatGridNumber(data.grandTotals[pctCol.id] || 0) + '%</div><div class="ml">' + esc(pctCol.label) + '</div></div>';
+      summaryHtml = '<div class="summary"><div class="summary-meta">' + stats + '</div></div>';
+    }
+
+    var addColFormHtml = state.siteForm.addColForm.open ? addColFormHTML(site, orderedCols) : "";
+
+    return summaryHtml +
+      '<div class="progrid-wrap"><table class="progrid"><thead><tr><th></th>' + headCells + '<th></th></tr></thead>' +
+      '<tbody>' + bodyRows + emptyRow + totalRow + '</tbody></table></div>' +
+      '<div class="progrid-toolbar">' +
+        '<button class="btn btn-ghost btn-sm" data-add-row="' + site.id + '">' + icon("plus", 13) + 'Adaugă linie</button>' +
+        '<button class="btn btn-ghost btn-sm" data-add-group-row="' + site.id + '">' + icon("plus", 13) + 'Adaugă grup</button>' +
+        '<button class="btn btn-ghost btn-sm" data-toggle-addcol="' + site.id + '">' + icon("plus", 13) + 'Adaugă coloană</button>' +
+      '</div>' +
+      addColFormHtml;
   }
 
   function docsPanelHTML(site) {
@@ -1635,7 +1908,8 @@
       "[data-toggle-select-mode],[data-bulk-status],[data-clear-selection],[data-retry-failed]," +
       "[data-open-add-site],[data-close-add-site],[data-save-new-site],[data-edit-site],[data-save-site-edit],[data-cancel-site-edit],[data-delete-site]," +
       "[data-site-subtab],[data-save-doc-valoare],[data-remove-doc-file],[data-add-aviz],[data-remove-aviz]," +
-      "[data-add-gendoc],[data-remove-gendoc],[data-add-stage],[data-remove-stage]"
+      "[data-add-gendoc],[data-remove-gendoc]," +
+      "[data-add-row],[data-add-group-row],[data-remove-row],[data-remove-col],[data-toggle-addcol],[data-cancel-addcol],[data-submit-addcol]"
     );
 
     // Only re-render when something actually changes. A blanket render() on every
@@ -1675,7 +1949,13 @@
           state.view = "detail"; state.selectedSiteId = t.dataset.openSite; state.activeTab = "date-santier"; state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; isNav = true;
         }
       }
-      else if (t.dataset.tab) state.activeTab = t.dataset.tab;
+      else if (t.dataset.tab) {
+        state.activeTab = t.dataset.tab;
+        if (t.dataset.tab === "progres") {
+          var pgSite = findSite(state.selectedSiteId);
+          if (pgSite) seedDefaultProgresColumns(pgSite);
+        }
+      }
       else if (t.dataset.globalSite) state.globalSiteId = t.dataset.globalSite;
       else if (t.dataset.pontajPrev) shiftMonth(-1);
       else if (t.dataset.pontajNext) shiftMonth(1);
@@ -1761,11 +2041,39 @@
         var rgSite = findSite(rgParts[0]);
         if (rgSite) removeRepeatableDoc(rgSite, rgParts[1], "documentul", "acest document", "documentul");
       }
-      else if (t.dataset.addStage) { addStage(t.dataset.addStage); }
-      else if (t.dataset.removeStage) {
-        var rsParts = t.dataset.removeStage.split("|");
-        var rsSite = findSite(rsParts[0]);
-        if (rsSite) removeStage(rsSite, rsParts[1]);
+      else if (t.dataset.addRow) { var arSite = findSite(t.dataset.addRow); if (arSite) addRow(arSite, false); }
+      else if (t.dataset.addGroupRow) { var agSite = findSite(t.dataset.addGroupRow); if (agSite) addRow(agSite, true); }
+      else if (t.dataset.removeRow) {
+        var rrParts = t.dataset.removeRow.split("|");
+        var rrSite = findSite(rrParts[0]);
+        if (rrSite) removeRow(rrSite, rrParts[1]);
+      }
+      else if (t.dataset.removeCol) {
+        var rcParts = t.dataset.removeCol.split("|");
+        var rcSite = findSite(rcParts[0]);
+        if (rcSite) removeColumn(rcSite, rcParts[1]);
+      }
+      else if (t.dataset.toggleAddcol) {
+        state.siteForm.addColForm = state.siteForm.addColForm.open ? emptyAddColForm() : Object.assign(emptyAddColForm(), { open: true });
+      }
+      else if (t.dataset.cancelAddcol) { state.siteForm.addColForm = emptyAddColForm(); }
+      else if (t.dataset.submitAddcol) {
+        var acSite = findSite(t.dataset.submitAddcol);
+        if (acSite) {
+          var f = state.siteForm.addColForm;
+          var colLabel = (f.label || "").trim();
+          if (!colLabel) { flashSyncError("Dă un nume coloanei."); }
+          else if (f.tip === "calculat_procent") {
+            if (!f.numarator || !f.numitor) flashSyncError("Alege numărătorul și numitorul.");
+            else addColumn(acSite, { label: colLabel, tip: "calculat", formula: "procent", surse: [f.numarator, f.numitor] });
+          } else if (f.tip === "calculat_suma") {
+            var surseSuma = Object.keys(f.surseSuma);
+            if (!surseSuma.length) flashSyncError("Alege cel puțin o coloană de adunat.");
+            else addColumn(acSite, { label: colLabel, tip: "calculat", formula: "suma", surse: surseSuma });
+          } else {
+            addColumn(acSite, { label: colLabel, tip: f.tip });
+          }
+        }
       }
     }
 
@@ -1790,12 +2098,21 @@
     else if (id.indexOf("site-edit-") === 0) state.siteForm.editDraft[id.slice(10)] = e.target.value;
     else if (e.target.dataset.docValoareKey) state.siteForm.docDrafts[e.target.dataset.docValoareKey] = e.target.value;
     else if (e.target.dataset.labelEditInput) state.siteForm.labelEdit.draft = e.target.value;
-    else if (e.target.dataset.stageNameInput) state.siteForm.stageLabelEdit.draft = e.target.value;
-    else if (e.target.dataset.stagePctInput) state.siteForm.stagePercentEdit.draft = e.target.value;
+    else if (e.target.dataset.progcolLabelInput) state.siteForm.gridColLabelEdit.draft = e.target.value;
+    else if (e.target.dataset.progcellInput) state.siteForm.gridCellEdit.draft = e.target.value;
+    else if (e.target.dataset.addcolLabelInput) state.siteForm.addColForm.label = e.target.value;
     else if (e.target.dataset.sidebarNameInput) state.sidebarNameEdit.draft = e.target.value;
   });
   document.getElementById("app").addEventListener("change", function (e) {
     if (e.target.id === "new-worker-metoda") state.pontaj.newWorker.metoda = e.target.value;
+    else if (e.target.id === "addcol-tip-select") { state.siteForm.addColForm.tip = e.target.value; render(); }
+    else if (e.target.id === "addcol-numarator") state.siteForm.addColForm.numarator = e.target.value;
+    else if (e.target.id === "addcol-numitor") state.siteForm.addColForm.numitor = e.target.value;
+    else if (e.target.dataset.addcolSumaCheck) {
+      var sumaColId = e.target.dataset.addcolSumaCheck;
+      if (e.target.checked) state.siteForm.addColForm.surseSuma[sumaColId] = true;
+      else delete state.siteForm.addColForm.surseSuma[sumaColId];
+    }
     else if (e.target.dataset.docFileInput) {
       var dfParts = e.target.dataset.docFileInput.split("|");
       var dfSite = findSite(dfParts[0]);
@@ -1847,39 +2164,41 @@
       return;
     }
 
-    var stageNameT = e.target.closest("[data-edit-stage-name]");
-    if (stageNameT) {
-      var stageId = stageNameT.dataset.editStageName;
-      var stage = siteStages.filter(function (s) { return s.id === stageId; })[0];
-      startStageNameEdit(stageId, stage ? stage.nume : "");
+    var colLabelT = e.target.closest("[data-edit-col-label]");
+    if (colLabelT) {
+      var colId = colLabelT.dataset.editColLabel;
+      var col = progresColoane.filter(function (c) { return c.id === colId; })[0];
+      startColLabelEdit(colId, col ? col.label : "");
       render();
-      var stageNameInput = document.getElementById("stage-name-edit-" + stageId);
-      if (stageNameInput) {
-        stageNameInput.focus();
-        stageNameInput.select();
-        stageNameInput.addEventListener("blur", commitStageNameEdit);
-        stageNameInput.addEventListener("keydown", function (ke) {
-          if (ke.key === "Enter") { ke.preventDefault(); stageNameInput.blur(); }
-          else if (ke.key === "Escape") { ke.preventDefault(); stageNameInput.removeEventListener("blur", commitStageNameEdit); cancelStageNameEdit(); }
+      var colInput = document.getElementById("progcol-edit-" + colId);
+      if (colInput) {
+        colInput.focus();
+        colInput.select();
+        colInput.addEventListener("blur", commitColLabelEdit);
+        colInput.addEventListener("keydown", function (ke) {
+          if (ke.key === "Enter") { ke.preventDefault(); colInput.blur(); }
+          else if (ke.key === "Escape") { ke.preventDefault(); colInput.removeEventListener("blur", commitColLabelEdit); cancelColLabelEdit(); }
         });
       }
       return;
     }
 
-    var stagePctT = e.target.closest("[data-edit-stage-pct]");
-    if (stagePctT) {
-      var pctStageId = stagePctT.dataset.editStagePct;
-      var pctStage = siteStages.filter(function (s) { return s.id === pctStageId; })[0];
-      startStagePercentEdit(pctStageId, pctStage ? pctStage.procent : 0);
+    var cellT = e.target.closest("[data-edit-cell]");
+    if (cellT) {
+      var cellParts = cellT.dataset.editCell.split("|");
+      var cellRowId = cellParts[0], cellColId = cellParts[1];
+      var cellRow = progresRanduri.filter(function (r) { return r.id === cellRowId; })[0];
+      var currentCellVal = cellRow ? cellRow.valori[cellColId] : "";
+      startCellEdit(cellRowId, cellColId, currentCellVal);
       render();
-      var stagePctInput = document.getElementById("stage-pct-edit-" + pctStageId);
-      if (stagePctInput) {
-        stagePctInput.focus();
-        stagePctInput.select();
-        stagePctInput.addEventListener("blur", commitStagePercentEdit);
-        stagePctInput.addEventListener("keydown", function (ke) {
-          if (ke.key === "Enter") { ke.preventDefault(); stagePctInput.blur(); }
-          else if (ke.key === "Escape") { ke.preventDefault(); stagePctInput.removeEventListener("blur", commitStagePercentEdit); cancelStagePercentEdit(); }
+      var cellInput = document.getElementById("progcell-edit-" + cellRowId + "-" + cellColId);
+      if (cellInput) {
+        cellInput.focus();
+        cellInput.select();
+        cellInput.addEventListener("blur", commitCellEdit);
+        cellInput.addEventListener("keydown", function (ke) {
+          if (ke.key === "Enter") { ke.preventDefault(); cellInput.blur(); }
+          else if (ke.key === "Escape") { ke.preventDefault(); cellInput.removeEventListener("blur", commitCellEdit); cancelCellEdit(); }
         });
       }
     }
@@ -1890,17 +2209,31 @@
   // DOM instead of through render(), so the drag gesture isn't interrupted
   // by a full rebuild on every dragover.
   var dragState = { tip: null, scope: null };
-  var stageDragState = { id: null };
+  var progRowDragState = { id: null };
+  var progColDragState = { id: null };
   function clearDocDragClasses() {
-    document.querySelectorAll(".docrow.dragging, .docrow.drag-over-top, .docrow.drag-over-bottom, .stage-row.dragging, .stage-row.drag-over-top, .stage-row.drag-over-bottom").forEach(function (el) {
+    document.querySelectorAll(".docrow.dragging, .docrow.drag-over-top, .docrow.drag-over-bottom").forEach(function (el) {
       el.classList.remove("dragging", "drag-over-top", "drag-over-bottom");
+    });
+    document.querySelectorAll(".progrid tr.dragging, .progrid tr.drag-over-top, .progrid tr.drag-over-bottom").forEach(function (el) {
+      el.classList.remove("dragging", "drag-over-top", "drag-over-bottom");
+    });
+    document.querySelectorAll(".progrid th.dragging, .progrid th.drag-over-left, .progrid th.drag-over-right").forEach(function (el) {
+      el.classList.remove("dragging", "drag-over-left", "drag-over-right");
     });
   }
   document.getElementById("app").addEventListener("dragstart", function (e) {
-    var stageRow = e.target.closest("[data-stage-drag-id]");
-    if (stageRow) {
-      stageDragState.id = stageRow.dataset.stageDragId;
-      stageRow.classList.add("dragging");
+    var progRow = e.target.closest("[data-progrow-drag-id]");
+    if (progRow) {
+      progRowDragState.id = progRow.dataset.progrowDragId;
+      progRow.classList.add("dragging");
+      if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+      return;
+    }
+    var progCol = e.target.closest("[data-progcol-drag-id]");
+    if (progCol) {
+      progColDragState.id = progCol.dataset.progcolDragId;
+      progCol.classList.add("dragging");
       if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
       return;
     }
@@ -1912,13 +2245,22 @@
     if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
   });
   document.getElementById("app").addEventListener("dragover", function (e) {
-    var stageRow = e.target.closest("[data-stage-drag-id]");
-    if (stageRow && stageDragState.id) {
+    var progRow = e.target.closest("[data-progrow-drag-id]");
+    if (progRow && progRowDragState.id) {
       e.preventDefault();
-      var srect = stageRow.getBoundingClientRect();
-      var sbefore = (e.clientY - srect.top) < srect.height / 2;
-      stageRow.classList.toggle("drag-over-top", sbefore);
-      stageRow.classList.toggle("drag-over-bottom", !sbefore);
+      var rrect = progRow.getBoundingClientRect();
+      var rbefore = (e.clientY - rrect.top) < rrect.height / 2;
+      progRow.classList.toggle("drag-over-top", rbefore);
+      progRow.classList.toggle("drag-over-bottom", !rbefore);
+      return;
+    }
+    var progCol = e.target.closest("[data-progcol-drag-id]");
+    if (progCol && progColDragState.id) {
+      e.preventDefault();
+      var crect = progCol.getBoundingClientRect();
+      var cbefore = (e.clientX - crect.left) < crect.width / 2;
+      progCol.classList.toggle("drag-over-left", cbefore);
+      progCol.classList.toggle("drag-over-right", !cbefore);
       return;
     }
     var row = e.target.closest("[data-doc-drag-tip]");
@@ -1930,22 +2272,36 @@
     row.classList.toggle("drag-over-bottom", !before);
   });
   document.getElementById("app").addEventListener("dragleave", function (e) {
-    var stageRow = e.target.closest("[data-stage-drag-id]");
-    if (stageRow) { stageRow.classList.remove("drag-over-top", "drag-over-bottom"); return; }
+    var progRow = e.target.closest("[data-progrow-drag-id]");
+    if (progRow) { progRow.classList.remove("drag-over-top", "drag-over-bottom"); return; }
+    var progCol = e.target.closest("[data-progcol-drag-id]");
+    if (progCol) { progCol.classList.remove("drag-over-left", "drag-over-right"); return; }
     var row = e.target.closest("[data-doc-drag-tip]");
     if (row) row.classList.remove("drag-over-top", "drag-over-bottom");
   });
   document.getElementById("app").addEventListener("drop", function (e) {
-    var stageRow = e.target.closest("[data-stage-drag-id]");
-    if (stageRow && stageDragState.id) {
+    var progRow = e.target.closest("[data-progrow-drag-id]");
+    if (progRow && progRowDragState.id) {
       e.preventDefault();
-      var sbefore = stageRow.classList.contains("drag-over-top");
-      var targetId = stageRow.dataset.stageDragId;
-      var draggedId = stageDragState.id;
-      stageDragState.id = null;
+      var rbefore = progRow.classList.contains("drag-over-top");
+      var rTargetId = progRow.dataset.progrowDragId;
+      var rDraggedId = progRowDragState.id;
+      progRowDragState.id = null;
       clearDocDragClasses();
-      var stageSite = findSite(state.selectedSiteId);
-      if (stageSite) reorderStages(stageSite, draggedId, targetId, sbefore);
+      var rSite = findSite(state.selectedSiteId);
+      if (rSite) reorderRows(rSite, rDraggedId, rTargetId, rbefore);
+      return;
+    }
+    var progCol = e.target.closest("[data-progcol-drag-id]");
+    if (progCol && progColDragState.id) {
+      e.preventDefault();
+      var cbefore = progCol.classList.contains("drag-over-left");
+      var cTargetId = progCol.dataset.progcolDragId;
+      var cDraggedId = progColDragState.id;
+      progColDragState.id = null;
+      clearDocDragClasses();
+      var cSite = findSite(state.selectedSiteId);
+      if (cSite) reorderColumns(cSite, cDraggedId, cTargetId, cbefore);
       return;
     }
     var row = e.target.closest("[data-doc-drag-tip]");
@@ -1964,7 +2320,8 @@
   });
   document.getElementById("app").addEventListener("dragend", function () {
     dragState.tip = null; dragState.scope = null;
-    stageDragState.id = null;
+    progRowDragState.id = null;
+    progColDragState.id = null;
     clearDocDragClasses();
   });
 
