@@ -83,6 +83,7 @@
   .btn-primary { background: var(--navy); color: white; }
   .btn-ghost { border: 1px solid var(--border-strong); background: var(--surface); color: var(--ink); }
   .btn-sm { padding: 6px 11px; font-size: 11.5px; }
+  .btn[disabled] { opacity: .4; cursor: not-allowed; }
 
   /* dashboard */
   .topbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
@@ -269,7 +270,7 @@
   .progrid tbody tr.drag-over-bottom td { box-shadow: inset 0 -2px 0 var(--navy); }
   .progrid tbody tr.progrow-group td { background: var(--surface-2); font-weight: 700; }
   .progrid tbody tr.progrow-subtotal td { font-weight: 700; border-top: 1.5px solid var(--border-strong); }
-  .progrid tbody tr.progrow-total td { background: var(--surface-2); font-weight: 700; border-top: 2px solid var(--border-strong); }
+  .progrid tbody tr.progrow-total td { background: var(--surface-2); font-weight: 700; border-top: 2px solid var(--border-strong); text-align: center; }
   .progrid td { padding: 8px 10px; color: var(--ink); }
   .progrid-color-btn { width: 13px; height: 13px; border-radius: 50%; border: 1px solid var(--border-strong);
     cursor: pointer; flex-shrink: 0; display: inline-block; background: transparent; padding: 0; }
@@ -291,18 +292,19 @@
   .rowsrcpop-link:hover { text-decoration: underline; }
   .rowsrcpop-list { overflow-y: auto; max-height: 190px; display: flex; flex-direction: column; gap: 6px; }
   .rowsrc-check { display: flex; align-items: center; gap: 7px; font-size: 12.5px; cursor: pointer; }
+  .progrid td.progrid-cell { text-align: center; }
   .progrid td.progrid-cell-editable { cursor: pointer; }
   .progrid td.progrid-cell-editable:hover { background: var(--surface-2); }
   .progrid td.progrid-cell-computed { color: var(--ink-soft); font-style: italic; }
   .progrid .progrid-grip { text-align: center; width: 22px; padding: 8px 6px; color: var(--ink-faint); cursor: grab; }
-  .progrid .progrid-num { font-family: var(--mono); text-align: right; }
+  .progrid .progrid-num { font-family: var(--mono); }
   .progrid .progrid-del-cell { text-align: center; width: 30px; padding: 8px 6px; }
   .progrid-del { color: var(--ink-faint); cursor: pointer; display: inline-flex; }
   .progrid-del:hover { color: oklch(55% 0.18 25); }
   .progrid-cell-input { width: 100%; box-sizing: border-box; border: 1px solid var(--navy); border-radius: 3px;
-    padding: 3px 5px; font-family: inherit; font-size: inherit; }
-  .progrid-num-input { text-align: right; font-family: var(--mono); }
-  .doclist-empty.progrid-empty-cell { padding: 16px 22px; text-align: left; }
+    padding: 3px 5px; font-family: inherit; font-size: inherit; text-align: center; }
+  .progrid-num-input { font-family: var(--mono); }
+  .doclist-empty.progrid-empty-cell { padding: 16px 22px; text-align: center; }
 
   .progrid-toolbar { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
   .addcol-form { border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 12px;
@@ -485,7 +487,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b31-2026-09-17";
+  var BUILD = "b32-2026-09-17";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -672,7 +674,7 @@
     sb.auth.signOut().then(function () {
       authState.session = null;
       workers = []; entries = {}; company = { name: "", cif: "", docTipOrder: null, docTipLabels: null }; sites = []; projectDocs = [];
-      progresColoane = []; progresRanduri = []; progresSeededSites = {};
+      progresColoane = []; progresRanduri = []; progresSeededSites = {}; progresUndoStack = {};
       state.view = "dashboard"; state.selectedSiteId = null;
       render();
     });
@@ -1002,6 +1004,87 @@
   var progresColoane = [];
   var progresRanduri = [];
   var progresSeededSites = {};
+  var progresUndoStack = {};
+  var PROGRES_UNDO_LIMIT = 20;
+
+  // Generic snapshot-based undo: every mutating action snapshots the site's
+  // full columns+rows+order BEFORE it runs, so undo never needs a bespoke
+  // "inverse" per action — it just reconciles current state back to the
+  // last snapshot (insert/update/delete whatever differs) and re-syncs it.
+  function snapshotProgres(site) {
+    return {
+      coloane: coloaneForSite(site).map(function (c) { return { id: c.id, label: c.label, tip: c.tip, formula: c.formula, surse: (c.surse || []).slice(), culoare: c.culoare, latime: c.latime }; }),
+      randuri: randuriForSite(site).map(function (r) { return { id: r.id, grup: r.grup, subtotal: r.subtotal, valori: Object.assign({}, r.valori), culoare: r.culoare, surseRanduri: (r.surseRanduri || []).slice() }; }),
+      coloaneOrder: site.progresColoaneOrder ? site.progresColoaneOrder.slice() : null,
+      randuriOrder: site.progresRanduriOrder ? site.progresRanduriOrder.slice() : null
+    };
+  }
+  function pushProgresUndo(site) {
+    if (!progresUndoStack[site.id]) progresUndoStack[site.id] = [];
+    var stack = progresUndoStack[site.id];
+    stack.push(snapshotProgres(site));
+    if (stack.length > PROGRES_UNDO_LIMIT) stack.shift();
+  }
+  function canUndoProgres(site) { return !!(progresUndoStack[site.id] && progresUndoStack[site.id].length); }
+  function reconcileProgresColumns(site, targetCols) {
+    var current = coloaneForSite(site).slice();
+    var targetIds = targetCols.map(function (c) { return c.id; });
+    current.forEach(function (c) {
+      if (targetIds.indexOf(c.id) !== -1) return;
+      progresColoane = progresColoane.filter(function (x) { return x !== c; });
+      if (String(c.id).indexOf("tmp-") !== 0) {
+        sb.from("santier_progres_coloane").delete().eq("id", c.id).then(function (res) { if (res.error) console.error(res.error); });
+      }
+    });
+    targetCols.forEach(function (tc) {
+      var existing = progresColoane.filter(function (c) { return c.id === tc.id; })[0];
+      if (!existing) {
+        var copy = { id: tc.id, santierId: site.id, label: tc.label, tip: tc.tip, formula: tc.formula, surse: tc.surse.slice(), culoare: tc.culoare, latime: tc.latime };
+        progresColoane.push(copy);
+        sb.from("santier_progres_coloane").insert({ id: copy.id, santier_id: site.id, label: copy.label, tip: copy.tip, formula: copy.formula, surse: copy.surse, culoare: copy.culoare, latime: copy.latime }).then(function (res) { if (res.error) console.error(res.error); });
+      } else {
+        existing.label = tc.label; existing.tip = tc.tip; existing.formula = tc.formula; existing.surse = tc.surse.slice(); existing.culoare = tc.culoare; existing.latime = tc.latime;
+        sb.from("santier_progres_coloane").update({ label: existing.label, tip: existing.tip, formula: existing.formula, surse: existing.surse, culoare: existing.culoare, latime: existing.latime }).eq("id", existing.id).then(function (res) { if (res.error) console.error(res.error); });
+      }
+    });
+  }
+  function reconcileProgresRows(site, targetRows) {
+    var current = randuriForSite(site).slice();
+    var targetIds = targetRows.map(function (r) { return r.id; });
+    current.forEach(function (r) {
+      if (targetIds.indexOf(r.id) !== -1) return;
+      progresRanduri = progresRanduri.filter(function (x) { return x !== r; });
+      if (String(r.id).indexOf("tmp-") !== 0) {
+        sb.from("santier_progres_randuri").delete().eq("id", r.id).then(function (res) { if (res.error) console.error(res.error); });
+      }
+    });
+    targetRows.forEach(function (tr) {
+      var existing = progresRanduri.filter(function (r) { return r.id === tr.id; })[0];
+      if (!existing) {
+        var copy = { id: tr.id, santierId: site.id, grup: tr.grup, subtotal: tr.subtotal, valori: Object.assign({}, tr.valori), culoare: tr.culoare, surseRanduri: tr.surseRanduri.slice() };
+        progresRanduri.push(copy);
+        sb.from("santier_progres_randuri").insert({ id: copy.id, santier_id: site.id, grup: copy.grup, subtotal: copy.subtotal, valori: copy.valori, culoare: copy.culoare, surse_randuri: copy.surseRanduri }).then(function (res) { if (res.error) console.error(res.error); });
+      } else {
+        existing.grup = tr.grup; existing.subtotal = tr.subtotal; existing.valori = Object.assign({}, tr.valori); existing.culoare = tr.culoare; existing.surseRanduri = tr.surseRanduri.slice();
+        sb.from("santier_progres_randuri").update({ grup: existing.grup, subtotal: existing.subtotal, valori: existing.valori, culoare: existing.culoare, surse_randuri: existing.surseRanduri }).eq("id", existing.id).then(function (res) { if (res.error) console.error(res.error); });
+      }
+    });
+  }
+  function undoProgres(site) {
+    var stack = progresUndoStack[site.id];
+    if (!stack || !stack.length) return;
+    var snap = stack.pop();
+    reconcileProgresColumns(site, snap.coloane);
+    reconcileProgresRows(site, snap.randuri);
+    site.progresColoaneOrder = snap.coloaneOrder;
+    site.progresRanduriOrder = snap.randuriOrder;
+    state.siteForm.gridCellEdit = { rowId: null, colId: null, draft: "" };
+    state.siteForm.gridColLabelEdit = { colId: null, draft: "" };
+    render();
+    sb.from("santiere").update({ progres_coloane_order: site.progresColoaneOrder, progres_randuri_order: site.progresRanduriOrder }).eq("id", site.id).then(function (res) {
+      if (res.error) console.error(res.error);
+    });
+  }
 
   function progresColFromRow(r) {
     return { id: r.id, santierId: r.santier_id, label: r.label || "", tip: r.tip || "numar", formula: r.formula || null, surse: r.surse || [], culoare: r.culoare || null, latime: r.latime || null };
@@ -1157,6 +1240,7 @@
 
   // --- Coloane: adăugare / ștergere / redenumire / reordonare ---
   function addColumn(site, spec) {
+    pushProgresUndo(site);
     var tempId = "tmp-" + Date.now();
     var col = { id: tempId, santierId: site.id, label: spec.label, tip: spec.tip, formula: spec.formula || null, surse: spec.surse || [], culoare: null, latime: null };
     progresColoane.push(col);
@@ -1170,6 +1254,11 @@
         progresColoane = progresColoane.filter(function (c) { return c.id !== tempId; });
         flashSyncError("Nu am putut adăuga coloana."); console.error(res.error); render(); return;
       }
+      if (progresColoane.indexOf(col) === -1) {
+        // undone before the insert resolved — clean up the orphaned server row
+        sb.from("santier_progres_coloane").delete().eq("id", res.data.id).then(function (r2) { if (r2.error) console.error(r2.error); });
+        return;
+      }
       col.id = res.data.id;
       render();
     });
@@ -1179,6 +1268,7 @@
     if (!col) return;
     var label = col.label ? ('coloana "' + col.label + '"') : "această coloană";
     if (!confirmDelete("Ștergi " + label + "? Se pierd toate valorile completate pe această coloană.")) return;
+    pushProgresUndo(site);
     progresColoane = progresColoane.filter(function (c) { return c !== col; });
     render();
     if (String(col.id).indexOf("tmp-") === 0) return;
@@ -1194,6 +1284,8 @@
     var label = (edit.draft || "").trim();
     state.siteForm.gridColLabelEdit = { colId: null, draft: "" };
     if (!col || !label) { render(); return; } // never blank out a column name
+    var labelSite = findSite(state.selectedSiteId);
+    if (labelSite) pushProgresUndo(labelSite);
     col.label = label;
     render();
     sb.from("santier_progres_coloane").update({ label: label }).eq("id", col.id).then(function (res) {
@@ -1212,6 +1304,7 @@
     if (toIdx === -1) return;
     if (!before) toIdx += 1;
     current.splice(toIdx, 0, draggedId);
+    pushProgresUndo(site);
     site.progresColoaneOrder = current;
     render();
     sb.from("santiere").update({ progres_coloane_order: current }).eq("id", site.id).then(function (res) {
@@ -1221,6 +1314,7 @@
   function resizeColumn(site, colId, widthPx) {
     var col = progresColoane.filter(function (c) { return c.id === colId; })[0];
     if (!col) return;
+    pushProgresUndo(site);
     col.latime = Math.max(50, Math.round(widthPx));
     render();
     sb.from("santier_progres_coloane").update({ latime: col.latime }).eq("id", col.id).then(function (res) {
@@ -1234,6 +1328,7 @@
   // rândurile pe care utilizatorul le bifează explicit (row.surseRanduri),
   // ca să nu amestece unități incompatibile (ex. bucăți + metri liniari).
   function addRow(site, kind) {
+    pushProgresUndo(site);
     var tempId = "tmp-" + Date.now();
     var isGrup = kind === "grup";
     var isSubtotal = kind === "subtotal";
@@ -1252,8 +1347,13 @@
         flashSyncError("Nu am putut adăuga rândul."); console.error(res.error); render(); return;
       }
       var row = progresRanduri.filter(function (r) { return r.id === tempId; })[0];
-      if (row) row.id = res.data.id;
-      if (state.siteForm.rowSourcesOpen === tempId) state.siteForm.rowSourcesOpen = row ? row.id : null;
+      if (!row) {
+        // undone before the insert resolved — clean up the orphaned server row
+        sb.from("santier_progres_randuri").delete().eq("id", res.data.id).then(function (r2) { if (r2.error) console.error(r2.error); });
+        return;
+      }
+      row.id = res.data.id;
+      if (state.siteForm.rowSourcesOpen === tempId) state.siteForm.rowSourcesOpen = row.id;
       render();
     });
   }
@@ -1263,6 +1363,7 @@
     var text = rowDisplayLabel(site, row);
     var label = text ? ('rândul "' + text + '"') : (row.grup ? "acest grup" : "acest rând");
     if (!confirmDelete("Ștergi " + label + "? Această acțiune nu poate fi anulată.")) return;
+    pushProgresUndo(site);
     progresRanduri = progresRanduri.filter(function (r) { return r !== row; });
     if (state.siteForm.rowSourcesOpen === rowId) state.siteForm.rowSourcesOpen = null;
     render();
@@ -1274,6 +1375,7 @@
   function duplicateRow(site, rowId) {
     var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
     if (!row) return;
+    pushProgresUndo(site);
     var tempId = "tmp-" + Date.now();
     var copy = { id: tempId, santierId: site.id, grup: row.grup, subtotal: row.subtotal, valori: Object.assign({}, row.valori), culoare: row.culoare, surseRanduri: (row.surseRanduri || []).slice() };
     progresRanduri.push(copy);
@@ -1287,6 +1389,11 @@
         progresRanduri = progresRanduri.filter(function (r) { return r.id !== tempId; });
         flashSyncError("Nu am putut duplica rândul."); console.error(res.error); render(); return;
       }
+      if (progresRanduri.indexOf(copy) === -1) {
+        // undone before the insert resolved — clean up the orphaned server row
+        sb.from("santier_progres_randuri").delete().eq("id", res.data.id).then(function (r2) { if (r2.error) console.error(r2.error); });
+        return;
+      }
       copy.id = res.data.id;
       var order = orderedRandIds(site).map(function (id) { return id === tempId ? res.data.id : id; });
       site.progresRanduriOrder = order;
@@ -1299,6 +1406,7 @@
   function toggleRowSource(site, rowId, srcId) {
     var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
     if (!row) return;
+    pushProgresUndo(site);
     var current = row.surseRanduri || [];
     var idx = current.indexOf(srcId);
     var next = current.slice();
@@ -1312,6 +1420,7 @@
   function setAllRowSources(site, rowId, ids) {
     var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
     if (!row) return;
+    pushProgresUndo(site);
     row.surseRanduri = ids;
     render();
     sb.from("santier_progres_randuri").update({ surse_randuri: ids }).eq("id", row.id).then(function (res) {
@@ -1328,6 +1437,7 @@
     if (toIdx === -1) return;
     if (!before) toIdx += 1;
     current.splice(toIdx, 0, draggedId);
+    pushProgresUndo(site);
     site.progresRanduriOrder = current;
     render();
     sb.from("santiere").update({ progres_randuri_order: current }).eq("id", site.id).then(function (res) {
@@ -1339,6 +1449,7 @@
   function setColumnColor(site, colId, color) {
     var col = progresColoane.filter(function (c) { return c.id === colId; })[0];
     if (!col) return;
+    pushProgresUndo(site);
     col.culoare = color;
     state.siteForm.colorPickerOpen = { type: null, id: null };
     render();
@@ -1349,6 +1460,7 @@
   function setRowColor(site, rowId, color) {
     var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
     if (!row) return;
+    pushProgresUndo(site);
     row.culoare = color;
     state.siteForm.colorPickerOpen = { type: null, id: null };
     render();
@@ -1368,6 +1480,8 @@
     var col = progresColoane.filter(function (c) { return c.id === edit.colId; })[0];
     state.siteForm.gridCellEdit = { rowId: null, colId: null, draft: "" };
     if (!row || !col) { render(); return; }
+    var cellSite = findSite(state.selectedSiteId);
+    if (cellSite) pushProgresUndo(cellSite);
     var value;
     if (col.tip === "numar") {
       var n = parseFloat(edit.draft);
@@ -1394,6 +1508,7 @@
     var rowIdx = orderedRows.findIndex(function (r) { return r.id === anchorRowId; });
     var colIdx = orderedCols.findIndex(function (c) { return c.id === anchorColId; });
     if (rowIdx === -1 || colIdx === -1) return;
+    pushProgresUndo(site);
     var lines = text.replace(/\r/g, "").split("\n");
     if (lines.length > 1 && lines[lines.length - 1] === "") lines.pop();
     var rowsById = {};
@@ -1447,7 +1562,8 @@
       grip: '<circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/>',
       trash: '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/><path d="M10 11v6M14 11v6"/>',
       docLines: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
-      copy: '<rect x="9" y="9" width="11" height="11" rx="1.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>'
+      copy: '<rect x="9" y="9" width="11" height="11" rx="1.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
+      undo: '<path d="M7 6 3 10l4 4"/><path d="M3 10h10.5a5.5 5.5 0 0 1 0 11H11"/>'
     };
     return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' + icons[name] + '</svg>';
   }
@@ -2114,6 +2230,7 @@
       '<div class="progrid-wrap"><table class="progrid">' + colGroupHtml + '<thead><tr><th class="progrid-sticky-1"></th>' + headCells + '<th></th></tr></thead>' +
       '<tbody>' + bodyRows + emptyRow + totalRow + '</tbody></table></div>' +
       '<div class="progrid-toolbar">' +
+        '<button class="btn btn-ghost btn-sm" data-undo-progres="' + site.id + '"' + (canUndoProgres(site) ? "" : ' disabled') + ' title="Anulează ultima acțiune">' + icon("undo", 13) + 'Anulează</button>' +
         '<button class="btn btn-ghost btn-sm" data-add-row="' + site.id + '">' + icon("plus", 13) + 'Adaugă linie</button>' +
         '<button class="btn btn-ghost btn-sm" data-add-group-row="' + site.id + '">' + icon("plus", 13) + 'Adaugă grup</button>' +
         '<button class="btn btn-ghost btn-sm" data-add-subtotal-row="' + site.id + '">' + icon("plus", 13) + 'Total intermediar</button>' +
@@ -2121,7 +2238,7 @@
         '<button class="btn btn-ghost btn-sm" data-export-progres-csv="' + site.id + '">' + icon("doc", 13) + 'Exportă CSV</button>' +
         '<button class="btn btn-ghost btn-sm" data-print-progres="' + site.id + '">' + icon("printer", 13) + 'Printează</button>' +
       '</div>' +
-      '<div class="helper">Click pe o celulă o selectează (poți lipi din Excel cu Ctrl+V) · dublu-click o editează · trage mânerul ca să reordonezi.</div>' +
+      '<div class="helper">Click pe o celulă o selectează (poți lipi din Excel cu Ctrl+V) · dublu-click o editează · trage mânerul ca să reordonezi · Ctrl+Z anulează ultima acțiune.</div>' +
       addColFormHtml + colorPopHtml + rowSrcPopHtml;
   }
 
@@ -2324,7 +2441,8 @@
       "[data-add-row],[data-add-group-row],[data-add-subtotal-row],[data-remove-row],[data-remove-col],[data-toggle-addcol],[data-cancel-addcol],[data-submit-addcol]," +
       "[data-toggle-color],[data-pick-color],[data-toggle-sidebar]," +
       "[data-toggle-collapse-group],[data-duplicate-row],[data-export-progres-csv],[data-print-progres]," +
-      "[data-open-rowsrc],[data-toggle-rowsrc],[data-select-all-rowsrc],[data-select-none-rowsrc],[data-close-rowsrc]"
+      "[data-open-rowsrc],[data-toggle-rowsrc],[data-select-all-rowsrc],[data-select-none-rowsrc],[data-close-rowsrc]," +
+      "[data-undo-progres]"
     );
 
     // Only re-render when something actually changes. A blanket render() on every
@@ -2537,6 +2655,10 @@
         var ppSite = findSite(t.dataset.printProgres);
         if (ppSite) printProgres(ppSite);
         needsRender = false;
+      }
+      else if (t.dataset.undoProgres) {
+        var undoSite = findSite(t.dataset.undoProgres);
+        if (undoSite && canUndoProgres(undoSite)) undoProgres(undoSite);
       }
       else if (t.dataset.openRowsrc) {
         state.siteForm.rowSourcesOpen = state.siteForm.rowSourcesOpen === t.dataset.openRowsrc ? null : t.dataset.openRowsrc;
@@ -2859,6 +2981,18 @@
   // Never let a completed-but-unsynced day get lost by an accidental tab close.
   window.addEventListener("beforeunload", function (e) {
     if (Object.keys(failedCells).length > 0) { e.preventDefault(); e.returnValue = ""; }
+  });
+
+  // Ctrl/Cmd+Z undoes the last Progres Șantier grid action — but never while
+  // an input/textarea has focus, so the browser's own text-undo still works
+  // normally inside a cell/column-name edit in progress.
+  document.addEventListener("keydown", function (e) {
+    if (!(e.key === "z" || e.key === "Z") || !(e.ctrlKey || e.metaKey) || e.shiftKey) return;
+    var tag = document.activeElement && document.activeElement.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (state.view !== "detail" || state.activeTab !== "progres") return;
+    var site = findSite(state.selectedSiteId);
+    if (site && canUndoProgres(site)) { e.preventDefault(); undoProgres(site); }
   });
 
   render();
