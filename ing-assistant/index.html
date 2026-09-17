@@ -333,7 +333,10 @@
   .docrow.dragging { opacity: .4; }
   .docrow.drag-over-top { border-top: 2px solid var(--navy); }
   .docrow.drag-over-bottom { border-bottom: 2px solid var(--navy); }
-  .docrow-label { flex: 0 0 140px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+  .docrow-label { flex: 0 0 140px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); cursor: pointer;
+    border-radius: 3px; padding: 2px 4px; margin: -2px -4px; }
+  .docrow-label:hover { background: var(--surface-2); }
+  .docrow-label-empty { color: var(--ink-faint); font-style: italic; font-weight: 500; }
   .docrow-input { flex: 1 1 220px; min-width: 120px; border: 1px solid var(--border-strong); border-radius: 3px;
     padding: 8px 11px; font-size: 13px; font-family: var(--sans); }
   .doc-uploading { font-size: 12px; color: var(--ink-faint); flex-shrink: 0; }
@@ -344,7 +347,8 @@
   .doc-file-del { cursor: pointer; color: var(--ink-faint); display: flex; }
   .doc-file-del:hover { color: var(--red); }
   .doc-upload-label { display: inline-flex; align-items: center; gap: 6px; width: fit-content; flex-shrink: 0; }
-  .docrow-input-narrow { field-sizing: content; flex: 0 1 auto; min-width: 170px; max-width: 340px; }
+  .docrow-label-input { field-sizing: content; flex: 0 1 auto; min-width: 140px; max-width: 340px;
+    font-size: 12.5px; font-weight: 600; font-family: var(--sans); border: 1px solid var(--navy); border-radius: 3px; padding: 4px 6px; }
   .doclist-empty { font-size: 12.5px; color: var(--ink-faint); padding: 6px 0; }
 
   /* print sheet — hidden on screen, shown only via window.print() */
@@ -404,7 +408,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b26-2026-09-17";
+  var BUILD = "b27-2026-09-17";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -432,7 +436,7 @@
       subTab: "sintetice",
       docDrafts: {},
       docUploading: {},
-      docEtichetaDrafts: {}
+      labelEdit: { tip: null, siteId: null, draft: "" }
     },
     sidebarNameEdit: { siteId: null, draft: "" }
   };
@@ -461,34 +465,47 @@
   function docDraftKey(santierId, tip) { return santierId + "|" + tip; }
   function sanitizeFilename(name) { return String(name).replace(/[^a-zA-Z0-9.\-_]+/g, "_"); }
 
-  // Row order for the fixed document types is a shared preference (same for
-  // every site), stored on the singleton "companie" row — new types added
-  // later that aren't in the saved order just land at the end.
-  function orderedProjectDocs() {
-    var order = company.docTipOrder;
-    if (!order || !order.length) return PROJECT_DOCS.slice();
-    var byTip = {};
-    PROJECT_DOCS.forEach(function (d) { byTip[d[0]] = d; });
-    var ordered = order.map(function (tip) { return byTip[tip]; }).filter(Boolean);
+  // Row order is one shared list (company-wide) holding every tip ever seen —
+  // fixed types and per-site custom rows (doc-/aviz-) alike. Each panel only
+  // ever drags within its own tips, so reordering one scope can never disturb
+  // another's relative order, even though they all live in the same array.
+  function isFixedTip(tip) { return PROJECT_DOCS.some(function (d) { return d[0] === tip; }); }
+  function docTipLabel(tip, fallback) {
+    return (company.docTipLabels && company.docTipLabels[tip]) || fallback;
+  }
+  function mainListTips(site) {
+    var fixed = PROJECT_DOCS.map(function (d) { return d[0]; });
+    var custom = projectDocs.filter(function (d) { return d.santierId === site.id && d.tip.indexOf("doc-") === 0; }).map(function (d) { return d.tip; });
+    return fixed.concat(custom);
+  }
+  function avizeTips(site) {
+    return projectDocs.filter(function (d) { return d.santierId === site.id && d.tip.indexOf("aviz-") === 0; }).map(function (d) { return d.tip; });
+  }
+  function orderedTipsFor(candidateTips, orderArray) {
+    if (!orderArray || !orderArray.length) return candidateTips.slice();
+    var set = {};
+    candidateTips.forEach(function (t) { set[t] = true; });
+    var ordered = orderArray.filter(function (t) { return set[t]; });
     var seen = {};
-    ordered.forEach(function (d) { seen[d[0]] = true; });
-    PROJECT_DOCS.forEach(function (d) { if (!seen[d[0]]) ordered.push(d); });
+    ordered.forEach(function (t) { seen[t] = true; });
+    candidateTips.forEach(function (t) { if (!seen[t]) ordered.push(t); });
     return ordered;
   }
-
-  function reorderProjectDocs(draggedTip, targetTip, before) {
+  function reorderWithinScope(draggedTip, targetTip, before, scopeTips) {
     if (draggedTip === targetTip) return;
-    var current = orderedProjectDocs().map(function (d) { return d[0]; });
-    var fromIdx = current.indexOf(draggedTip);
+    if (scopeTips.indexOf(draggedTip) === -1 || scopeTips.indexOf(targetTip) === -1) return; // no cross-scope drops
+    var fullOrder = (company.docTipOrder || []).slice();
+    scopeTips.forEach(function (t) { if (fullOrder.indexOf(t) === -1) fullOrder.push(t); });
+    var fromIdx = fullOrder.indexOf(draggedTip);
     if (fromIdx === -1) return;
-    current.splice(fromIdx, 1);
-    var toIdx = current.indexOf(targetTip);
+    fullOrder.splice(fromIdx, 1);
+    var toIdx = fullOrder.indexOf(targetTip);
     if (toIdx === -1) return;
     if (!before) toIdx += 1;
-    current.splice(toIdx, 0, draggedTip);
-    company.docTipOrder = current;
+    fullOrder.splice(toIdx, 0, draggedTip);
+    company.docTipOrder = fullOrder;
     render();
-    sb.from("companie").update({ doc_tip_order: current }).eq("id", 1).then(function (res) {
+    sb.from("companie").update({ doc_tip_order: fullOrder }).eq("id", 1).then(function (res) {
       if (res.error) { flashSyncError("Nu am putut salva ordinea documentelor."); console.error(res.error); }
     });
   }
@@ -503,7 +520,7 @@
 
   var workers = [];
   var entries = {};
-  var company = { name: "", cif: "", docTipOrder: null };
+  var company = { name: "", cif: "", docTipOrder: null, docTipLabels: null };
   // Cells whose write to Supabase failed — kept until retried successfully, so a
   // network blip can never silently drop a completed day (per user requirement:
   // "nu vreau sa pierd ce completez").
@@ -539,7 +556,7 @@
       });
       entries = {};
       (eRes.data || []).forEach(function (e) { entries[e.muncitor_id + "|" + e.data] = e.status; });
-      if (cRes.data) company = { name: cRes.data.nume, cif: cRes.data.cod_fiscal, docTipOrder: cRes.data.doc_tip_order || null };
+      if (cRes.data) company = { name: cRes.data.nume, cif: cRes.data.cod_fiscal, docTipOrder: cRes.data.doc_tip_order || null, docTipLabels: cRes.data.doc_tip_labels || null };
       sites = (sRes.data || []).map(siteFromRow);
       projectDocs = (dRes.data || []).map(docFromRow);
     }).catch(function (err) {
@@ -566,7 +583,7 @@
   function doLogout() {
     sb.auth.signOut().then(function () {
       authState.session = null;
-      workers = []; entries = {}; company = { name: "", cif: "", docTipOrder: null }; sites = []; projectDocs = [];
+      workers = []; entries = {}; company = { name: "", cif: "", docTipOrder: null, docTipLabels: null }; sites = []; projectDocs = [];
       state.view = "dashboard"; state.selectedSiteId = null;
       render();
     });
@@ -833,23 +850,6 @@
     projectDocs.push({ id: "tmp-" + Date.now(), santierId: siteId, tip: tip, eticheta: "", valoare: "", fisierPath: "", fisierNume: "", fisierMarime: null });
   }
 
-  function saveRepeatableDoc(siteId, tip, nounErr) {
-    var key = docDraftKey(siteId, tip);
-    var eticheta = (state.siteForm.docEtichetaDrafts[key] || "").trim();
-    var valoare = (state.siteForm.docDrafts[key] || "").trim();
-    var existing = findProjectDoc(siteId, tip);
-    if (existing) { existing.eticheta = eticheta; existing.valoare = valoare; }
-    else { existing = { id: "tmp-" + Date.now(), santierId: siteId, tip: tip, eticheta: eticheta, valoare: valoare, fisierPath: "", fisierNume: "", fisierMarime: null }; projectDocs.push(existing); }
-    delete state.siteForm.docEtichetaDrafts[key];
-    delete state.siteForm.docDrafts[key];
-    sb.from("santier_documente").upsert({ santier_id: siteId, tip: tip, eticheta: eticheta, valoare: valoare }, { onConflict: "santier_id,tip" })
-      .select().single().then(function (res) {
-        if (res.error) { flashSyncError("Nu am putut salva " + nounErr + "."); console.error(res.error); render(); return; }
-        if (String(existing.id).indexOf("tmp-") === 0) existing.id = res.data.id;
-        render();
-      });
-  }
-
   function removeRepeatableDoc(site, tip, nounThe, nounGeneric, nounErr) {
     var existing = findProjectDoc(site.id, tip);
     if (!existing) return;
@@ -858,7 +858,6 @@
     var oldPath = existing.fisierPath;
     var key = docDraftKey(site.id, tip);
     projectDocs = projectDocs.filter(function (d) { return d !== existing; });
-    delete state.siteForm.docEtichetaDrafts[key];
     delete state.siteForm.docDrafts[key];
     render();
     if (oldPath) sb.storage.from(DOC_BUCKET).remove([oldPath]);
@@ -866,6 +865,42 @@
     sb.from("santier_documente").delete().eq("id", existing.id).then(function (res) {
       if (res.error) { flashSyncError("Nu am putut șterge " + nounErr + "."); console.error(res.error); }
     });
+  }
+
+  // Every row's label (fixed or custom) is editable via double-click. Fixed
+  // types store their override company-wide (there's one "Autorizație" per
+  // firm, not per site); custom rows store it on their own record, same
+  // table as their nr/dată.
+  function startLabelEdit(tip, siteId, currentLabel) {
+    state.siteForm.labelEdit = { tip: tip, siteId: siteId, draft: currentLabel };
+  }
+  function commitLabelEdit() {
+    var edit = state.siteForm.labelEdit;
+    if (!edit.tip) return;
+    var tip = edit.tip, siteId = edit.siteId, label = (edit.draft || "").trim();
+    if (isFixedTip(tip)) {
+      company.docTipLabels = company.docTipLabels || {};
+      if (label) company.docTipLabels[tip] = label; else delete company.docTipLabels[tip];
+      sb.from("companie").update({ doc_tip_labels: company.docTipLabels }).eq("id", 1).then(function (res) {
+        if (res.error) { flashSyncError("Nu am putut salva denumirea."); console.error(res.error); render(); }
+      });
+    } else if (label) {
+      var existing = findProjectDoc(siteId, tip);
+      if (existing) existing.eticheta = label;
+      else { existing = { id: "tmp-" + Date.now(), santierId: siteId, tip: tip, eticheta: label, valoare: "", fisierPath: "", fisierNume: "", fisierMarime: null }; projectDocs.push(existing); }
+      sb.from("santier_documente").upsert({ santier_id: siteId, tip: tip, eticheta: label }, { onConflict: "santier_id,tip" })
+        .select().single().then(function (res) {
+          if (res.error) { flashSyncError("Nu am putut salva denumirea."); console.error(res.error); render(); return; }
+          if (String(existing.id).indexOf("tmp-") === 0) existing.id = res.data.id;
+          render();
+        });
+    }
+    state.siteForm.labelEdit = { tip: null, siteId: null, draft: "" };
+    render();
+  }
+  function cancelLabelEdit() {
+    state.siteForm.labelEdit = { tip: null, siteId: null, draft: "" };
+    render();
   }
 
   function shiftMonth(delta) {
@@ -1019,57 +1054,58 @@
       '<input type="file" id="' + inputId + '" data-doc-file-input="' + site.id + '|' + tip + '" accept=".pdf,image/*" style="display:none"></label>';
   }
 
-  // Shared row markup for repeatable document lists (Avize, Documente generale).
-  function repeatableDocRowHTML(site, doc, etichetaPlaceholder, saveAttr, removeAttr, removeTitle) {
-    var tip = doc.tip;
+  // Unified row markup — used identically by fixed types (Autorizație, ...)
+  // and by custom rows (Documente generale, Avize). Every row's label is
+  // plain text, editable in place via double-click (data-edit-label-tip),
+  // never a permanently-open input box.
+  function docRowHTML(site, tip, label, scope, opts) {
+    opts = opts || {};
     var key = docDraftKey(site.id, tip);
-    var etichetaDraft = state.siteForm.docEtichetaDrafts[key];
-    var etichetaVal = (etichetaDraft !== undefined) ? etichetaDraft : doc.eticheta;
-    var valoareDraft = state.siteForm.docDrafts[key];
-    var valoareVal = (valoareDraft !== undefined) ? valoareDraft : doc.valoare;
+    var doc = findProjectDoc(site.id, tip);
+    var draftVal = state.siteForm.docDrafts[key];
+    var inputVal = (draftVal !== undefined) ? draftVal : (doc ? doc.valoare : "");
     var uploading = !!state.siteForm.docUploading[key];
+    var isEditingLabel = state.siteForm.labelEdit.tip === tip;
+    var placeholderLabel = scope === "avize" ? "Tip aviz (dublu-click)" : "Denumire document (dublu-click)";
+    var displayLabel = label || placeholderLabel;
+    var labelEmptyCls = label ? "" : " docrow-label-empty";
 
-    return '<div class="docrow">' +
-      '<input class="docrow-input docrow-input-narrow" data-doc-eticheta-key="' + key + '" placeholder="' + esc(etichetaPlaceholder) + '" value="' + esc(etichetaVal) + '">' +
-      '<input class="docrow-input" data-doc-valoare-key="' + key + '" placeholder="nr. / data" value="' + esc(valoareVal) + '">' +
-      '<button class="btn btn-ghost btn-sm" ' + saveAttr + '="' + site.id + '|' + tip + '">Salvează</button>' +
+    var labelHtml = isEditingLabel
+      ? '<input class="docrow-label-input" id="label-edit-' + tip + '" draggable="false" data-label-edit-input="1" value="' + esc(label || "") + '">'
+      : '<div class="docrow-label' + labelEmptyCls + '" draggable="false" data-edit-label-tip="' + tip + '" data-edit-label-site="' + site.id + '" data-current-label="' + esc(label || "") + '" title="Dublu-click pentru a redenumi">' + esc(displayLabel) + '</div>';
+
+    var delBtn = opts.deletable
+      ? '<span class="doc-file-del" ' + opts.removeAttr + '="' + site.id + '|' + tip + '" title="' + esc(opts.removeTitle) + '">' + icon("trash", 14) + '</span>'
+      : "";
+
+    return '<div class="docrow" draggable="true" data-doc-drag-tip="' + tip + '" data-drag-scope="' + scope + '">' +
+      '<span class="docrow-grip" title="Trage pentru a reordona">' + icon("grip", 15) + '</span>' +
+      labelHtml +
+      '<input class="docrow-input" draggable="false" data-doc-valoare-key="' + key + '" placeholder="nr. / data" value="' + esc(inputVal) + '">' +
+      '<button class="btn btn-ghost btn-sm" data-save-doc-valoare="' + site.id + '|' + tip + '">Salvează</button>' +
       docFileSectionHTML(site, tip, doc, uploading) +
-      '<span class="doc-file-del" ' + removeAttr + '="' + site.id + '|' + tip + '" title="' + esc(removeTitle) + '">' + icon("trash", 14) + '</span>' +
+      delBtn +
     '</div>';
   }
 
   function proiectGeneralPanelHTML(site) {
-    var rows = orderedProjectDocs().map(function (d) {
-      var tip = d[0], label = d[1];
-      var doc = findProjectDoc(site.id, tip);
-      var key = docDraftKey(site.id, tip);
-      var draftVal = state.siteForm.docDrafts[key];
-      var inputVal = (draftVal !== undefined) ? draftVal : (doc ? doc.valoare : "");
-      var uploading = !!state.siteForm.docUploading[key];
-
-      return '<div class="docrow" draggable="true" data-doc-drag-tip="' + tip + '">' +
-        '<span class="docrow-grip" title="Trage pentru a reordona">' + icon("grip", 15) + '</span>' +
-        '<div class="docrow-label">' + esc(label) + '</div>' +
-        '<input class="docrow-input" draggable="false" data-doc-valoare-key="' + key + '" placeholder="nr. / data" value="' + esc(inputVal) + '">' +
-        '<button class="btn btn-ghost btn-sm" data-save-doc-valoare="' + site.id + '|' + tip + '">Salvează</button>' +
-        docFileSectionHTML(site, tip, doc, uploading) +
-      '</div>';
+    var mainTips = orderedTipsFor(mainListTips(site), company.docTipOrder);
+    var rows = mainTips.map(function (tip) {
+      var fixedDef = PROJECT_DOCS.filter(function (d) { return d[0] === tip; })[0];
+      var label = fixedDef ? docTipLabel(tip, fixedDef[1]) : (findProjectDoc(site.id, tip) || {}).eticheta;
+      return docRowHTML(site, tip, label, "main", { deletable: !fixedDef, removeAttr: "data-remove-gendoc", removeTitle: "Șterge document" });
     }).join("");
 
-    var genDocs = projectDocs.filter(function (d) { return d.santierId === site.id && d.tip.indexOf("doc-") === 0; });
-    var genDocRows = genDocs.map(function (doc) {
-      return repeatableDocRowHTML(site, doc, "Denumire document", "data-save-gendoc", "data-remove-gendoc", "Șterge document");
+    var avizeTipsOrdered = orderedTipsFor(avizeTips(site), company.docTipOrder);
+    var avizeRows = avizeTipsOrdered.map(function (tip) {
+      var label = (findProjectDoc(site.id, tip) || {}).eticheta;
+      return docRowHTML(site, tip, label, "avize", { deletable: true, removeAttr: "data-remove-aviz", removeTitle: "Șterge aviz" });
     }).join("");
-
-    var avize = projectDocs.filter(function (d) { return d.santierId === site.id && d.tip.indexOf("aviz-") === 0; });
-    var avizeRows = avize.map(function (doc) {
-      return repeatableDocRowHTML(site, doc, "Tip aviz (ex: Mediu)", "data-save-aviz", "data-remove-aviz", "Șterge aviz");
-    }).join("");
-    var avizeEmpty = avize.length === 0 ? '<div class="doclist-empty">Niciun aviz adăugat încă.</div>' : "";
+    var avizeEmpty = avizeTipsOrdered.length === 0 ? '<div class="doclist-empty">Niciun aviz adăugat încă.</div>' : "";
 
     return '<div class="panel"><div class="panel-title">Date generale ale proiectului</div>' +
       '<div class="panel-sub">Documentele oficiale ale proiectului — număr/dată și, opțional, fișierul scanat.</div>' +
-      '<div class="doclist-docs">' + rows + genDocRows + '</div>' +
+      '<div class="doclist-docs">' + rows + '</div>' +
       '<button class="btn btn-ghost btn-sm" style="margin-top:10px" data-add-gendoc="' + site.id + '">' + icon("plus", 13) + 'Adaugă date generale</button>' +
     '</div>' +
     '<div class="panel" style="margin-top:16px"><div class="panel-title">Avize</div>' +
@@ -1460,8 +1496,8 @@
       "[data-add-worker],[data-remove-worker],[data-print-pontaj],[data-toggle-company],[data-save-company],[data-logout]," +
       "[data-toggle-select-mode],[data-bulk-status],[data-clear-selection],[data-retry-failed]," +
       "[data-open-add-site],[data-close-add-site],[data-save-new-site],[data-edit-site],[data-save-site-edit],[data-cancel-site-edit],[data-delete-site]," +
-      "[data-site-subtab],[data-save-doc-valoare],[data-remove-doc-file],[data-add-aviz],[data-save-aviz],[data-remove-aviz]," +
-      "[data-add-gendoc],[data-save-gendoc],[data-remove-gendoc]"
+      "[data-site-subtab],[data-save-doc-valoare],[data-remove-doc-file],[data-add-aviz],[data-remove-aviz]," +
+      "[data-add-gendoc],[data-remove-gendoc]"
     );
 
     // Only re-render when something actually changes. A blanket render() on every
@@ -1576,20 +1612,12 @@
         if (rdSite) removeDocFile(rdSite, rdParts[1]);
       }
       else if (t.dataset.addAviz) { addRepeatableDoc(t.dataset.addAviz, "aviz"); }
-      else if (t.dataset.saveAviz) {
-        var saParts = t.dataset.saveAviz.split("|");
-        saveRepeatableDoc(saParts[0], saParts[1], "avizul");
-      }
       else if (t.dataset.removeAviz) {
         var raParts = t.dataset.removeAviz.split("|");
         var raSite = findSite(raParts[0]);
         if (raSite) removeRepeatableDoc(raSite, raParts[1], "avizul", "acest aviz", "avizul");
       }
       else if (t.dataset.addGendoc) { addRepeatableDoc(t.dataset.addGendoc, "doc"); }
-      else if (t.dataset.saveGendoc) {
-        var sgParts = t.dataset.saveGendoc.split("|");
-        saveRepeatableDoc(sgParts[0], sgParts[1], "documentul");
-      }
       else if (t.dataset.removeGendoc) {
         var rgParts = t.dataset.removeGendoc.split("|");
         var rgSite = findSite(rgParts[0]);
@@ -1617,7 +1645,7 @@
     else if (id.indexOf("new-site-") === 0) state.siteForm.addDraft[id.slice(9)] = e.target.value;
     else if (id.indexOf("site-edit-") === 0) state.siteForm.editDraft[id.slice(10)] = e.target.value;
     else if (e.target.dataset.docValoareKey) state.siteForm.docDrafts[e.target.dataset.docValoareKey] = e.target.value;
-    else if (e.target.dataset.docEtichetaKey) state.siteForm.docEtichetaDrafts[e.target.dataset.docEtichetaKey] = e.target.value;
+    else if (e.target.dataset.labelEditInput) state.siteForm.labelEdit.draft = e.target.value;
     else if (e.target.dataset.sidebarNameInput) state.sidebarNameEdit.draft = e.target.value;
   });
   document.getElementById("app").addEventListener("change", function (e) {
@@ -1635,22 +1663,41 @@
   });
 
   document.getElementById("app").addEventListener("dblclick", function (e) {
-    var t = e.target.closest("[data-sidebar-name-label]");
-    if (!t) return;
-    clearTimeout(sidebarClickTimer); // cancel the pending single-click navigation
-    var site = findSite(t.dataset.sidebarNameLabel);
-    if (!site) return;
-    state.sidebarNameEdit = { siteId: site.id, draft: site.numeScurt || site.nume };
-    render();
-    var input = document.getElementById("sidebar-name-input-" + site.id);
-    if (input) {
-      input.focus();
-      input.select();
-      input.addEventListener("blur", commitSidebarNameEdit);
-      input.addEventListener("keydown", function (ke) {
-        if (ke.key === "Enter") { ke.preventDefault(); input.blur(); }
-        else if (ke.key === "Escape") { ke.preventDefault(); input.removeEventListener("blur", commitSidebarNameEdit); cancelSidebarNameEdit(); }
-      });
+    var sidebarT = e.target.closest("[data-sidebar-name-label]");
+    if (sidebarT) {
+      clearTimeout(sidebarClickTimer); // cancel the pending single-click navigation
+      var site = findSite(sidebarT.dataset.sidebarNameLabel);
+      if (!site) return;
+      state.sidebarNameEdit = { siteId: site.id, draft: site.numeScurt || site.nume };
+      render();
+      var sidebarInput = document.getElementById("sidebar-name-input-" + site.id);
+      if (sidebarInput) {
+        sidebarInput.focus();
+        sidebarInput.select();
+        sidebarInput.addEventListener("blur", commitSidebarNameEdit);
+        sidebarInput.addEventListener("keydown", function (ke) {
+          if (ke.key === "Enter") { ke.preventDefault(); sidebarInput.blur(); }
+          else if (ke.key === "Escape") { ke.preventDefault(); sidebarInput.removeEventListener("blur", commitSidebarNameEdit); cancelSidebarNameEdit(); }
+        });
+      }
+      return;
+    }
+
+    var labelT = e.target.closest("[data-edit-label-tip]");
+    if (labelT) {
+      var currentLabel = labelT.dataset.currentLabel || "";
+      startLabelEdit(labelT.dataset.editLabelTip, labelT.dataset.editLabelSite, currentLabel);
+      render();
+      var labelInput = document.getElementById("label-edit-" + labelT.dataset.editLabelTip);
+      if (labelInput) {
+        labelInput.focus();
+        labelInput.select();
+        labelInput.addEventListener("blur", commitLabelEdit);
+        labelInput.addEventListener("keydown", function (ke) {
+          if (ke.key === "Enter") { ke.preventDefault(); labelInput.blur(); }
+          else if (ke.key === "Escape") { ke.preventDefault(); labelInput.removeEventListener("blur", commitLabelEdit); cancelLabelEdit(); }
+        });
+      }
     }
   });
 
@@ -1658,7 +1705,7 @@
   // Visual feedback (dragging/insertion classes) is applied directly to the
   // DOM instead of through render(), so the drag gesture isn't interrupted
   // by a full rebuild on every dragover.
-  var dragState = { tip: null };
+  var dragState = { tip: null, scope: null };
   function clearDocDragClasses() {
     document.querySelectorAll(".docrow.dragging, .docrow.drag-over-top, .docrow.drag-over-bottom").forEach(function (el) {
       el.classList.remove("dragging", "drag-over-top", "drag-over-bottom");
@@ -1668,12 +1715,13 @@
     var row = e.target.closest("[data-doc-drag-tip]");
     if (!row) return;
     dragState.tip = row.dataset.docDragTip;
+    dragState.scope = row.dataset.dragScope;
     row.classList.add("dragging");
     if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
   });
   document.getElementById("app").addEventListener("dragover", function (e) {
     var row = e.target.closest("[data-doc-drag-tip]");
-    if (!row || !dragState.tip) return;
+    if (!row || !dragState.tip || row.dataset.dragScope !== dragState.scope) return;
     e.preventDefault();
     var rect = row.getBoundingClientRect();
     var before = (e.clientY - rect.top) < rect.height / 2;
@@ -1686,17 +1734,21 @@
   });
   document.getElementById("app").addEventListener("drop", function (e) {
     var row = e.target.closest("[data-doc-drag-tip]");
-    if (!row || !dragState.tip) return;
+    if (!row || !dragState.tip || row.dataset.dragScope !== dragState.scope) return;
     e.preventDefault();
     var before = row.classList.contains("drag-over-top");
     var targetTip = row.dataset.docDragTip;
     var draggedTip = dragState.tip;
-    dragState.tip = null;
+    var scope = dragState.scope;
+    dragState.tip = null; dragState.scope = null;
     clearDocDragClasses();
-    reorderProjectDocs(draggedTip, targetTip, before);
+    var site = findSite(state.selectedSiteId);
+    if (!site) return;
+    var scopeTips = scope === "avize" ? avizeTips(site) : mainListTips(site);
+    reorderWithinScope(draggedTip, targetTip, before, scopeTips);
   });
   document.getElementById("app").addEventListener("dragend", function () {
-    dragState.tip = null;
+    dragState.tip = null; dragState.scope = null;
     clearDocDragClasses();
   });
 
