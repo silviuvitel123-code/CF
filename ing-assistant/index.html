@@ -344,7 +344,7 @@
   .doc-file-del { cursor: pointer; color: var(--ink-faint); display: flex; }
   .doc-file-del:hover { color: var(--red); }
   .doc-upload-label { display: inline-flex; align-items: center; gap: 6px; width: fit-content; flex-shrink: 0; }
-  .docrow-input-narrow { flex: 0 0 170px; }
+  .docrow-input-narrow { field-sizing: content; flex: 0 1 auto; min-width: 170px; max-width: 340px; }
   .doclist-empty { font-size: 12.5px; color: var(--ink-faint); padding: 6px 0; }
 
   /* print sheet — hidden on screen, shown only via window.print() */
@@ -404,7 +404,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b25-2026-09-17";
+  var BUILD = "b26-2026-09-17";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -1060,7 +1060,6 @@
     var genDocRows = genDocs.map(function (doc) {
       return repeatableDocRowHTML(site, doc, "Denumire document", "data-save-gendoc", "data-remove-gendoc", "Șterge document");
     }).join("");
-    var genDocEmpty = genDocs.length === 0 ? '<div class="doclist-empty">Niciun document adăugat încă.</div>' : "";
 
     var avize = projectDocs.filter(function (d) { return d.santierId === site.id && d.tip.indexOf("aviz-") === 0; });
     var avizeRows = avize.map(function (doc) {
@@ -1070,11 +1069,7 @@
 
     return '<div class="panel"><div class="panel-title">Date generale ale proiectului</div>' +
       '<div class="panel-sub">Documentele oficiale ale proiectului — număr/dată și, opțional, fișierul scanat.</div>' +
-      '<div class="doclist-docs">' + rows + '</div>' +
-    '</div>' +
-    '<div class="panel" style="margin-top:16px"><div class="panel-title">Documente generale</div>' +
-      '<div class="panel-sub">Orice alt document oficial — denumire, număr/dată și, opțional, fișierul scanat.</div>' +
-      '<div class="doclist-docs">' + genDocRows + genDocEmpty + '</div>' +
+      '<div class="doclist-docs">' + rows + genDocRows + '</div>' +
       '<button class="btn btn-ghost btn-sm" style="margin-top:10px" data-add-gendoc="' + site.id + '">' + icon("plus", 13) + 'Adaugă date generale</button>' +
     '</div>' +
     '<div class="panel" style="margin-top:16px"><div class="panel-title">Avize</div>' +
