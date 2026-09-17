@@ -223,21 +223,33 @@
   .meta-item .mv { font-family: var(--mono); font-size: 19px; font-weight: 700; }
   .meta-item .ml { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
   .stages { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
-  .stage-row { display: grid; grid-template-columns: 190px 1fr 90px 110px 130px 90px; align-items: center; gap: 14px;
-    padding: 15px 22px; border-bottom: 1px solid var(--border); }
+  .stage-row { display: grid; grid-template-columns: 26px 200px 1fr 60px 100px 90px 24px; align-items: center; gap: 14px;
+    padding: 15px 22px; border-bottom: 1px solid var(--border); position: relative; }
   .stage-row:last-child { border-bottom: none; }
+  .stage-row[draggable="true"] { cursor: default; }
+  .stage-row.dragging { opacity: .4; }
+  .stage-row.drag-over-top { border-top: 2px solid var(--navy); }
+  .stage-row.drag-over-bottom { border-bottom: 2px solid var(--navy); }
+  .stage-grip { justify-self: start; }
   .stage-head { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-faint);
     background: var(--surface-2); }
-  .stage-name { font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 9px; }
+  .stage-name { font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 9px; cursor: pointer;
+    border-radius: 3px; padding: 2px 4px; margin: -2px -4px; }
+  .stage-name:hover { background: var(--surface-2); }
+  .stage-name-input { field-sizing: content; min-width: 160px; max-width: 280px; font-size: 13.5px; font-weight: 700;
+    font-family: var(--sans); border: 1px solid var(--navy); border-radius: 3px; padding: 4px 6px; }
   .stage-num { width: 22px; height: 22px; border-radius: 50%; background: var(--surface-2); color: var(--ink-soft);
     font-family: var(--mono); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .stages .prog-track { height: 7px; }
-  .stage-pct { font-family: var(--mono); font-size: 12.5px; font-weight: 600; text-align: right; }
+  .stage-pct { font-family: var(--mono); font-size: 12.5px; font-weight: 600; text-align: right; cursor: pointer;
+    border-radius: 3px; padding: 3px 4px; }
+  .stage-pct:hover { background: var(--surface-2); }
+  .stage-pct-input { width: 54px; font-family: var(--mono); font-size: 12.5px; font-weight: 600; text-align: right;
+    border: 1px solid var(--navy); border-radius: 3px; padding: 3px 4px; }
   .badge-done { background: var(--green-soft); color: oklch(38% 0.1 150); }
   .badge-progress { background: var(--amber-soft); color: oklch(45% 0.14 50); }
   .badge-notstarted { background: var(--surface-2); color: var(--ink-faint); }
   .stage-date { font-size: 12px; color: var(--ink-soft); }
-  .stage-link { font-size: 12px; font-weight: 600; color: var(--navy); text-align: right; cursor: pointer; }
 
   /* documente */
   .doclist { display: flex; flex-direction: column; }
@@ -408,7 +420,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b27-2026-09-17";
+  var BUILD = "b28-2026-09-17";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -436,7 +448,9 @@
       subTab: "sintetice",
       docDrafts: {},
       docUploading: {},
-      labelEdit: { tip: null, siteId: null, draft: "" }
+      labelEdit: { tip: null, siteId: null, draft: "" },
+      stageLabelEdit: { id: null, draft: "" },
+      stagePercentEdit: { id: null, draft: "" }
     },
     sidebarNameEdit: { siteId: null, draft: "" }
   };
@@ -538,7 +552,7 @@
       proiectant: s.proiectant || "", constructor: s.constructor || "", contract: s.contract || "",
       perioadaExecutie: s.perioada_executie || "", dataExpirareContract: s.data_expirare_contract || "",
       garantie: s.garantie || "", ordinIncepere: s.ordin_incepere || "", status: s.status || "Activ",
-      numeScurt: s.nume_scurt || ""
+      numeScurt: s.nume_scurt || "", etapeOrder: s.etape_order || null
     };
   }
 
@@ -548,9 +562,10 @@
       sb.from("pontaj_intrari").select("*"),
       sb.from("companie").select("*").eq("id", 1).single(),
       sb.from("santiere").select("*").order("created_at"),
-      sb.from("santier_documente").select("*")
+      sb.from("santier_documente").select("*"),
+      sb.from("santier_etape").select("*")
     ]).then(function (results) {
-      var mRes = results[0], eRes = results[1], cRes = results[2], sRes = results[3], dRes = results[4];
+      var mRes = results[0], eRes = results[1], cRes = results[2], sRes = results[3], dRes = results[4], stRes = results[5];
       workers = (mRes.data || []).map(function (w) {
         return { id: w.id, name: w.nume, functie: w.functie || "", salariu: w.salariu, metodaPlata: w.metoda_plata || "CARD", telefon: w.telefon || "" };
       });
@@ -559,6 +574,7 @@
       if (cRes.data) company = { name: cRes.data.nume, cif: cRes.data.cod_fiscal, docTipOrder: cRes.data.doc_tip_order || null, docTipLabels: cRes.data.doc_tip_labels || null };
       sites = (sRes.data || []).map(siteFromRow);
       projectDocs = (dRes.data || []).map(docFromRow);
+      siteStages = (stRes.data || []).map(stageFromRow);
     }).catch(function (err) {
       flashSyncError("Nu am putut încărca datele din Supabase.");
       console.error(err);
@@ -583,7 +599,7 @@
   function doLogout() {
     sb.auth.signOut().then(function () {
       authState.session = null;
-      workers = []; entries = {}; company = { name: "", cif: "", docTipOrder: null, docTipLabels: null }; sites = []; projectDocs = [];
+      workers = []; entries = {}; company = { name: "", cif: "", docTipOrder: null, docTipLabels: null }; sites = []; projectDocs = []; siteStages = [];
       state.view = "dashboard"; state.selectedSiteId = null;
       render();
     });
@@ -909,14 +925,104 @@
     state.pontaj.month = m; state.pontaj.year = y;
   }
 
-  var stages = [
-    { idx: 1, name: "Fundație", pct: 100, badgeCls: "badge-done", badgeLabel: "Finalizat", date: "2 aug." },
-    { idx: 2, name: "Structură", pct: 100, badgeCls: "badge-done", badgeLabel: "Finalizat", date: "28 aug." },
-    { idx: 3, name: "Zidărie", pct: 70, badgeCls: "badge-progress", badgeLabel: "În lucru", date: "azi" },
-    { idx: 4, name: "Instalații electrice și sanitare", pct: 25, badgeCls: "badge-progress", badgeLabel: "În lucru", date: "azi" },
-    { idx: 5, name: "Finisaje", pct: 0, badgeCls: "badge-notstarted", badgeLabel: "Neînceput", date: "—" },
-    { idx: 6, name: "Recepție lucrări", pct: 0, badgeCls: "badge-notstarted", badgeLabel: "Neînceput", date: "—" }
-  ];
+  // --- Progres șantier: etape, persistate per șantier ---
+  var siteStages = [];
+  function stageFromRow(r) {
+    return { id: r.id, santierId: r.santier_id, nume: r.nume || "", procent: r.procent || 0, updatedAt: r.updated_at || null };
+  }
+  function stagesForSite(site) { return siteStages.filter(function (s) { return s.santierId === site.id; }); }
+  function orderedStageIds(site) { return orderedTipsFor(stagesForSite(site).map(function (s) { return s.id; }), site.etapeOrder); }
+  function stageStatusInfo(procent) {
+    if (procent >= 100) return { cls: "badge-done", label: "Finalizat" };
+    if (procent <= 0) return { cls: "badge-notstarted", label: "Neînceput" };
+    return { cls: "badge-progress", label: "În lucru" };
+  }
+  var STAGE_MONTHS_SHORT = ["ian.", "feb.", "mar.", "apr.", "mai", "iun.", "iul.", "aug.", "sep.", "oct.", "nov.", "dec."];
+  function formatStageDate(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso);
+    var now = new Date();
+    if (d.toDateString() === now.toDateString()) return "azi";
+    return d.getDate() + " " + STAGE_MONTHS_SHORT[d.getMonth()];
+  }
+
+  function addStage(siteId) {
+    var tempId = "tmp-" + Date.now();
+    siteStages.push({ id: tempId, santierId: siteId, nume: "", procent: 0, updatedAt: null });
+    render();
+    sb.from("santier_etape").insert({ santier_id: siteId, nume: "", procent: 0 }).select().single().then(function (res) {
+      if (res.error) {
+        siteStages = siteStages.filter(function (s) { return s.id !== tempId; });
+        flashSyncError("Nu am putut adăuga etapa."); console.error(res.error); render(); return;
+      }
+      var s = siteStages.filter(function (x) { return x.id === tempId; })[0];
+      if (s) s.id = res.data.id;
+      render();
+    });
+  }
+  function removeStage(site, stageId) {
+    var stage = siteStages.filter(function (s) { return s.id === stageId; })[0];
+    if (!stage) return;
+    var label = stage.nume ? ('etapa "' + stage.nume + '"') : "această etapă";
+    if (!confirmDelete("Ștergi " + label + "? Această acțiune nu poate fi anulată.")) return;
+    siteStages = siteStages.filter(function (s) { return s !== stage; });
+    render();
+    if (String(stage.id).indexOf("tmp-") === 0) return;
+    sb.from("santier_etape").delete().eq("id", stage.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut șterge etapa."); console.error(res.error); }
+    });
+  }
+  function startStageNameEdit(stageId, currentName) { state.siteForm.stageLabelEdit = { id: stageId, draft: currentName }; }
+  function commitStageNameEdit() {
+    var edit = state.siteForm.stageLabelEdit;
+    if (!edit.id) return;
+    var stage = siteStages.filter(function (s) { return s.id === edit.id; })[0];
+    var name = (edit.draft || "").trim();
+    state.siteForm.stageLabelEdit = { id: null, draft: "" };
+    if (!stage || !name) { render(); return; } // never blank out a stage name
+    stage.nume = name;
+    render();
+    sb.from("santier_etape").update({ nume: name }).eq("id", stage.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva denumirea etapei."); console.error(res.error); render(); }
+    });
+  }
+  function cancelStageNameEdit() { state.siteForm.stageLabelEdit = { id: null, draft: "" }; render(); }
+
+  function startStagePercentEdit(stageId, currentPercent) { state.siteForm.stagePercentEdit = { id: stageId, draft: String(currentPercent) }; }
+  function commitStagePercentEdit() {
+    var edit = state.siteForm.stagePercentEdit;
+    if (!edit.id) return;
+    var stage = siteStages.filter(function (s) { return s.id === edit.id; })[0];
+    state.siteForm.stagePercentEdit = { id: null, draft: "" };
+    if (!stage) { render(); return; }
+    var n = parseInt(edit.draft, 10);
+    if (isNaN(n)) n = stage.procent;
+    n = Math.max(0, Math.min(100, n));
+    stage.procent = n;
+    stage.updatedAt = new Date().toISOString();
+    render();
+    sb.from("santier_etape").update({ procent: n, updated_at: stage.updatedAt }).eq("id", stage.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva progresul."); console.error(res.error); render(); }
+    });
+  }
+  function cancelStagePercentEdit() { state.siteForm.stagePercentEdit = { id: null, draft: "" }; render(); }
+
+  function reorderStages(site, draggedId, targetId, before) {
+    if (draggedId === targetId) return;
+    var current = orderedStageIds(site);
+    var fromIdx = current.indexOf(draggedId);
+    if (fromIdx === -1) return;
+    current.splice(fromIdx, 1);
+    var toIdx = current.indexOf(targetId);
+    if (toIdx === -1) return;
+    if (!before) toIdx += 1;
+    current.splice(toIdx, 0, draggedId);
+    site.etapeOrder = current;
+    render();
+    sb.from("santiere").update({ etape_order: current }).eq("id", site.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva ordinea etapelor."); console.error(res.error); }
+    });
+  }
 
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function findSite(id) { for (var i = 0; i < sites.length; i++) if (sites[i].id === id) return sites[i]; return null; }
@@ -1339,23 +1445,55 @@
   }
 
   function progresPanelHTML(site) {
-    var avgPct = Math.round(stages.reduce(function (a, s) { return a + s.pct; }, 0) / stages.length);
-    var rows = stages.map(function (s) {
-      return '<div class="stage-row"><div class="stage-name"><span class="stage-num">' + s.idx + '</span>' + esc(s.name) + '</div>' +
-        '<div class="prog-track"><div class="prog-fill" style="width:' + s.pct + '%"></div></div>' +
-        '<div class="stage-pct">' + s.pct + '%</div><span class="badge ' + s.badgeCls + '">' + s.badgeLabel + '</span>' +
-        '<div class="stage-date">' + s.date + '</div><div class="stage-link">Actualizează</div></div>';
+    var byId = {};
+    stagesForSite(site).forEach(function (s) { byId[s.id] = s; });
+    var orderedStages = orderedStageIds(site).map(function (id) { return byId[id]; }).filter(Boolean);
+    var total = orderedStages.length;
+    var avgPct = total ? Math.round(orderedStages.reduce(function (a, s) { return a + s.procent; }, 0) / total) : 0;
+    var doneCount = orderedStages.filter(function (s) { return s.procent >= 100; }).length;
+    var lastUpdated = orderedStages.reduce(function (latest, s) {
+      if (!s.updatedAt) return latest;
+      if (!latest || new Date(s.updatedAt) > new Date(latest)) return s.updatedAt;
+      return latest;
+    }, null);
+
+    var rows = orderedStages.map(function (s, idx) {
+      var isEditingName = state.siteForm.stageLabelEdit.id === s.id;
+      var isEditingPct = state.siteForm.stagePercentEdit.id === s.id;
+      var status = stageStatusInfo(s.procent);
+      var displayName = s.nume || "Denumire etapă (dublu-click)";
+      var nameCls = s.nume ? "" : " docrow-label-empty";
+
+      var nameHtml = isEditingName
+        ? '<input class="stage-name-input" id="stage-name-edit-' + s.id + '" draggable="false" data-stage-name-input="1" value="' + esc(s.nume) + '">'
+        : '<div class="stage-name' + nameCls + '" draggable="false" data-edit-stage-name="' + s.id + '" title="Dublu-click pentru a redenumi"><span class="stage-num">' + (idx + 1) + '</span>' + esc(displayName) + '</div>';
+
+      var pctHtml = isEditingPct
+        ? '<input type="number" min="0" max="100" class="stage-pct-input" id="stage-pct-edit-' + s.id + '" draggable="false" data-stage-pct-input="1" value="' + esc(String(s.procent)) + '">'
+        : '<div class="stage-pct" draggable="false" data-edit-stage-pct="' + s.id + '" title="Dublu-click pentru a actualiza">' + s.procent + '%</div>';
+
+      return '<div class="stage-row" draggable="true" data-stage-drag-id="' + s.id + '">' +
+        '<span class="docrow-grip stage-grip" title="Trage pentru a reordona">' + icon("grip", 15) + '</span>' +
+        nameHtml +
+        '<div class="prog-track"><div class="prog-fill" style="width:' + s.procent + '%"></div></div>' +
+        pctHtml +
+        '<span class="badge ' + status.cls + '">' + status.label + '</span>' +
+        '<div class="stage-date">' + formatStageDate(s.updatedAt) + '</div>' +
+        '<span class="doc-file-del" data-remove-stage="' + site.id + '|' + s.id + '" title="Șterge etapă">' + icon("trash", 14) + '</span>' +
+      '</div>';
     }).join("");
+    var empty = total === 0 ? '<div class="doclist-empty" style="padding:16px 22px">Nicio etapă adăugată încă.</div>' : "";
+
     return '' +
       '<div class="summary">' +
         '<div class="big-ring" style="background:conic-gradient(var(--navy) 0% ' + avgPct + '%, var(--gray-soft) ' + avgPct + '% 100%)"><div class="big-ring-val">' + avgPct + '%</div></div>' +
         '<div class="summary-meta">' +
-          '<div class="meta-item"><div class="mv">2 / 6</div><div class="ml">Etape finalizate</div></div>' +
-          '<div class="meta-item"><div class="mv">~48</div><div class="ml">Zile rămase estimate</div></div>' +
-          '<div class="meta-item"><div class="mv">azi</div><div class="ml">Ultima actualizare</div></div>' +
+          '<div class="meta-item"><div class="mv">' + doneCount + ' / ' + total + '</div><div class="ml">Etape finalizate</div></div>' +
+          '<div class="meta-item"><div class="mv">' + formatStageDate(lastUpdated) + '</div><div class="ml">Ultima actualizare</div></div>' +
         '</div>' +
       '</div>' +
-      '<div class="stages"><div class="stage-row stage-head"><div>Etapă</div><div>Progres</div><div style="text-align:right">%</div><div>Status</div><div>Ultima actualizare</div><div></div></div>' + rows + '</div>';
+      '<div class="stages"><div class="stage-row stage-head"><div></div><div>Etapă</div><div>Progres</div><div>%</div><div>Status</div><div>Ultima actualizare</div><div></div></div>' + rows + empty + '</div>' +
+      '<button class="btn btn-ghost btn-sm" style="margin-top:12px" data-add-stage="' + site.id + '">' + icon("plus", 13) + 'Adaugă etapă</button>';
   }
 
   function docsPanelHTML(site) {
@@ -1497,7 +1635,7 @@
       "[data-toggle-select-mode],[data-bulk-status],[data-clear-selection],[data-retry-failed]," +
       "[data-open-add-site],[data-close-add-site],[data-save-new-site],[data-edit-site],[data-save-site-edit],[data-cancel-site-edit],[data-delete-site]," +
       "[data-site-subtab],[data-save-doc-valoare],[data-remove-doc-file],[data-add-aviz],[data-remove-aviz]," +
-      "[data-add-gendoc],[data-remove-gendoc]"
+      "[data-add-gendoc],[data-remove-gendoc],[data-add-stage],[data-remove-stage]"
     );
 
     // Only re-render when something actually changes. A blanket render() on every
@@ -1623,6 +1761,12 @@
         var rgSite = findSite(rgParts[0]);
         if (rgSite) removeRepeatableDoc(rgSite, rgParts[1], "documentul", "acest document", "documentul");
       }
+      else if (t.dataset.addStage) { addStage(t.dataset.addStage); }
+      else if (t.dataset.removeStage) {
+        var rsParts = t.dataset.removeStage.split("|");
+        var rsSite = findSite(rsParts[0]);
+        if (rsSite) removeStage(rsSite, rsParts[1]);
+      }
     }
 
     if (needsRender) {
@@ -1646,6 +1790,8 @@
     else if (id.indexOf("site-edit-") === 0) state.siteForm.editDraft[id.slice(10)] = e.target.value;
     else if (e.target.dataset.docValoareKey) state.siteForm.docDrafts[e.target.dataset.docValoareKey] = e.target.value;
     else if (e.target.dataset.labelEditInput) state.siteForm.labelEdit.draft = e.target.value;
+    else if (e.target.dataset.stageNameInput) state.siteForm.stageLabelEdit.draft = e.target.value;
+    else if (e.target.dataset.stagePctInput) state.siteForm.stagePercentEdit.draft = e.target.value;
     else if (e.target.dataset.sidebarNameInput) state.sidebarNameEdit.draft = e.target.value;
   });
   document.getElementById("app").addEventListener("change", function (e) {
@@ -1698,6 +1844,44 @@
           else if (ke.key === "Escape") { ke.preventDefault(); labelInput.removeEventListener("blur", commitLabelEdit); cancelLabelEdit(); }
         });
       }
+      return;
+    }
+
+    var stageNameT = e.target.closest("[data-edit-stage-name]");
+    if (stageNameT) {
+      var stageId = stageNameT.dataset.editStageName;
+      var stage = siteStages.filter(function (s) { return s.id === stageId; })[0];
+      startStageNameEdit(stageId, stage ? stage.nume : "");
+      render();
+      var stageNameInput = document.getElementById("stage-name-edit-" + stageId);
+      if (stageNameInput) {
+        stageNameInput.focus();
+        stageNameInput.select();
+        stageNameInput.addEventListener("blur", commitStageNameEdit);
+        stageNameInput.addEventListener("keydown", function (ke) {
+          if (ke.key === "Enter") { ke.preventDefault(); stageNameInput.blur(); }
+          else if (ke.key === "Escape") { ke.preventDefault(); stageNameInput.removeEventListener("blur", commitStageNameEdit); cancelStageNameEdit(); }
+        });
+      }
+      return;
+    }
+
+    var stagePctT = e.target.closest("[data-edit-stage-pct]");
+    if (stagePctT) {
+      var pctStageId = stagePctT.dataset.editStagePct;
+      var pctStage = siteStages.filter(function (s) { return s.id === pctStageId; })[0];
+      startStagePercentEdit(pctStageId, pctStage ? pctStage.procent : 0);
+      render();
+      var stagePctInput = document.getElementById("stage-pct-edit-" + pctStageId);
+      if (stagePctInput) {
+        stagePctInput.focus();
+        stagePctInput.select();
+        stagePctInput.addEventListener("blur", commitStagePercentEdit);
+        stagePctInput.addEventListener("keydown", function (ke) {
+          if (ke.key === "Enter") { ke.preventDefault(); stagePctInput.blur(); }
+          else if (ke.key === "Escape") { ke.preventDefault(); stagePctInput.removeEventListener("blur", commitStagePercentEdit); cancelStagePercentEdit(); }
+        });
+      }
     }
   });
 
@@ -1706,12 +1890,20 @@
   // DOM instead of through render(), so the drag gesture isn't interrupted
   // by a full rebuild on every dragover.
   var dragState = { tip: null, scope: null };
+  var stageDragState = { id: null };
   function clearDocDragClasses() {
-    document.querySelectorAll(".docrow.dragging, .docrow.drag-over-top, .docrow.drag-over-bottom").forEach(function (el) {
+    document.querySelectorAll(".docrow.dragging, .docrow.drag-over-top, .docrow.drag-over-bottom, .stage-row.dragging, .stage-row.drag-over-top, .stage-row.drag-over-bottom").forEach(function (el) {
       el.classList.remove("dragging", "drag-over-top", "drag-over-bottom");
     });
   }
   document.getElementById("app").addEventListener("dragstart", function (e) {
+    var stageRow = e.target.closest("[data-stage-drag-id]");
+    if (stageRow) {
+      stageDragState.id = stageRow.dataset.stageDragId;
+      stageRow.classList.add("dragging");
+      if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+      return;
+    }
     var row = e.target.closest("[data-doc-drag-tip]");
     if (!row) return;
     dragState.tip = row.dataset.docDragTip;
@@ -1720,6 +1912,15 @@
     if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
   });
   document.getElementById("app").addEventListener("dragover", function (e) {
+    var stageRow = e.target.closest("[data-stage-drag-id]");
+    if (stageRow && stageDragState.id) {
+      e.preventDefault();
+      var srect = stageRow.getBoundingClientRect();
+      var sbefore = (e.clientY - srect.top) < srect.height / 2;
+      stageRow.classList.toggle("drag-over-top", sbefore);
+      stageRow.classList.toggle("drag-over-bottom", !sbefore);
+      return;
+    }
     var row = e.target.closest("[data-doc-drag-tip]");
     if (!row || !dragState.tip || row.dataset.dragScope !== dragState.scope) return;
     e.preventDefault();
@@ -1729,10 +1930,24 @@
     row.classList.toggle("drag-over-bottom", !before);
   });
   document.getElementById("app").addEventListener("dragleave", function (e) {
+    var stageRow = e.target.closest("[data-stage-drag-id]");
+    if (stageRow) { stageRow.classList.remove("drag-over-top", "drag-over-bottom"); return; }
     var row = e.target.closest("[data-doc-drag-tip]");
     if (row) row.classList.remove("drag-over-top", "drag-over-bottom");
   });
   document.getElementById("app").addEventListener("drop", function (e) {
+    var stageRow = e.target.closest("[data-stage-drag-id]");
+    if (stageRow && stageDragState.id) {
+      e.preventDefault();
+      var sbefore = stageRow.classList.contains("drag-over-top");
+      var targetId = stageRow.dataset.stageDragId;
+      var draggedId = stageDragState.id;
+      stageDragState.id = null;
+      clearDocDragClasses();
+      var stageSite = findSite(state.selectedSiteId);
+      if (stageSite) reorderStages(stageSite, draggedId, targetId, sbefore);
+      return;
+    }
     var row = e.target.closest("[data-doc-drag-tip]");
     if (!row || !dragState.tip || row.dataset.dragScope !== dragState.scope) return;
     e.preventDefault();
@@ -1749,6 +1964,7 @@
   });
   document.getElementById("app").addEventListener("dragend", function () {
     dragState.tip = null; dragState.scope = null;
+    stageDragState.id = null;
     clearDocDragClasses();
   });
 
