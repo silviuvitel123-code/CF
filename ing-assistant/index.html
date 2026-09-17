@@ -17,6 +17,7 @@
     --green:oklch(58% 0.15 145); --green-soft:oklch(92% 0.05 145);
     --red:oklch(55% 0.2 25); --red-soft:oklch(93% 0.05 25);
     --gray-soft:oklch(94% 0.006 75);
+    --blue-soft:oklch(92% 0.05 250); --purple-soft:oklch(92% 0.05 310);
     --sans:'IBM Plex Sans', system-ui, sans-serif; --mono:'IBM Plex Mono', ui-monospace, monospace;
   }
   * { box-sizing: border-box; }
@@ -248,8 +249,17 @@
   .progrid tbody tr.drag-over-top td { box-shadow: inset 0 2px 0 var(--navy); }
   .progrid tbody tr.drag-over-bottom td { box-shadow: inset 0 -2px 0 var(--navy); }
   .progrid tbody tr.progrow-group td { background: var(--surface-2); font-weight: 700; }
+  .progrid tbody tr.progrow-subtotal td { font-weight: 700; border-top: 1.5px solid var(--border-strong); }
   .progrid tbody tr.progrow-total td { background: var(--surface-2); font-weight: 700; border-top: 2px solid var(--border-strong); }
   .progrid td { padding: 8px 10px; color: var(--ink); }
+  .progrid-color-btn { width: 13px; height: 13px; border-radius: 50%; border: 1px solid var(--border-strong);
+    cursor: pointer; flex-shrink: 0; display: inline-block; background: transparent; padding: 0; }
+  .progrid-color-btn.has-color { border-color: transparent; }
+  .colorpop { position: fixed; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(20,20,30,.18); padding: 8px; z-index: 40; display: flex; gap: 6px; align-items: center; }
+  .colorpop-dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 1px solid var(--border-strong); padding: 0; }
+  .colorpop-clear { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 1px solid var(--border-strong);
+    display: flex; align-items: center; justify-content: center; color: var(--ink-faint); background: var(--surface); font-size: 11px; padding: 0; }
   .progrid td.progrid-cell-editable { cursor: pointer; }
   .progrid td.progrid-cell-editable:hover { background: var(--surface-2); }
   .progrid td.progrid-cell-computed { color: var(--ink-soft); font-style: italic; }
@@ -444,7 +454,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b29-2026-09-17";
+  var BUILD = "b30-2026-09-17";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -475,7 +485,8 @@
       labelEdit: { tip: null, siteId: null, draft: "" },
       gridCellEdit: { rowId: null, colId: null, draft: "" },
       gridColLabelEdit: { colId: null, draft: "" },
-      addColForm: { open: false, label: "", tip: "numar", numarator: "", numitor: "", surseSuma: {} }
+      addColForm: { open: false, label: "", tip: "numar", numarator: "", numitor: "", surseSuma: {} },
+      colorPickerOpen: { type: null, id: null }
     },
     sidebarNameEdit: { siteId: null, draft: "" }
   };
@@ -959,10 +970,22 @@
   var progresSeededSites = {};
 
   function progresColFromRow(r) {
-    return { id: r.id, santierId: r.santier_id, label: r.label || "", tip: r.tip || "numar", formula: r.formula || null, surse: r.surse || [] };
+    return { id: r.id, santierId: r.santier_id, label: r.label || "", tip: r.tip || "numar", formula: r.formula || null, surse: r.surse || [], culoare: r.culoare || null };
   }
   function progresRandFromRow(r) {
-    return { id: r.id, santierId: r.santier_id, grup: !!r.grup, valori: r.valori || {} };
+    return { id: r.id, santierId: r.santier_id, grup: !!r.grup, subtotal: !!r.subtotal, valori: r.valori || {}, culoare: r.culoare || null };
+  }
+  var PROGRES_COLORS = [
+    { key: "rosu", css: "var(--red-soft)" },
+    { key: "portocaliu", css: "var(--amber-soft)" },
+    { key: "verde", css: "var(--green-soft)" },
+    { key: "albastru", css: "var(--blue-soft)" },
+    { key: "violet", css: "var(--purple-soft)" },
+    { key: "gri", css: "var(--gray-soft)" }
+  ];
+  function progresColorCss(key) {
+    var found = PROGRES_COLORS.filter(function (c) { return c.key === key; })[0];
+    return found ? found.css : null;
   }
   function coloaneForSite(site) { return progresColoane.filter(function (c) { return c.santierId === site.id; }); }
   function randuriForSite(site) { return progresRanduri.filter(function (r) { return r.santierId === site.id; }); }
@@ -1034,8 +1057,10 @@
   }
 
   // Builds the fully-resolved grid for a site: column/row order applied,
-  // group rows summed from their children (numar cols) and recomputed
-  // (calculat cols), plus a grand-total row across all item rows.
+  // a group row sums ALL its children regardless of any subtotal rows in
+  // between; a subtotal row sums only the item rows since the previous
+  // group-or-subtotal boundary (then resets that running segment); a
+  // grand-total row sums every item row in the table.
   function progresGridData(site) {
     var colsById = {};
     coloaneForSite(site).forEach(function (c) { colsById[c.id] = c; });
@@ -1049,8 +1074,31 @@
     var calcCols = orderedCols.filter(function (c) { return c.tip === "calculat"; });
     var displayValori = {};
 
+    var sinceBoundary = {};
+    numarCols.forEach(function (c) { sinceBoundary[c.id] = 0; });
+    var currentGroupId = null;
+    var groupSums = {};
+
     orderedRows.forEach(function (row) {
-      if (row.grup) return;
+      if (row.grup) {
+        currentGroupId = row.id;
+        groupSums[row.id] = {};
+        numarCols.forEach(function (c) { groupSums[row.id][c.id] = 0; });
+        sinceBoundary = {};
+        numarCols.forEach(function (c) { sinceBoundary[c.id] = 0; });
+        return;
+      }
+      if (row.subtotal) {
+        var subVals = {};
+        numarCols.forEach(function (c) { subVals[c.id] = sinceBoundary[c.id]; });
+        orderedCols.forEach(function (c) { if (c.tip === "text") subVals[c.id] = row.valori[c.id]; });
+        calcCols.forEach(function (c) { subVals[c.id] = computeCalcValue(c, subVals); });
+        displayValori[row.id] = subVals;
+        sinceBoundary = {};
+        numarCols.forEach(function (c) { sinceBoundary[c.id] = 0; });
+        return;
+      }
+      // normal item row
       var vals = {};
       orderedCols.forEach(function (col) {
         // pass the accumulating `vals` (not raw row.valori) so a calculated
@@ -1060,27 +1108,26 @@
         vals[col.id] = col.tip === "calculat" ? computeCalcValue(col, vals) : row.valori[col.id];
       });
       displayValori[row.id] = vals;
+      numarCols.forEach(function (c) { sinceBoundary[c.id] += cellNumber(row, c.id); });
+      if (currentGroupId) numarCols.forEach(function (c) { groupSums[currentGroupId][c.id] += cellNumber(row, c.id); });
     });
 
-    for (var i = 0; i < orderedRows.length; i++) {
-      if (!orderedRows[i].grup) continue;
-      var groupRow = orderedRows[i];
-      var sums = {};
-      orderedCols.forEach(function (c) { if (c.tip === "text") sums[c.id] = groupRow.valori[c.id]; });
-      numarCols.forEach(function (c) { sums[c.id] = 0; });
-      for (var j = i + 1; j < orderedRows.length && !orderedRows[j].grup; j++) {
-        numarCols.forEach(function (c) { sums[c.id] += cellNumber(orderedRows[j], c.id); });
-      }
+    // fill in each group header's totals now that all its children (across
+    // any subtotal rows) have been accumulated
+    orderedRows.forEach(function (row) {
+      if (!row.grup) return;
+      var sums = Object.assign({}, groupSums[row.id]);
+      orderedCols.forEach(function (c) { if (c.tip === "text") sums[c.id] = row.valori[c.id]; });
       calcCols.forEach(function (c) { sums[c.id] = computeCalcValue(c, sums); });
-      displayValori[groupRow.id] = sums;
-    }
+      displayValori[row.id] = sums;
+    });
 
     var grandTotals = null;
-    var itemCount = orderedRows.filter(function (r) { return !r.grup; }).length;
-    if (itemCount > 0) {
+    var itemRows = orderedRows.filter(function (r) { return !r.grup && !r.subtotal; });
+    if (itemRows.length > 0) {
       var gsums = {};
       numarCols.forEach(function (c) { gsums[c.id] = 0; });
-      orderedRows.forEach(function (row) { if (!row.grup) numarCols.forEach(function (c) { gsums[c.id] += cellNumber(row, c.id); }); });
+      itemRows.forEach(function (row) { numarCols.forEach(function (c) { gsums[c.id] += cellNumber(row, c.id); }); });
       calcCols.forEach(function (c) { gsums[c.id] = computeCalcValue(c, gsums); });
       grandTotals = gsums;
     }
@@ -1096,7 +1143,7 @@
   // --- Coloane: adăugare / ștergere / redenumire / reordonare ---
   function addColumn(site, spec) {
     var tempId = "tmp-" + Date.now();
-    var col = { id: tempId, santierId: site.id, label: spec.label, tip: spec.tip, formula: spec.formula || null, surse: spec.surse || [] };
+    var col = { id: tempId, santierId: site.id, label: spec.label, tip: spec.tip, formula: spec.formula || null, surse: spec.surse || [], culoare: null };
     progresColoane.push(col);
     state.siteForm.addColForm = emptyAddColForm();
     render();
@@ -1158,11 +1205,21 @@
   }
 
   // --- Rânduri: adăugare / ștergere / reordonare ---
-  function addRow(site, isGrup) {
+  // kind: null/undefined = rând normal, "grup" = antet de grup (însumează
+  // tot ce urmează până la următorul grup), "subtotal" = total intermediar
+  // (însumează doar rândurile normale de la ultimul grup/subtotal încoace).
+  function addRow(site, kind) {
     var tempId = "tmp-" + Date.now();
-    progresRanduri.push({ id: tempId, santierId: site.id, grup: !!isGrup, valori: {} });
+    var isGrup = kind === "grup";
+    var isSubtotal = kind === "subtotal";
+    var initialValori = {};
+    if (isSubtotal) {
+      var labelCol = coloaneForSite(site).filter(function (c) { return c.tip === "text"; })[0];
+      if (labelCol) initialValori[labelCol.id] = "Subtotal";
+    }
+    progresRanduri.push({ id: tempId, santierId: site.id, grup: isGrup, subtotal: isSubtotal, valori: initialValori, culoare: null });
     render();
-    sb.from("santier_progres_randuri").insert({ santier_id: site.id, grup: !!isGrup, valori: {} }).select().single().then(function (res) {
+    sb.from("santier_progres_randuri").insert({ santier_id: site.id, grup: isGrup, subtotal: isSubtotal, valori: initialValori }).select().single().then(function (res) {
       if (res.error) {
         progresRanduri = progresRanduri.filter(function (r) { return r.id !== tempId; });
         flashSyncError("Nu am putut adăuga rândul."); console.error(res.error); render(); return;
@@ -1199,6 +1256,28 @@
     render();
     sb.from("santiere").update({ progres_randuri_order: current }).eq("id", site.id).then(function (res) {
       if (res.error) { flashSyncError("Nu am putut salva ordinea rândurilor."); console.error(res.error); }
+    });
+  }
+
+  // --- Culori: coloană / rând (paletă fixă, cheie salvată, nu cod de culoare brut) ---
+  function setColumnColor(site, colId, color) {
+    var col = progresColoane.filter(function (c) { return c.id === colId; })[0];
+    if (!col) return;
+    col.culoare = color;
+    state.siteForm.colorPickerOpen = { type: null, id: null };
+    render();
+    sb.from("santier_progres_coloane").update({ culoare: color }).eq("id", col.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva culoarea coloanei."); console.error(res.error); render(); }
+    });
+  }
+  function setRowColor(site, rowId, color) {
+    var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
+    if (!row) return;
+    row.culoare = color;
+    state.siteForm.colorPickerOpen = { type: null, id: null };
+    render();
+    sb.from("santier_progres_randuri").update({ culoare: color }).eq("id", row.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva culoarea rândului."); console.error(res.error); render(); }
     });
   }
 
@@ -1683,6 +1762,21 @@
     '</div>';
   }
 
+  function colorSwatchHTML(kind, id, colorKey) {
+    var bg = colorKey ? progresColorCss(colorKey) : "transparent";
+    var cls = "progrid-color-btn" + (colorKey ? " has-color" : "");
+    return '<span class="' + cls + '" style="background:' + bg + '" draggable="false" data-toggle-color="' + kind + '|' + id + '" title="Culoare"></span>';
+  }
+  function colorPopoverHTML(kind, id) {
+    var dots = PROGRES_COLORS.map(function (c) {
+      return '<span class="colorpop-dot" style="background:' + c.css + '" data-pick-color="' + kind + '|' + id + '|' + c.key + '" title="' + esc(c.key) + '"></span>';
+    }).join("");
+    return '<div class="colorpop">' +
+      '<span class="colorpop-clear" data-pick-color="' + kind + '|' + id + '|none" title="Fără culoare">✕</span>' +
+      dots +
+    '</div>';
+  }
+
   function progresPanelHTML(site) {
     var data = progresGridData(site);
     var orderedCols = data.orderedCols, orderedRows = data.orderedRows, displayValori = data.displayValori;
@@ -1699,8 +1793,10 @@
         var tagSymbol = col.formula === "procent" ? "%" : "Σ";
         if (col.label.indexOf(tagSymbol) === -1) typeTag = " " + tagSymbol;
       }
-      return '<th draggable="true" data-progcol-drag-id="' + col.id + '"><div class="progrid-th-inner">' +
+      var thStyle = col.culoare ? ' style="background:' + progresColorCss(col.culoare) + '"' : "";
+      return '<th draggable="true" data-progcol-drag-id="' + col.id + '"' + thStyle + '><div class="progrid-th-inner">' +
         '<span class="progrid-col-grip" title="Trage pentru a reordona">' + icon("grip", 13) + '</span>' +
+        colorSwatchHTML("col", col.id, col.culoare) +
         labelHtml + (typeTag ? '<span class="progrid-col-tag">' + esc(typeTag) + '</span>' : "") +
         '<span class="progrid-col-del" data-remove-col="' + site.id + '|' + col.id + '" title="Șterge coloana">' + icon("trash", 12) + '</span>' +
       '</div></th>';
@@ -1708,28 +1804,35 @@
 
     var bodyRows = orderedRows.map(function (row) {
       var vals = displayValori[row.id] || {};
+      var rowBg = row.culoare ? progresColorCss(row.culoare) : null;
       var cellsHtml = orderedCols.map(function (col) {
-        var editable = col.tip === "text" || (!row.grup && col.tip === "numar");
+        var editable = col.tip === "text" || (!row.grup && !row.subtotal && col.tip === "numar");
         var isEditingCell = editable && state.siteForm.gridCellEdit.rowId === row.id && state.siteForm.gridCellEdit.colId === col.id;
         var raw = vals[col.id];
         var isNumCol = col.tip === "numar" || col.tip === "calculat";
         var display = isNumCol ? (formatGridNumber(raw || 0) + (col.tip === "calculat" && col.formula === "procent" ? "%" : "")) : esc(raw || "");
         var cls = "progrid-cell" + (isNumCol ? " progrid-num" : "") + (col.tip === "calculat" ? " progrid-cell-computed" : "") + (editable ? " progrid-cell-editable" : "");
+        var cellBg = rowBg || (col.culoare ? progresColorCss(col.culoare) : null);
+        var bgStyle = cellBg ? ' style="background:' + cellBg + '"' : "";
 
         if (isEditingCell) {
           var inputCls = "progrid-cell-input" + (col.tip === "numar" ? " progrid-num-input" : "");
           var inputType = col.tip === "numar" ? ' type="number"' : "";
-          return '<td class="' + cls + '"><input class="' + inputCls + '"' + inputType + ' id="progcell-edit-' + row.id + '-' + col.id + '" draggable="false" data-progcell-input="1" value="' + esc(raw === undefined || raw === null ? "" : String(raw)) + '"></td>';
+          return '<td class="' + cls + '"' + bgStyle + '><input class="' + inputCls + '"' + inputType + ' id="progcell-edit-' + row.id + '-' + col.id + '" draggable="false" data-progcell-input="1" value="' + esc(raw === undefined || raw === null ? "" : String(raw)) + '"></td>';
         }
         var attrs = editable ? ' draggable="false" data-edit-cell="' + row.id + '|' + col.id + '" title="Dublu-click pentru a edita"' : "";
-        return '<td class="' + cls + '"' + attrs + '>' + display + '</td>';
+        return '<td class="' + cls + '"' + attrs + bgStyle + '>' + display + '</td>';
       }).join("");
 
-      var rowCls = row.grup ? "progrow-group" : "";
+      var rowCls = row.grup ? "progrow-group" : (row.subtotal ? "progrow-subtotal" : "");
+      var gripStyle = rowBg ? ' style="background:' + rowBg + '"' : "";
+      var delStyle = rowBg ? ' style="background:' + rowBg + '"' : "";
       return '<tr class="' + rowCls + '" draggable="true" data-progrow-drag-id="' + row.id + '">' +
-        '<td class="progrid-grip" title="Trage pentru a reordona">' + icon("grip", 13) + '</td>' +
+        '<td class="progrid-grip"' + gripStyle + '>' +
+          '<span style="display:flex;align-items:center;gap:4px;justify-content:center">' + icon("grip", 13) + colorSwatchHTML("row", row.id, row.culoare) + '</span>' +
+        '</td>' +
         cellsHtml +
-        '<td class="progrid-del-cell"><span class="progrid-del" data-remove-row="' + site.id + '|' + row.id + '" title="Șterge rândul">' + icon("trash", 13) + '</span></td>' +
+        '<td class="progrid-del-cell"' + delStyle + '><span class="progrid-del" data-remove-row="' + site.id + '|' + row.id + '" title="Șterge rândul">' + icon("trash", 13) + '</span></td>' +
       '</tr>';
     }).join("");
 
@@ -1750,13 +1853,14 @@
     var summaryHtml = "";
     if (data.grandTotals) {
       var pctCol = orderedCols.filter(function (c) { return c.tip === "calculat" && c.formula === "procent"; })[0];
-      var itemRows = orderedRows.filter(function (r) { return !r.grup; }).length;
-      var stats = '<div class="meta-item"><div class="mv">' + itemRows + '</div><div class="ml">Linii</div></div>';
+      var itemRowCount = orderedRows.filter(function (r) { return !r.grup && !r.subtotal; }).length;
+      var stats = '<div class="meta-item"><div class="mv">' + itemRowCount + '</div><div class="ml">Linii</div></div>';
       if (pctCol) stats += '<div class="meta-item"><div class="mv">' + formatGridNumber(data.grandTotals[pctCol.id] || 0) + '%</div><div class="ml">' + esc(pctCol.label) + '</div></div>';
       summaryHtml = '<div class="summary"><div class="summary-meta">' + stats + '</div></div>';
     }
 
     var addColFormHtml = state.siteForm.addColForm.open ? addColFormHTML(site, orderedCols) : "";
+    var colorPopHtml = state.siteForm.colorPickerOpen.id ? colorPopoverHTML(state.siteForm.colorPickerOpen.type, state.siteForm.colorPickerOpen.id) : "";
 
     return summaryHtml +
       '<div class="progrid-wrap"><table class="progrid"><thead><tr><th></th>' + headCells + '<th></th></tr></thead>' +
@@ -1764,9 +1868,10 @@
       '<div class="progrid-toolbar">' +
         '<button class="btn btn-ghost btn-sm" data-add-row="' + site.id + '">' + icon("plus", 13) + 'Adaugă linie</button>' +
         '<button class="btn btn-ghost btn-sm" data-add-group-row="' + site.id + '">' + icon("plus", 13) + 'Adaugă grup</button>' +
+        '<button class="btn btn-ghost btn-sm" data-add-subtotal-row="' + site.id + '">' + icon("plus", 13) + 'Total intermediar</button>' +
         '<button class="btn btn-ghost btn-sm" data-toggle-addcol="' + site.id + '">' + icon("plus", 13) + 'Adaugă coloană</button>' +
       '</div>' +
-      addColFormHtml;
+      addColFormHtml + colorPopHtml;
   }
 
   function docsPanelHTML(site) {
@@ -1885,6 +1990,7 @@
     document.getElementById("app").innerHTML = errorBanner + retryBanner +
       '<div class="app">' + sidebarHTML() + '<div class="main"><div class="main-inner">' + main + '</div></div></div>';
     positionOpenPopover();
+    positionColorPopover();
   }
 
   function positionOpenPopover() {
@@ -1893,6 +1999,20 @@
     var cell = document.querySelector('[data-cell-toggle="' + state.pontaj.openCell + '"]');
     if (!pop || !cell) return;
     var r = cell.getBoundingClientRect();
+    var pw = pop.offsetWidth, ph = pop.offsetHeight;
+    var left = Math.min(Math.max(r.left, 8), window.innerWidth - pw - 8);
+    var top = (r.bottom + 4 + ph <= window.innerHeight) ? (r.bottom + 4) : Math.max(8, r.top - ph - 4);
+    pop.style.left = left + "px";
+    pop.style.top = top + "px";
+  }
+
+  function positionColorPopover() {
+    var open = state.siteForm.colorPickerOpen;
+    if (!open.id) return;
+    var pop = document.querySelector(".colorpop");
+    var btn = document.querySelector('[data-toggle-color="' + open.type + '|' + open.id + '"]');
+    if (!pop || !btn) return;
+    var r = btn.getBoundingClientRect();
     var pw = pop.offsetWidth, ph = pop.offsetHeight;
     var left = Math.min(Math.max(r.left, 8), window.innerWidth - pw - 8);
     var top = (r.bottom + 4 + ph <= window.innerHeight) ? (r.bottom + 4) : Math.max(8, r.top - ph - 4);
@@ -1909,7 +2029,8 @@
       "[data-open-add-site],[data-close-add-site],[data-save-new-site],[data-edit-site],[data-save-site-edit],[data-cancel-site-edit],[data-delete-site]," +
       "[data-site-subtab],[data-save-doc-valoare],[data-remove-doc-file],[data-add-aviz],[data-remove-aviz]," +
       "[data-add-gendoc],[data-remove-gendoc]," +
-      "[data-add-row],[data-add-group-row],[data-remove-row],[data-remove-col],[data-toggle-addcol],[data-cancel-addcol],[data-submit-addcol]"
+      "[data-add-row],[data-add-group-row],[data-add-subtotal-row],[data-remove-row],[data-remove-col],[data-toggle-addcol],[data-cancel-addcol],[data-submit-addcol]," +
+      "[data-toggle-color],[data-pick-color]"
     );
 
     // Only re-render when something actually changes. A blanket render() on every
@@ -1923,6 +2044,12 @@
     // clicking anywhere outside an open day-popover closes it
     if (state.pontaj.openCell && !(t && (t.dataset.cellToggle || t.dataset.setStatus))) {
       state.pontaj.openCell = null;
+      needsRender = true;
+    }
+
+    // clicking anywhere outside an open color popover closes it
+    if (state.siteForm.colorPickerOpen.id && !(t && (t.dataset.toggleColor || t.dataset.pickColor))) {
+      state.siteForm.colorPickerOpen = { type: null, id: null };
       needsRender = true;
     }
 
@@ -2041,8 +2168,24 @@
         var rgSite = findSite(rgParts[0]);
         if (rgSite) removeRepeatableDoc(rgSite, rgParts[1], "documentul", "acest document", "documentul");
       }
-      else if (t.dataset.addRow) { var arSite = findSite(t.dataset.addRow); if (arSite) addRow(arSite, false); }
-      else if (t.dataset.addGroupRow) { var agSite = findSite(t.dataset.addGroupRow); if (agSite) addRow(agSite, true); }
+      else if (t.dataset.addRow) { var arSite = findSite(t.dataset.addRow); if (arSite) addRow(arSite, null); }
+      else if (t.dataset.addGroupRow) { var agSite = findSite(t.dataset.addGroupRow); if (agSite) addRow(agSite, "grup"); }
+      else if (t.dataset.addSubtotalRow) { var asSite = findSite(t.dataset.addSubtotalRow); if (asSite) addRow(asSite, "subtotal"); }
+      else if (t.dataset.toggleColor) {
+        var tcParts = t.dataset.toggleColor.split("|");
+        var open = state.siteForm.colorPickerOpen;
+        var isSameSwatch = open.type === tcParts[0] && open.id === tcParts[1];
+        state.siteForm.colorPickerOpen = isSameSwatch ? { type: null, id: null } : { type: tcParts[0], id: tcParts[1] };
+      }
+      else if (t.dataset.pickColor) {
+        var pcParts = t.dataset.pickColor.split("|");
+        var pcSite = findSite(state.selectedSiteId);
+        if (pcSite) {
+          var pickedColor = pcParts[2] === "none" ? null : pcParts[2];
+          if (pcParts[0] === "col") setColumnColor(pcSite, pcParts[1], pickedColor);
+          else setRowColor(pcSite, pcParts[1], pickedColor);
+        }
+      }
       else if (t.dataset.removeRow) {
         var rrParts = t.dataset.removeRow.split("|");
         var rrSite = findSite(rrParts[0]);
