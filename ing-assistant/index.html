@@ -245,6 +245,7 @@
   .progrid-resize-handle { position: absolute; top: 0; right: 0; width: 6px; height: 100%; cursor: col-resize; z-index: 4; }
   .progrid .progrid-sticky-1 { position: sticky; left: 0; z-index: 2; }
   .progrid .progrid-sticky-2 { position: sticky; left: 56px; z-index: 2; border-right: 1.5px solid var(--border-strong); }
+  .progrid.drag-in-progress .progrid-sticky-1, .progrid.drag-in-progress .progrid-sticky-2 { position: static; }
   .progrid td.progrid-sticky-1, .progrid td.progrid-sticky-2 { background: var(--surface); }
   .progrid th.progrid-sticky-1, .progrid th.progrid-sticky-2 { background: var(--surface-2); }
   .progrid tbody tr.progrow-group td.progrid-sticky-1, .progrid tbody tr.progrow-group td.progrid-sticky-2,
@@ -487,7 +488,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b32-2026-09-17";
+  var BUILD = "b33-2026-09-17";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -2827,19 +2828,34 @@
       el.classList.remove("dragging", "drag-over-left", "drag-over-right");
     });
   }
+  // A native drag needs a ghost image, and by default the browser rasterizes
+  // the dragged element itself. Doing that for a <tr>/<th> that contains
+  // position:sticky cells inside a horizontally-scrolling table is a known
+  // freeze trigger in Chromium — so hand it a trivial offscreen element to
+  // snapshot instead. (Synthetic DragEvents in automated tests skip this
+  // rendering path entirely, which is why it never showed up there.)
+  var dragGhostEl = document.createElement("div");
+  dragGhostEl.style.cssText = "position:fixed;top:-999px;left:-999px;width:1px;height:1px;";
+  document.body.appendChild(dragGhostEl);
+  // Sticky positioning is also disabled for the duration of the drag, as
+  // cheap extra insurance against any repeated-layout cost during dragover.
   document.getElementById("app").addEventListener("dragstart", function (e) {
     var progRow = e.target.closest("[data-progrow-drag-id]");
     if (progRow) {
       progRowDragState.id = progRow.dataset.progrowDragId;
       progRow.classList.add("dragging");
-      if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+      var progridEl1 = progRow.closest(".progrid");
+      if (progridEl1) progridEl1.classList.add("drag-in-progress");
+      if (e.dataTransfer) { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setDragImage(dragGhostEl, 0, 0); }
       return;
     }
     var progCol = e.target.closest("[data-progcol-drag-id]");
     if (progCol) {
       progColDragState.id = progCol.dataset.progcolDragId;
       progCol.classList.add("dragging");
-      if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+      var progridEl2 = progCol.closest(".progrid");
+      if (progridEl2) progridEl2.classList.add("drag-in-progress");
+      if (e.dataTransfer) { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setDragImage(dragGhostEl, 0, 0); }
       return;
     }
     var row = e.target.closest("[data-doc-drag-tip]");
@@ -2849,23 +2865,43 @@
     row.classList.add("dragging");
     if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
   });
+  // dragover can fire far more often than once per frame, and reading
+  // getBoundingClientRect() forces a synchronous layout every time — on a
+  // wide table-layout:fixed table this adds up fast and reads as a freeze
+  // during the drag itself. Coalesce it to at most once per animation frame.
+  var dragoverRAF = null;
+  var dragoverPending = null;
+  function scheduleDragoverUpdate(el, coord, kind) {
+    dragoverPending = { el: el, coord: coord, kind: kind };
+    if (dragoverRAF) return;
+    dragoverRAF = requestAnimationFrame(function () {
+      dragoverRAF = null;
+      var p = dragoverPending;
+      dragoverPending = null;
+      if (!p || !document.contains(p.el)) return;
+      var rect = p.el.getBoundingClientRect();
+      if (p.kind === "row") {
+        var before = (p.coord - rect.top) < rect.height / 2;
+        p.el.classList.toggle("drag-over-top", before);
+        p.el.classList.toggle("drag-over-bottom", !before);
+      } else {
+        var beforeCol = (p.coord - rect.left) < rect.width / 2;
+        p.el.classList.toggle("drag-over-left", beforeCol);
+        p.el.classList.toggle("drag-over-right", !beforeCol);
+      }
+    });
+  }
   document.getElementById("app").addEventListener("dragover", function (e) {
     var progRow = e.target.closest("[data-progrow-drag-id]");
     if (progRow && progRowDragState.id) {
       e.preventDefault();
-      var rrect = progRow.getBoundingClientRect();
-      var rbefore = (e.clientY - rrect.top) < rrect.height / 2;
-      progRow.classList.toggle("drag-over-top", rbefore);
-      progRow.classList.toggle("drag-over-bottom", !rbefore);
+      scheduleDragoverUpdate(progRow, e.clientY, "row");
       return;
     }
     var progCol = e.target.closest("[data-progcol-drag-id]");
     if (progCol && progColDragState.id) {
       e.preventDefault();
-      var crect = progCol.getBoundingClientRect();
-      var cbefore = (e.clientX - crect.left) < crect.width / 2;
-      progCol.classList.toggle("drag-over-left", cbefore);
-      progCol.classList.toggle("drag-over-right", !cbefore);
+      scheduleDragoverUpdate(progCol, e.clientX, "col");
       return;
     }
     var row = e.target.closest("[data-doc-drag-tip]");
@@ -2888,7 +2924,10 @@
     var progRow = e.target.closest("[data-progrow-drag-id]");
     if (progRow && progRowDragState.id) {
       e.preventDefault();
-      var rbefore = progRow.classList.contains("drag-over-top");
+      // Computed fresh here (not read off the throttled dragover class,
+      // which may not have caught up to this exact event yet).
+      var rrect = progRow.getBoundingClientRect();
+      var rbefore = (e.clientY - rrect.top) < rrect.height / 2;
       var rTargetId = progRow.dataset.progrowDragId;
       var rDraggedId = progRowDragState.id;
       progRowDragState.id = null;
@@ -2900,7 +2939,8 @@
     var progCol = e.target.closest("[data-progcol-drag-id]");
     if (progCol && progColDragState.id) {
       e.preventDefault();
-      var cbefore = progCol.classList.contains("drag-over-left");
+      var crect = progCol.getBoundingClientRect();
+      var cbefore = (e.clientX - crect.left) < crect.width / 2;
       var cTargetId = progCol.dataset.progcolDragId;
       var cDraggedId = progColDragState.id;
       progColDragState.id = null;
@@ -2927,7 +2967,10 @@
     dragState.tip = null; dragState.scope = null;
     progRowDragState.id = null;
     progColDragState.id = null;
+    if (dragoverRAF) { cancelAnimationFrame(dragoverRAF); dragoverRAF = null; }
+    dragoverPending = null;
     clearDocDragClasses();
+    document.querySelectorAll(".progrid.drag-in-progress").forEach(function (el) { el.classList.remove("drag-in-progress"); });
   });
 
   // Column resize: a narrow handle at the right edge of each header cell.
