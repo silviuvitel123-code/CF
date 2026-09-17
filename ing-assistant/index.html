@@ -30,6 +30,13 @@
   /* sidebar */
   .sidebar { width: 260px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border);
     display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+  .app.sidebar-hidden .sidebar { display: none; }
+  .sidebar-collapse-btn { position: absolute; top: 18px; right: -12px; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--border-strong); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--ink-soft); box-shadow: 0 1px 4px rgba(20,20,30,.14); z-index: 5; }
+  .sidebar-expand-btn { position: fixed; top: 18px; left: 14px; width: 28px; height: 28px; border-radius: 7px;
+    background: var(--surface); border: 1px solid var(--border-strong); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--ink-soft); box-shadow: 0 2px 8px rgba(20,20,30,.1); z-index: 50; }
   .brand { display: flex; align-items: center; gap: 10px; padding: 20px 18px; border-bottom: 1px solid var(--border); cursor: pointer; }
   .brand-mark { width: 34px; height: 34px; border-radius: 8px; background: var(--navy); flex-shrink: 0;
     display: flex; align-items: center; justify-content: center; }
@@ -64,6 +71,7 @@
   /* main */
   .main { flex: 1 1 auto; padding: 26px 32px 40px; min-width: 0; }
   .main-inner { max-width: 1220px; }
+  .main-inner.wide { max-width: none; }
   .crumb { font-size: 12px; color: var(--ink-faint); margin-bottom: 10px; }
   .crumb b { color: var(--ink-soft); font-weight: 600; }
   .crumb-link { cursor: pointer; text-decoration: underline; text-decoration-color: transparent; }
@@ -226,12 +234,23 @@
 
   /* progres: grid liber (coloane + rânduri configurabile) */
   .progrid-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow-x: auto; max-width: 100%; }
-  table.progrid { border-collapse: collapse; width: 100%; font-size: 12.5px; }
-  .progrid th, .progrid td { border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); white-space: nowrap; }
+  table.progrid { border-collapse: collapse; width: 100%; font-size: 12.5px; table-layout: fixed; }
+  .progrid th, .progrid td { border-bottom: 1px solid var(--border); border-right: 1px solid var(--border);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .progrid th:last-child, .progrid td:last-child { border-right: none; }
   .progrid thead th { background: var(--surface-2); font-size: 10.5px; font-weight: 600; text-transform: uppercase;
-    letter-spacing: .04em; color: var(--ink-faint); padding: 0; text-align: left; }
-  .progrid-th-inner { display: flex; align-items: center; gap: 5px; padding: 8px 10px; }
+    letter-spacing: .04em; color: var(--ink-faint); padding: 0; text-align: left; position: relative; }
+  .progrid-th-inner { display: flex; align-items: center; gap: 5px; padding: 8px 10px; overflow: hidden; }
+  .progrid-resize-handle { position: absolute; top: 0; right: 0; width: 6px; height: 100%; cursor: col-resize; z-index: 4; }
+  .progrid .progrid-sticky-1 { position: sticky; left: 0; z-index: 2; }
+  .progrid .progrid-sticky-2 { position: sticky; left: 56px; z-index: 2; border-right: 1.5px solid var(--border-strong); }
+  .progrid td.progrid-sticky-1, .progrid td.progrid-sticky-2 { background: var(--surface); }
+  .progrid th.progrid-sticky-1, .progrid th.progrid-sticky-2 { background: var(--surface-2); }
+  .progrid tbody tr.progrow-group td.progrid-sticky-1, .progrid tbody tr.progrow-group td.progrid-sticky-2,
+  .progrid tbody tr.progrow-total td.progrid-sticky-1, .progrid tbody tr.progrow-total td.progrid-sticky-2 { background: var(--surface-2); }
+  .progrid-collapse-btn { cursor: pointer; color: var(--ink-soft); display: inline-flex; align-items: center;
+    justify-content: center; width: 12px; font-size: 11px; font-weight: 700; vertical-align: middle; margin-right: 2px; }
+  .progrid td.progrid-cell-editable:focus { outline: 2px solid var(--navy); outline-offset: -2px; }
   .progrid-col-grip { cursor: grab; color: var(--ink-faint); flex-shrink: 0; display: flex; }
   .progrid-col-label { cursor: pointer; border-radius: 3px; padding: 2px 4px; margin: -2px -4px; flex: 1; }
   .progrid-col-label:hover { background: var(--border); }
@@ -260,6 +279,18 @@
   .colorpop-dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 1px solid var(--border-strong); padding: 0; }
   .colorpop-clear { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 1px solid var(--border-strong);
     display: flex; align-items: center; justify-content: center; color: var(--ink-faint); background: var(--surface); font-size: 11px; padding: 0; }
+  .progrid-rowsrc-btn { color: var(--ink-faint); cursor: pointer; display: flex; flex-shrink: 0; }
+  .progrid-rowsrc-btn.unconfigured { color: var(--amber-strong); }
+  .progrid-rowsrc-btn:hover { color: var(--navy); }
+  .rowsrcpop { position: fixed; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(20,20,30,.18); padding: 12px; z-index: 40; width: 260px; max-height: 320px;
+    display: flex; flex-direction: column; gap: 8px; }
+  .rowsrcpop-title { font-size: 12px; font-weight: 700; color: var(--ink); }
+  .rowsrcpop-actions { display: flex; gap: 12px; }
+  .rowsrcpop-link { font-size: 11.5px; font-weight: 600; color: var(--navy); cursor: pointer; }
+  .rowsrcpop-link:hover { text-decoration: underline; }
+  .rowsrcpop-list { overflow-y: auto; max-height: 190px; display: flex; flex-direction: column; gap: 6px; }
+  .rowsrc-check { display: flex; align-items: center; gap: 7px; font-size: 12.5px; cursor: pointer; }
   .progrid td.progrid-cell-editable { cursor: pointer; }
   .progrid td.progrid-cell-editable:hover { background: var(--surface-2); }
   .progrid td.progrid-cell-computed { color: var(--ink-soft); font-style: italic; }
@@ -454,7 +485,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b30-2026-09-17";
+  var BUILD = "b31-2026-09-17";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -462,7 +493,7 @@
   }
 
   var state = {
-    view: "dashboard", selectedSiteId: null, activeTab: "date-santier", globalSiteId: null,
+    view: "dashboard", selectedSiteId: null, activeTab: "date-santier", globalSiteId: null, sidebarCollapsed: false,
     pontaj: {
       year: todayD.getFullYear(),
       month: todayD.getMonth() + 1,
@@ -486,7 +517,10 @@
       gridCellEdit: { rowId: null, colId: null, draft: "" },
       gridColLabelEdit: { colId: null, draft: "" },
       addColForm: { open: false, label: "", tip: "numar", numarator: "", numitor: "", surseSuma: {} },
-      colorPickerOpen: { type: null, id: null }
+      colorPickerOpen: { type: null, id: null },
+      rowSourcesOpen: null,
+      collapsedGroups: {},
+      pasteAnchor: null
     },
     sidebarNameEdit: { siteId: null, draft: "" }
   };
@@ -970,10 +1004,11 @@
   var progresSeededSites = {};
 
   function progresColFromRow(r) {
-    return { id: r.id, santierId: r.santier_id, label: r.label || "", tip: r.tip || "numar", formula: r.formula || null, surse: r.surse || [], culoare: r.culoare || null };
+    return { id: r.id, santierId: r.santier_id, label: r.label || "", tip: r.tip || "numar", formula: r.formula || null, surse: r.surse || [], culoare: r.culoare || null, latime: r.latime || null };
   }
+  function colWidth(col) { return col.latime || (col.tip === "text" ? 170 : 115); }
   function progresRandFromRow(r) {
-    return { id: r.id, santierId: r.santier_id, grup: !!r.grup, subtotal: !!r.subtotal, valori: r.valori || {}, culoare: r.culoare || null };
+    return { id: r.id, santierId: r.santier_id, grup: !!r.grup, subtotal: !!r.subtotal, valori: r.valori || {}, culoare: r.culoare || null, surseRanduri: r.surse_randuri || [] };
   }
   var PROGRES_COLORS = [
     { key: "rosu", css: "var(--red-soft)" },
@@ -1056,11 +1091,12 @@
     return rounded.toLocaleString("ro-RO", { maximumFractionDigits: 2 });
   }
 
-  // Builds the fully-resolved grid for a site: column/row order applied,
-  // a group row sums ALL its children regardless of any subtotal rows in
-  // between; a subtotal row sums only the item rows since the previous
-  // group-or-subtotal boundary (then resets that running segment); a
-  // grand-total row sums every item row in the table.
+  // Builds the fully-resolved grid for a site: column/row order applied.
+  // A grup or subtotal row sums ONLY the rows explicitly picked for it
+  // (row.surseRanduri) — never an automatic "everything below/until the
+  // next boundary" guess, since that silently added incompatible units
+  // (e.g. bucăți + metri liniari) together. The grand-total row is the
+  // one place a full automatic sum still makes sense: every item row.
   function progresGridData(site) {
     var colsById = {};
     coloaneForSite(site).forEach(function (c) { colsById[c.id] = c; });
@@ -1074,31 +1110,8 @@
     var calcCols = orderedCols.filter(function (c) { return c.tip === "calculat"; });
     var displayValori = {};
 
-    var sinceBoundary = {};
-    numarCols.forEach(function (c) { sinceBoundary[c.id] = 0; });
-    var currentGroupId = null;
-    var groupSums = {};
-
     orderedRows.forEach(function (row) {
-      if (row.grup) {
-        currentGroupId = row.id;
-        groupSums[row.id] = {};
-        numarCols.forEach(function (c) { groupSums[row.id][c.id] = 0; });
-        sinceBoundary = {};
-        numarCols.forEach(function (c) { sinceBoundary[c.id] = 0; });
-        return;
-      }
-      if (row.subtotal) {
-        var subVals = {};
-        numarCols.forEach(function (c) { subVals[c.id] = sinceBoundary[c.id]; });
-        orderedCols.forEach(function (c) { if (c.tip === "text") subVals[c.id] = row.valori[c.id]; });
-        calcCols.forEach(function (c) { subVals[c.id] = computeCalcValue(c, subVals); });
-        displayValori[row.id] = subVals;
-        sinceBoundary = {};
-        numarCols.forEach(function (c) { sinceBoundary[c.id] = 0; });
-        return;
-      }
-      // normal item row
+      if (row.grup || row.subtotal) return;
       var vals = {};
       orderedCols.forEach(function (col) {
         // pass the accumulating `vals` (not raw row.valori) so a calculated
@@ -1108,15 +1121,17 @@
         vals[col.id] = col.tip === "calculat" ? computeCalcValue(col, vals) : row.valori[col.id];
       });
       displayValori[row.id] = vals;
-      numarCols.forEach(function (c) { sinceBoundary[c.id] += cellNumber(row, c.id); });
-      if (currentGroupId) numarCols.forEach(function (c) { groupSums[currentGroupId][c.id] += cellNumber(row, c.id); });
     });
 
-    // fill in each group header's totals now that all its children (across
-    // any subtotal rows) have been accumulated
     orderedRows.forEach(function (row) {
-      if (!row.grup) return;
-      var sums = Object.assign({}, groupSums[row.id]);
+      if (!row.grup && !row.subtotal) return;
+      var sums = {};
+      numarCols.forEach(function (c) { sums[c.id] = 0; });
+      (row.surseRanduri || []).forEach(function (srcId) {
+        var srcRow = rowsById[srcId];
+        if (!srcRow || srcRow.grup || srcRow.subtotal) return; // ignore stale/invalid refs
+        numarCols.forEach(function (c) { sums[c.id] += cellNumber(srcRow, c.id); });
+      });
       orderedCols.forEach(function (c) { if (c.tip === "text") sums[c.id] = row.valori[c.id]; });
       calcCols.forEach(function (c) { sums[c.id] = computeCalcValue(c, sums); });
       displayValori[row.id] = sums;
@@ -1143,7 +1158,7 @@
   // --- Coloane: adăugare / ștergere / redenumire / reordonare ---
   function addColumn(site, spec) {
     var tempId = "tmp-" + Date.now();
-    var col = { id: tempId, santierId: site.id, label: spec.label, tip: spec.tip, formula: spec.formula || null, surse: spec.surse || [], culoare: null };
+    var col = { id: tempId, santierId: site.id, label: spec.label, tip: spec.tip, formula: spec.formula || null, surse: spec.surse || [], culoare: null, latime: null };
     progresColoane.push(col);
     state.siteForm.addColForm = emptyAddColForm();
     render();
@@ -1203,11 +1218,21 @@
       if (res.error) { flashSyncError("Nu am putut salva ordinea coloanelor."); console.error(res.error); }
     });
   }
+  function resizeColumn(site, colId, widthPx) {
+    var col = progresColoane.filter(function (c) { return c.id === colId; })[0];
+    if (!col) return;
+    col.latime = Math.max(50, Math.round(widthPx));
+    render();
+    sb.from("santier_progres_coloane").update({ latime: col.latime }).eq("id", col.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva lățimea coloanei."); console.error(res.error); }
+    });
+  }
 
   // --- Rânduri: adăugare / ștergere / reordonare ---
-  // kind: null/undefined = rând normal, "grup" = antet de grup (însumează
-  // tot ce urmează până la următorul grup), "subtotal" = total intermediar
-  // (însumează doar rândurile normale de la ultimul grup/subtotal încoace).
+  // kind: null/undefined = rând normal, "grup" = antet de grup, "subtotal" =
+  // total intermediar. Un grup/subtotal nu adună nimic automat — adună DOAR
+  // rândurile pe care utilizatorul le bifează explicit (row.surseRanduri),
+  // ca să nu amestece unități incompatibile (ex. bucăți + metri liniari).
   function addRow(site, kind) {
     var tempId = "tmp-" + Date.now();
     var isGrup = kind === "grup";
@@ -1217,15 +1242,18 @@
       var labelCol = coloaneForSite(site).filter(function (c) { return c.tip === "text"; })[0];
       if (labelCol) initialValori[labelCol.id] = "Subtotal";
     }
-    progresRanduri.push({ id: tempId, santierId: site.id, grup: isGrup, subtotal: isSubtotal, valori: initialValori, culoare: null });
+    progresRanduri.push({ id: tempId, santierId: site.id, grup: isGrup, subtotal: isSubtotal, valori: initialValori, culoare: null, surseRanduri: [] });
+    if (isGrup || isSubtotal) state.siteForm.rowSourcesOpen = tempId; // prompt the user to pick sources right away
     render();
     sb.from("santier_progres_randuri").insert({ santier_id: site.id, grup: isGrup, subtotal: isSubtotal, valori: initialValori }).select().single().then(function (res) {
       if (res.error) {
         progresRanduri = progresRanduri.filter(function (r) { return r.id !== tempId; });
+        if (state.siteForm.rowSourcesOpen === tempId) state.siteForm.rowSourcesOpen = null;
         flashSyncError("Nu am putut adăuga rândul."); console.error(res.error); render(); return;
       }
       var row = progresRanduri.filter(function (r) { return r.id === tempId; })[0];
       if (row) row.id = res.data.id;
+      if (state.siteForm.rowSourcesOpen === tempId) state.siteForm.rowSourcesOpen = row ? row.id : null;
       render();
     });
   }
@@ -1236,10 +1264,58 @@
     var label = text ? ('rândul "' + text + '"') : (row.grup ? "acest grup" : "acest rând");
     if (!confirmDelete("Ștergi " + label + "? Această acțiune nu poate fi anulată.")) return;
     progresRanduri = progresRanduri.filter(function (r) { return r !== row; });
+    if (state.siteForm.rowSourcesOpen === rowId) state.siteForm.rowSourcesOpen = null;
     render();
     if (String(row.id).indexOf("tmp-") === 0) return;
     sb.from("santier_progres_randuri").delete().eq("id", row.id).then(function (res) {
       if (res.error) { flashSyncError("Nu am putut șterge rândul."); console.error(res.error); }
+    });
+  }
+  function duplicateRow(site, rowId) {
+    var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
+    if (!row) return;
+    var tempId = "tmp-" + Date.now();
+    var copy = { id: tempId, santierId: site.id, grup: row.grup, subtotal: row.subtotal, valori: Object.assign({}, row.valori), culoare: row.culoare, surseRanduri: (row.surseRanduri || []).slice() };
+    progresRanduri.push(copy);
+    var current = orderedRandIds(site);
+    var atIdx = current.indexOf(rowId);
+    current.splice(atIdx === -1 ? current.length : atIdx + 1, 0, tempId);
+    site.progresRanduriOrder = current;
+    render();
+    sb.from("santier_progres_randuri").insert({ santier_id: site.id, grup: copy.grup, subtotal: copy.subtotal, valori: copy.valori, culoare: copy.culoare, surse_randuri: copy.surseRanduri }).select().single().then(function (res) {
+      if (res.error) {
+        progresRanduri = progresRanduri.filter(function (r) { return r.id !== tempId; });
+        flashSyncError("Nu am putut duplica rândul."); console.error(res.error); render(); return;
+      }
+      copy.id = res.data.id;
+      var order = orderedRandIds(site).map(function (id) { return id === tempId ? res.data.id : id; });
+      site.progresRanduriOrder = order;
+      render();
+      sb.from("santiere").update({ progres_randuri_order: order }).eq("id", site.id).then(function (r2) {
+        if (r2.error) console.error(r2.error);
+      });
+    });
+  }
+  function toggleRowSource(site, rowId, srcId) {
+    var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
+    if (!row) return;
+    var current = row.surseRanduri || [];
+    var idx = current.indexOf(srcId);
+    var next = current.slice();
+    if (idx === -1) next.push(srcId); else next.splice(idx, 1);
+    row.surseRanduri = next;
+    render();
+    sb.from("santier_progres_randuri").update({ surse_randuri: next }).eq("id", row.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva selecția rândurilor."); console.error(res.error); render(); }
+    });
+  }
+  function setAllRowSources(site, rowId, ids) {
+    var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
+    if (!row) return;
+    row.surseRanduri = ids;
+    render();
+    sb.from("santier_progres_randuri").update({ surse_randuri: ids }).eq("id", row.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva selecția rândurilor."); console.error(res.error); render(); }
     });
   }
   function reorderRows(site, draggedId, targetId, before) {
@@ -1308,6 +1384,45 @@
   }
   function cancelCellEdit() { state.siteForm.gridCellEdit = { rowId: null, colId: null, draft: "" }; render(); }
 
+  // --- Lipire dintr-un tabel Excel: pornind de la celula selectată, valorile
+  // separate prin tab/linie nouă din clipboard se scriu în celulele
+  // corespunzătoare (text/număr); coloanele calculate și rândurile de
+  // grup/subtotal sunt sărite, fără să strice alinierea restului lipirii. ---
+  function pasteIntoGrid(site, anchorRowId, anchorColId, text) {
+    var data = progresGridData(site);
+    var orderedCols = data.orderedCols, orderedRows = data.orderedRows;
+    var rowIdx = orderedRows.findIndex(function (r) { return r.id === anchorRowId; });
+    var colIdx = orderedCols.findIndex(function (c) { return c.id === anchorColId; });
+    if (rowIdx === -1 || colIdx === -1) return;
+    var lines = text.replace(/\r/g, "").split("\n");
+    if (lines.length > 1 && lines[lines.length - 1] === "") lines.pop();
+    var rowsById = {};
+    randuriForSite(site).forEach(function (r) { rowsById[r.id] = r; });
+    var touched = [];
+    lines.forEach(function (line, i) {
+      var targetRow = orderedRows[rowIdx + i];
+      if (!targetRow || targetRow.grup || targetRow.subtotal) return;
+      var liveRow = rowsById[targetRow.id];
+      if (!liveRow) return;
+      var cells = line.split("\t");
+      var changed = false;
+      cells.forEach(function (cellText, j) {
+        var col = orderedCols[colIdx + j];
+        if (!col || col.tip === "calculat") return;
+        liveRow.valori[col.id] = col.tip === "numar" ? (parseFloat(cellText.replace(",", ".")) || 0) : cellText.trim();
+        changed = true;
+      });
+      if (changed && touched.indexOf(liveRow) === -1) touched.push(liveRow);
+    });
+    if (!touched.length) return;
+    render();
+    touched.forEach(function (row) {
+      sb.from("santier_progres_randuri").update({ valori: row.valori }).eq("id", row.id).then(function (res) {
+        if (res.error) { flashSyncError("Nu am putut salva datele lipite."); console.error(res.error); render(); }
+      });
+    });
+  }
+
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function findSite(id) { for (var i = 0; i < sites.length; i++) if (sites[i].id === id) return sites[i]; return null; }
 
@@ -1331,7 +1446,8 @@
       info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 8h.01"/>',
       grip: '<circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/>',
       trash: '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/><path d="M10 11v6M14 11v6"/>',
-      docLines: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>'
+      docLines: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
+      copy: '<rect x="9" y="9" width="11" height="11" rx="1.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>'
     };
     return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' + icons[name] + '</svg>';
   }
@@ -1374,6 +1490,7 @@
     }).join("");
     return '' +
       '<div class="sidebar">' +
+        '<div class="sidebar-collapse-btn" data-toggle-sidebar="1" title="Ascunde bara laterală">' + icon("chevronLeft", 14) + '</div>' +
         '<div class="brand" data-go="dashboard">' +
           '<div class="brand-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/><path d="M9 12h6"/></svg></div>' +
           '<div><div class="brand-name">Ing. Assistant</div><div class="brand-sub">build ' + BUILD + '</div></div>' +
@@ -1762,6 +1879,10 @@
     '</div>';
   }
 
+  function collapseToggleHTML(row) {
+    var collapsed = !!state.siteForm.collapsedGroups[row.id];
+    return '<span class="progrid-collapse-btn" draggable="false" data-toggle-collapse-group="' + row.id + '" title="' + (collapsed ? "Extinde grupul" : "Restrânge grupul") + '">' + (collapsed ? "▸" : "▾") + '</span>';
+  }
   function colorSwatchHTML(kind, id, colorKey) {
     var bg = colorKey ? progresColorCss(colorKey) : "transparent";
     var cls = "progrid-color-btn" + (colorKey ? " has-color" : "");
@@ -1777,13 +1898,117 @@
     '</div>';
   }
 
+  function rowSourcesPopoverHTML(site, rowId) {
+    var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
+    if (!row) return "";
+    var orderedIds = orderedRandIds(site);
+    var candidates = randuriForSite(site).filter(function (r) { return !r.grup && !r.subtotal; })
+      .sort(function (a, b) { return orderedIds.indexOf(a.id) - orderedIds.indexOf(b.id); });
+    var current = row.surseRanduri || [];
+    var checks = candidates.map(function (r) {
+      var label = rowDisplayLabel(site, r) || "(rând fără denumire)";
+      var checked = current.indexOf(r.id) !== -1 ? " checked" : "";
+      return '<label class="rowsrc-check"><input type="checkbox" data-toggle-rowsrc="' + rowId + '|' + r.id + '"' + checked + '> ' + esc(label) + '</label>';
+    }).join("");
+    var empty = candidates.length === 0 ? '<div style="color:var(--ink-faint);font-size:12px">Nu există alte rânduri de adunat.</div>' : "";
+    return '<div class="rowsrcpop">' +
+      '<div class="rowsrcpop-title">Ce rânduri să adune acest total?</div>' +
+      '<div class="rowsrcpop-actions">' +
+        '<span class="rowsrcpop-link" data-select-all-rowsrc="' + rowId + '">Selectează tot</span>' +
+        '<span class="rowsrcpop-link" data-select-none-rowsrc="' + rowId + '">Deselectează tot</span>' +
+      '</div>' +
+      '<div class="rowsrcpop-list">' + checks + empty + '</div>' +
+      '<button class="btn btn-ghost btn-sm" data-close-rowsrc="1">Închide</button>' +
+    '</div>';
+  }
+
+  function progresLabelColId(orderedCols) {
+    for (var i = 0; i < orderedCols.length; i++) if (orderedCols[i].tip === "text") return orderedCols[i].id;
+    return null;
+  }
+  function progresCellDisplayForExport(col, v) {
+    if (col.tip === "numar" || col.tip === "calculat") {
+      var n = typeof v === "number" ? v : (parseFloat(v) || 0);
+      var out = formatGridNumber(n);
+      return col.tip === "calculat" && col.formula === "procent" ? out + "%" : out;
+    }
+    return v || "";
+  }
+  function csvEscape(v) {
+    var s = String(v === undefined || v === null ? "" : v);
+    if (/[";\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+  function exportProgresCSV(site) {
+    var data = progresGridData(site);
+    var orderedCols = data.orderedCols, orderedRows = data.orderedRows, displayValori = data.displayValori;
+    var labelColId = progresLabelColId(orderedCols);
+    var lines = [orderedCols.map(function (c) { return csvEscape(c.label); }).join(";")];
+    orderedRows.forEach(function (row) {
+      var vals = displayValori[row.id] || {};
+      lines.push(orderedCols.map(function (col) { return csvEscape(progresCellDisplayForExport(col, vals[col.id])); }).join(";"));
+    });
+    if (data.grandTotals) {
+      lines.push(orderedCols.map(function (col) {
+        if (col.tip === "text") return csvEscape(col.id === labelColId ? "TOTAL GENERAL" : "");
+        return csvEscape(progresCellDisplayForExport(col, data.grandTotals[col.id]));
+      }).join(";"));
+    }
+    var csv = "﻿" + lines.join("\r\n");
+    var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    var slug = (site.numeScurt || site.nume || "santier").toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
+    a.download = "progres-" + slug + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  function printProgres(site) {
+    var data = progresGridData(site);
+    var orderedCols = data.orderedCols, orderedRows = data.orderedRows, displayValori = data.displayValori;
+    var labelColId = progresLabelColId(orderedCols);
+    var headHtml = orderedCols.map(function (c) { return "<th>" + esc(c.label) + "</th>"; }).join("");
+    var rowsHtml = orderedRows.map(function (row) {
+      var vals = displayValori[row.id] || {};
+      var cells = orderedCols.map(function (col) {
+        var isNum = col.tip === "numar" || col.tip === "calculat";
+        return "<td" + (isNum ? ' style="text-align:right;font-family:monospace"' : "") + ">" + esc(progresCellDisplayForExport(col, vals[col.id])) + "</td>";
+      }).join("");
+      var rowStyle = (row.grup || row.subtotal) ? ' style="font-weight:700;background:#f0ede7"' : "";
+      return "<tr" + rowStyle + ">" + cells + "</tr>";
+    }).join("");
+    var totalHtml = "";
+    if (data.grandTotals) {
+      var totalCells = orderedCols.map(function (col) {
+        if (col.tip === "text") return "<td>" + (col.id === labelColId ? "TOTAL GENERAL" : "") + "</td>";
+        return '<td style="text-align:right;font-family:monospace">' + esc(progresCellDisplayForExport(col, data.grandTotals[col.id])) + "</td>";
+      }).join("");
+      totalHtml = '<tr style="font-weight:700;background:#f0ede7;border-top:2px solid #333">' + totalCells + "</tr>";
+    }
+    var html = '<div style="font-family:sans-serif;padding:10px">' +
+      "<h2 style=\"margin:0 0 4px\">" + esc(site.nume) + "</h2>" +
+      '<div style="font-size:12px;color:#555;margin-bottom:14px">Progres șantier — generat ' + new Date().toLocaleDateString("ro-RO") + "</div>" +
+      '<table style="width:100%;border-collapse:collapse;font-size:11px" border="1" cellpadding="5">' +
+        "<thead><tr>" + headHtml + "</tr></thead><tbody>" + rowsHtml + totalHtml + "</tbody>" +
+      "</table></div>";
+    var sheet = document.getElementById("print-sheet");
+    if (sheet) sheet.innerHTML = html;
+    window.print();
+  }
+
   function progresPanelHTML(site) {
     var data = progresGridData(site);
     var orderedCols = data.orderedCols, orderedRows = data.orderedRows, displayValori = data.displayValori;
-    var labelColId = null;
-    for (var li = 0; li < orderedCols.length; li++) { if (orderedCols[li].tip === "text") { labelColId = orderedCols[li].id; break; } }
+    var labelColId = progresLabelColId(orderedCols);
 
-    var headCells = orderedCols.map(function (col) {
+    var colGroupHtml = '<colgroup><col style="width:56px">' +
+      orderedCols.map(function (c) { return '<col data-col-id="' + c.id + '" style="width:' + colWidth(c) + 'px">'; }).join("") +
+      '<col style="width:50px"></colgroup>';
+
+    var headCells = orderedCols.map(function (col, idx) {
       var isEditing = state.siteForm.gridColLabelEdit.colId === col.id;
       var labelHtml = isEditing
         ? '<input class="progrid-col-input" id="progcol-edit-' + col.id + '" draggable="false" data-progcol-label-input="1" value="' + esc(col.label) + '">'
@@ -1794,24 +2019,40 @@
         if (col.label.indexOf(tagSymbol) === -1) typeTag = " " + tagSymbol;
       }
       var thStyle = col.culoare ? ' style="background:' + progresColorCss(col.culoare) + '"' : "";
-      return '<th draggable="true" data-progcol-drag-id="' + col.id + '"' + thStyle + '><div class="progrid-th-inner">' +
+      var stickyCls = idx === 0 ? " progrid-sticky-2" : "";
+      return '<th class="' + stickyCls.trim() + '" draggable="true" data-progcol-drag-id="' + col.id + '"' + thStyle + '><div class="progrid-th-inner">' +
         '<span class="progrid-col-grip" title="Trage pentru a reordona">' + icon("grip", 13) + '</span>' +
         colorSwatchHTML("col", col.id, col.culoare) +
         labelHtml + (typeTag ? '<span class="progrid-col-tag">' + esc(typeTag) + '</span>' : "") +
         '<span class="progrid-col-del" data-remove-col="' + site.id + '|' + col.id + '" title="Șterge coloana">' + icon("trash", 12) + '</span>' +
+        '<span class="progrid-resize-handle" draggable="false" data-resize-col="' + col.id + '"></span>' +
       '</div></th>';
     }).join("");
 
-    var bodyRows = orderedRows.map(function (row) {
+    // Collapsing a group only hides rows visually between it and the next
+    // group (position-based), independent of which rows actually feed its
+    // total (which is now an explicit, user-picked selection).
+    var visibleRows = [];
+    var hiding = false;
+    orderedRows.forEach(function (row) {
+      if (row.grup) { visibleRows.push(row); hiding = !!state.siteForm.collapsedGroups[row.id]; return; }
+      if (!hiding) visibleRows.push(row);
+    });
+
+    var bodyRows = visibleRows.map(function (row) {
       var vals = displayValori[row.id] || {};
       var rowBg = row.culoare ? progresColorCss(row.culoare) : null;
-      var cellsHtml = orderedCols.map(function (col) {
+      var unconfigured = (row.grup || row.subtotal) && (!row.surseRanduri || row.surseRanduri.length === 0);
+      var cellsHtml = orderedCols.map(function (col, idx) {
         var editable = col.tip === "text" || (!row.grup && !row.subtotal && col.tip === "numar");
         var isEditingCell = editable && state.siteForm.gridCellEdit.rowId === row.id && state.siteForm.gridCellEdit.colId === col.id;
         var raw = vals[col.id];
         var isNumCol = col.tip === "numar" || col.tip === "calculat";
-        var display = isNumCol ? (formatGridNumber(raw || 0) + (col.tip === "calculat" && col.formula === "procent" ? "%" : "")) : esc(raw || "");
-        var cls = "progrid-cell" + (isNumCol ? " progrid-num" : "") + (col.tip === "calculat" ? " progrid-cell-computed" : "") + (editable ? " progrid-cell-editable" : "");
+        var display;
+        if (isNumCol && unconfigured) display = "—";
+        else display = isNumCol ? (formatGridNumber(raw || 0) + (col.tip === "calculat" && col.formula === "procent" ? "%" : "")) : esc(raw || "");
+        var stickyCls = idx === 0 ? " progrid-sticky-2" : "";
+        var cls = "progrid-cell" + (isNumCol ? " progrid-num" : "") + (col.tip === "calculat" ? " progrid-cell-computed" : "") + (editable ? " progrid-cell-editable" : "") + stickyCls;
         var cellBg = rowBg || (col.culoare ? progresColorCss(col.culoare) : null);
         var bgStyle = cellBg ? ' style="background:' + cellBg + '"' : "";
 
@@ -1820,19 +2061,24 @@
           var inputType = col.tip === "numar" ? ' type="number"' : "";
           return '<td class="' + cls + '"' + bgStyle + '><input class="' + inputCls + '"' + inputType + ' id="progcell-edit-' + row.id + '-' + col.id + '" draggable="false" data-progcell-input="1" value="' + esc(raw === undefined || raw === null ? "" : String(raw)) + '"></td>';
         }
-        var attrs = editable ? ' draggable="false" data-edit-cell="' + row.id + '|' + col.id + '" title="Dublu-click pentru a edita"' : "";
-        return '<td class="' + cls + '"' + attrs + bgStyle + '>' + display + '</td>';
+        var attrs = editable ? ' draggable="false" tabindex="0" data-edit-cell="' + row.id + '|' + col.id + '" title="Click = selectează (pentru lipire), dublu-click = editează"' : "";
+        var labelPrefix = (row.grup && col.id === labelColId && !isEditingCell) ? collapseToggleHTML(row) : "";
+        return '<td class="' + cls + '"' + attrs + bgStyle + '>' + labelPrefix + display + '</td>';
       }).join("");
 
       var rowCls = row.grup ? "progrow-group" : (row.subtotal ? "progrow-subtotal" : "");
       var gripStyle = rowBg ? ' style="background:' + rowBg + '"' : "";
       var delStyle = rowBg ? ' style="background:' + rowBg + '"' : "";
+      var rowSrcBtn = (row.grup || row.subtotal)
+        ? '<span class="progrid-rowsrc-btn' + (unconfigured ? " unconfigured" : "") + '" data-open-rowsrc="' + row.id + '" title="Alege ce rânduri adună acest total">' + icon("gear", 12) + '</span>'
+        : "";
+      var dupBtn = '<span class="progrid-rowsrc-btn" data-duplicate-row="' + site.id + '|' + row.id + '" title="Duplică rândul">' + icon("copy", 12) + '</span>';
       return '<tr class="' + rowCls + '" draggable="true" data-progrow-drag-id="' + row.id + '">' +
-        '<td class="progrid-grip"' + gripStyle + '>' +
-          '<span style="display:flex;align-items:center;gap:4px;justify-content:center">' + icon("grip", 13) + colorSwatchHTML("row", row.id, row.culoare) + '</span>' +
+        '<td class="progrid-grip progrid-sticky-1"' + gripStyle + '>' +
+          '<span style="display:flex;align-items:center;gap:3px;justify-content:center;flex-wrap:wrap">' + icon("grip", 13) + colorSwatchHTML("row", row.id, row.culoare) + rowSrcBtn + '</span>' +
         '</td>' +
         cellsHtml +
-        '<td class="progrid-del-cell"' + delStyle + '><span class="progrid-del" data-remove-row="' + site.id + '|' + row.id + '" title="Șterge rândul">' + icon("trash", 13) + '</span></td>' +
+        '<td class="progrid-del-cell"' + delStyle + '><span style="display:flex;align-items:center;gap:5px;justify-content:center">' + dupBtn + '<span class="progrid-del" data-remove-row="' + site.id + '|' + row.id + '" title="Șterge rândul">' + icon("trash", 13) + '</span></span></td>' +
       '</tr>';
     }).join("");
 
@@ -1841,13 +2087,14 @@
 
     var totalRow = "";
     if (data.grandTotals) {
-      var totalCells = orderedCols.map(function (col) {
-        if (col.tip === "text") return "<td>" + (col.id === labelColId ? "TOTAL GENERAL" : "") + "</td>";
+      var totalCells = orderedCols.map(function (col, idx) {
+        var stickyCls = idx === 0 ? " progrid-sticky-2" : "";
+        if (col.tip === "text") return '<td class="' + stickyCls.trim() + '">' + (col.id === labelColId ? "TOTAL GENERAL" : "") + "</td>";
         var v = data.grandTotals[col.id];
         var display = formatGridNumber(v || 0) + (col.tip === "calculat" && col.formula === "procent" ? "%" : "");
-        return '<td class="progrid-num">' + display + '</td>';
+        return '<td class="progrid-num' + stickyCls + '">' + display + '</td>';
       }).join("");
-      totalRow = '<tr class="progrow-total"><td></td>' + totalCells + '<td></td></tr>';
+      totalRow = '<tr class="progrow-total"><td class="progrid-sticky-1"></td>' + totalCells + '<td></td></tr>';
     }
 
     var summaryHtml = "";
@@ -1861,17 +2108,21 @@
 
     var addColFormHtml = state.siteForm.addColForm.open ? addColFormHTML(site, orderedCols) : "";
     var colorPopHtml = state.siteForm.colorPickerOpen.id ? colorPopoverHTML(state.siteForm.colorPickerOpen.type, state.siteForm.colorPickerOpen.id) : "";
+    var rowSrcPopHtml = state.siteForm.rowSourcesOpen ? rowSourcesPopoverHTML(site, state.siteForm.rowSourcesOpen) : "";
 
     return summaryHtml +
-      '<div class="progrid-wrap"><table class="progrid"><thead><tr><th></th>' + headCells + '<th></th></tr></thead>' +
+      '<div class="progrid-wrap"><table class="progrid">' + colGroupHtml + '<thead><tr><th class="progrid-sticky-1"></th>' + headCells + '<th></th></tr></thead>' +
       '<tbody>' + bodyRows + emptyRow + totalRow + '</tbody></table></div>' +
       '<div class="progrid-toolbar">' +
         '<button class="btn btn-ghost btn-sm" data-add-row="' + site.id + '">' + icon("plus", 13) + 'Adaugă linie</button>' +
         '<button class="btn btn-ghost btn-sm" data-add-group-row="' + site.id + '">' + icon("plus", 13) + 'Adaugă grup</button>' +
         '<button class="btn btn-ghost btn-sm" data-add-subtotal-row="' + site.id + '">' + icon("plus", 13) + 'Total intermediar</button>' +
         '<button class="btn btn-ghost btn-sm" data-toggle-addcol="' + site.id + '">' + icon("plus", 13) + 'Adaugă coloană</button>' +
+        '<button class="btn btn-ghost btn-sm" data-export-progres-csv="' + site.id + '">' + icon("doc", 13) + 'Exportă CSV</button>' +
+        '<button class="btn btn-ghost btn-sm" data-print-progres="' + site.id + '">' + icon("printer", 13) + 'Printează</button>' +
       '</div>' +
-      addColFormHtml + colorPopHtml;
+      '<div class="helper">Click pe o celulă o selectează (poți lipi din Excel cu Ctrl+V) · dublu-click o editează · trage mânerul ca să reordonezi.</div>' +
+      addColFormHtml + colorPopHtml + rowSrcPopHtml;
   }
 
   function docsPanelHTML(site) {
@@ -1987,10 +2238,14 @@
     else if (state.view === "detail") main = detailHTML();
     else if (state.view === "pontaj-global") main = pontajGlobalHTML();
 
-    document.getElementById("app").innerHTML = errorBanner + retryBanner +
-      '<div class="app">' + sidebarHTML() + '<div class="main"><div class="main-inner">' + main + '</div></div></div>';
+    var isWide = state.view === "detail" && state.activeTab === "progres";
+    var expandBtn = state.sidebarCollapsed ? '<div class="sidebar-expand-btn" data-toggle-sidebar="1" title="Arată bara laterală">' + icon("chevronRight", 15) + '</div>' : "";
+    document.getElementById("app").innerHTML = errorBanner + retryBanner + expandBtn +
+      '<div class="app' + (state.sidebarCollapsed ? " sidebar-hidden" : "") + '">' + sidebarHTML() +
+      '<div class="main"><div class="main-inner' + (isWide ? " wide" : "") + '">' + main + '</div></div></div>';
     positionOpenPopover();
     positionColorPopover();
+    positionRowSourcesPopover();
   }
 
   function positionOpenPopover() {
@@ -2020,7 +2275,44 @@
     pop.style.top = top + "px";
   }
 
+  function positionRowSourcesPopover() {
+    var rowId = state.siteForm.rowSourcesOpen;
+    if (!rowId) return;
+    var pop = document.querySelector(".rowsrcpop");
+    var btn = document.querySelector('[data-open-rowsrc="' + rowId + '"]');
+    if (!pop || !btn) return;
+    var r = btn.getBoundingClientRect();
+    var pw = pop.offsetWidth, ph = pop.offsetHeight;
+    var left = Math.min(Math.max(r.left, 8), window.innerWidth - pw - 8);
+    var top = (r.bottom + 4 + ph <= window.innerHeight) ? (r.bottom + 4) : Math.max(8, r.top - ph - 4);
+    pop.style.left = left + "px";
+    pop.style.top = top + "px";
+  }
+
   document.getElementById("app").addEventListener("click", function (e) {
+    // A single click on an editable grid cell just selects it (as a paste
+    // anchor for Ctrl+V) — it does NOT open the input, that's dblclick's job.
+    // Crucially this must NOT call render() in the common case: replacing
+    // the clicked <td> with a fresh DOM node between the two clicks of a
+    // dblclick gesture stops the browser from ever firing "dblclick" on it.
+    var pasteTarget = e.target.closest("[data-edit-cell]");
+    if (pasteTarget && e.target === pasteTarget) {
+      var ptParts = pasteTarget.dataset.editCell.split("|");
+      state.siteForm.pasteAnchor = { rowId: ptParts[0], colId: ptParts[1] };
+      var hadPopoverOpen = state.pontaj.openCell || state.siteForm.colorPickerOpen.id || state.siteForm.rowSourcesOpen;
+      state.pontaj.openCell = null;
+      state.siteForm.colorPickerOpen = { type: null, id: null };
+      state.siteForm.rowSourcesOpen = null;
+      if (hadPopoverOpen) {
+        render();
+        var refocus = document.querySelector('[data-edit-cell="' + ptParts[0] + '|' + ptParts[1] + '"]');
+        if (refocus) refocus.focus();
+      } else {
+        pasteTarget.focus();
+      }
+      return;
+    }
+
     var t = e.target.closest(
       "[data-go],[data-open-site],[data-tab],[data-global-site]," +
       "[data-pontaj-prev],[data-pontaj-next],[data-pontaj-mode],[data-cell-toggle],[data-set-status]," +
@@ -2030,7 +2322,9 @@
       "[data-site-subtab],[data-save-doc-valoare],[data-remove-doc-file],[data-add-aviz],[data-remove-aviz]," +
       "[data-add-gendoc],[data-remove-gendoc]," +
       "[data-add-row],[data-add-group-row],[data-add-subtotal-row],[data-remove-row],[data-remove-col],[data-toggle-addcol],[data-cancel-addcol],[data-submit-addcol]," +
-      "[data-toggle-color],[data-pick-color]"
+      "[data-toggle-color],[data-pick-color],[data-toggle-sidebar]," +
+      "[data-toggle-collapse-group],[data-duplicate-row],[data-export-progres-csv],[data-print-progres]," +
+      "[data-open-rowsrc],[data-toggle-rowsrc],[data-select-all-rowsrc],[data-select-none-rowsrc],[data-close-rowsrc]"
     );
 
     // Only re-render when something actually changes. A blanket render() on every
@@ -2050,6 +2344,12 @@
     // clicking anywhere outside an open color popover closes it
     if (state.siteForm.colorPickerOpen.id && !(t && (t.dataset.toggleColor || t.dataset.pickColor))) {
       state.siteForm.colorPickerOpen = { type: null, id: null };
+      needsRender = true;
+    }
+
+    // clicking anywhere outside an open "which rows does this total add" popover closes it
+    if (state.siteForm.rowSourcesOpen && !(t && (t.dataset.openRowsrc || t.dataset.toggleRowsrc || t.dataset.selectAllRowsrc || t.dataset.selectNoneRowsrc || t.dataset.closeRowsrc))) {
+      state.siteForm.rowSourcesOpen = null;
       needsRender = true;
     }
 
@@ -2111,6 +2411,7 @@
       }
       else if (t.dataset.saveCompany) { saveCompanyFromInputs(); state.pontaj.editingCompany = false; }
       else if (t.dataset.logout) { doLogout(); return; }
+      else if (t.dataset.toggleSidebar) { state.sidebarCollapsed = !state.sidebarCollapsed; }
       else if (t.dataset.toggleSelectMode) {
         state.pontaj.selectMode = !state.pontaj.selectMode;
         state.pontaj.selectedCells = [];
@@ -2218,6 +2519,45 @@
           }
         }
       }
+      else if (t.dataset.toggleCollapseGroup) {
+        var gId = t.dataset.toggleCollapseGroup;
+        state.siteForm.collapsedGroups[gId] = !state.siteForm.collapsedGroups[gId];
+      }
+      else if (t.dataset.duplicateRow) {
+        var drParts = t.dataset.duplicateRow.split("|");
+        var drSite = findSite(drParts[0]);
+        if (drSite) duplicateRow(drSite, drParts[1]);
+      }
+      else if (t.dataset.exportProgresCsv) {
+        var ecSite = findSite(t.dataset.exportProgresCsv);
+        if (ecSite) exportProgresCSV(ecSite);
+        needsRender = false;
+      }
+      else if (t.dataset.printProgres) {
+        var ppSite = findSite(t.dataset.printProgres);
+        if (ppSite) printProgres(ppSite);
+        needsRender = false;
+      }
+      else if (t.dataset.openRowsrc) {
+        state.siteForm.rowSourcesOpen = state.siteForm.rowSourcesOpen === t.dataset.openRowsrc ? null : t.dataset.openRowsrc;
+      }
+      else if (t.dataset.toggleRowsrc) {
+        var trsParts = t.dataset.toggleRowsrc.split("|");
+        var trsSite = findSite(state.selectedSiteId);
+        if (trsSite) toggleRowSource(trsSite, trsParts[0], trsParts[1]);
+      }
+      else if (t.dataset.selectAllRowsrc) {
+        var saSite = findSite(state.selectedSiteId);
+        if (saSite) {
+          var allIds = randuriForSite(saSite).filter(function (r) { return !r.grup && !r.subtotal; }).map(function (r) { return r.id; });
+          setAllRowSources(saSite, t.dataset.selectAllRowsrc, allIds);
+        }
+      }
+      else if (t.dataset.selectNoneRowsrc) {
+        var snSite = findSite(state.selectedSiteId);
+        if (snSite) setAllRowSources(snSite, t.dataset.selectNoneRowsrc, []);
+      }
+      else if (t.dataset.closeRowsrc) { state.siteForm.rowSourcesOpen = null; }
     }
 
     if (needsRender) {
@@ -2466,6 +2806,48 @@
     progRowDragState.id = null;
     progColDragState.id = null;
     clearDocDragClasses();
+  });
+
+  // Column resize: a narrow handle at the right edge of each header cell.
+  // Live width is applied straight to the <col> element (not through
+  // render()) so dragging is smooth, then committed + persisted on mouseup.
+  var colResizeState = { colId: null, startX: 0, startWidth: 0 };
+  document.getElementById("app").addEventListener("mousedown", function (e) {
+    var handle = e.target.closest("[data-resize-col]");
+    if (!handle) return;
+    e.preventDefault();
+    var th = handle.closest("th");
+    colResizeState.colId = handle.dataset.resizeCol;
+    colResizeState.startX = e.clientX;
+    colResizeState.startWidth = th ? th.getBoundingClientRect().width : 120;
+  });
+  document.addEventListener("mousemove", function (e) {
+    if (!colResizeState.colId) return;
+    var newWidth = Math.max(50, Math.round(colResizeState.startWidth + (e.clientX - colResizeState.startX)));
+    var col = document.querySelector('col[data-col-id="' + colResizeState.colId + '"]');
+    if (col) col.style.width = newWidth + "px";
+  });
+  document.addEventListener("mouseup", function () {
+    if (!colResizeState.colId) return;
+    var col = document.querySelector('col[data-col-id="' + colResizeState.colId + '"]');
+    var newWidth = col ? parseInt(col.style.width, 10) : null;
+    var colId = colResizeState.colId;
+    colResizeState.colId = null;
+    var site = findSite(state.selectedSiteId);
+    if (site && newWidth) resizeColumn(site, colId, newWidth);
+  });
+
+  // Paste from Excel: with a grid cell selected (single click), Ctrl+V
+  // spills the clipboard's tab/newline-separated values starting there.
+  document.getElementById("app").addEventListener("paste", function (e) {
+    var anchor = state.siteForm.pasteAnchor;
+    if (!anchor || !anchor.rowId) return;
+    var text = (e.clipboardData || window.clipboardData).getData("text");
+    if (!text) return;
+    var site = findSite(state.selectedSiteId);
+    if (!site) return;
+    e.preventDefault();
+    pasteIntoGrid(site, anchor.rowId, anchor.colId, text);
   });
 
   // If a save failed (offline / dropped request), retry automatically the moment
