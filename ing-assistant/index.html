@@ -296,12 +296,16 @@
     padding: 3px 5px; font-family: inherit; font-size: inherit; text-align: center; }
   .doclist-empty.progrid-empty-cell { padding: 16px 22px; text-align: center; }
 
-  /* per-cell formula: the small "ƒ" toggle + the pick-cells builder mode */
+  /* per-cell formula: the small "ƒ" toggle + the pick-cells builder mode.
+     Deliberately NOT hover-revealed: a "td:hover .child" rule forces the
+     browser to recompute a descendant's style on every cell the pointer
+     crosses, and during a native HTML5 row/column drag the pointer sweeps
+     over every cell in the table — the same freeze-trigger profile that
+     position:sticky caused earlier (see the drag-freeze note below). Always
+     visible but dim keeps the cost flat instead of per-cell-crossed. */
   .progrid-formula-btn { position: absolute; top: 1px; right: 2px; font-size: 9px; font-weight: 700; font-style: normal;
-    line-height: 1; color: var(--ink-faint); cursor: pointer; opacity: 0; padding: 1px 3px; border-radius: 3px; }
-  .progrid td:hover .progrid-formula-btn, .progrid-formula-btn.has-formula { opacity: 1; }
+    line-height: 1; color: var(--border-strong); cursor: pointer; padding: 1px 3px; border-radius: 3px; }
   .progrid-formula-btn.has-formula { color: var(--navy); background: var(--navy-soft); }
-  .progrid-formula-btn:hover { background: var(--navy-soft); color: var(--navy); }
   .progrid td.progrid-term-target { box-shadow: inset 0 0 0 2px var(--navy); background: var(--navy-soft) !important; }
   .progrid td.progrid-term-pos { box-shadow: inset 0 0 0 2px var(--green); background: var(--green-soft) !important; }
   .progrid td.progrid-term-neg { box-shadow: inset 0 0 0 2px var(--red); background: var(--red-soft) !important; }
@@ -487,7 +491,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b37-2026-09-18";
+  var BUILD = "b38-2026-09-18";
   var todayD = new Date();
 
   function emptySiteDraft() {
