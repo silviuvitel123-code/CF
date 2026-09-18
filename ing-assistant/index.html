@@ -243,9 +243,12 @@
     letter-spacing: .04em; color: var(--ink-faint); padding: 0; text-align: left; position: relative; }
   .progrid-th-inner { display: flex; align-items: center; gap: 5px; padding: 8px 10px; overflow: hidden; }
   .progrid-resize-handle { position: absolute; top: 0; right: 0; width: 6px; height: 100%; cursor: col-resize; z-index: 4; }
-  .progrid .progrid-sticky-1 { position: sticky; left: 0; z-index: 2; }
-  .progrid .progrid-sticky-2 { position: sticky; left: 56px; z-index: 2; border-right: 1.5px solid var(--border-strong); }
-  .progrid.drag-in-progress .progrid-sticky-1, .progrid.drag-in-progress .progrid-sticky-2 { position: static; }
+  /* Frozen (position:sticky) columns were removed — combined with native
+     HTML5 drag-and-drop on the row/column headers, sticky table cells are
+     a known freeze trigger in Chromium, and it kept reproducing even after
+     mitigating the drag-image and dragover-layout costs. The class names
+     stay (still used for background/border styling) but no longer stick. */
+  .progrid .progrid-sticky-2 { border-right: 1.5px solid var(--border-strong); }
   .progrid td.progrid-sticky-1, .progrid td.progrid-sticky-2 { background: var(--surface); }
   .progrid th.progrid-sticky-1, .progrid th.progrid-sticky-2 { background: var(--surface-2); }
   .progrid tbody tr.progrow-group td.progrid-sticky-1, .progrid tbody tr.progrow-group td.progrid-sticky-2,
@@ -488,7 +491,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b33-2026-09-17";
+  var BUILD = "b34-2026-09-18";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -2837,15 +2840,11 @@
   var dragGhostEl = document.createElement("div");
   dragGhostEl.style.cssText = "position:fixed;top:-999px;left:-999px;width:1px;height:1px;";
   document.body.appendChild(dragGhostEl);
-  // Sticky positioning is also disabled for the duration of the drag, as
-  // cheap extra insurance against any repeated-layout cost during dragover.
   document.getElementById("app").addEventListener("dragstart", function (e) {
     var progRow = e.target.closest("[data-progrow-drag-id]");
     if (progRow) {
       progRowDragState.id = progRow.dataset.progrowDragId;
       progRow.classList.add("dragging");
-      var progridEl1 = progRow.closest(".progrid");
-      if (progridEl1) progridEl1.classList.add("drag-in-progress");
       if (e.dataTransfer) { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setDragImage(dragGhostEl, 0, 0); }
       return;
     }
@@ -2853,8 +2852,6 @@
     if (progCol) {
       progColDragState.id = progCol.dataset.progcolDragId;
       progCol.classList.add("dragging");
-      var progridEl2 = progCol.closest(".progrid");
-      if (progridEl2) progridEl2.classList.add("drag-in-progress");
       if (e.dataTransfer) { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setDragImage(dragGhostEl, 0, 0); }
       return;
     }
@@ -2970,7 +2967,6 @@
     if (dragoverRAF) { cancelAnimationFrame(dragoverRAF); dragoverRAF = null; }
     dragoverPending = null;
     clearDocDragClasses();
-    document.querySelectorAll(".progrid.drag-in-progress").forEach(function (el) { el.classList.remove("drag-in-progress"); });
   });
 
   // Column resize: a narrow handle at the right edge of each header cell.
