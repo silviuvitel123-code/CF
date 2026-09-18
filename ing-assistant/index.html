@@ -44,6 +44,22 @@
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; min-height: 100%; }
+  /* Tells the browser its OWN chrome (native <select> popups, date pickers,
+     scrollbars, spell-check squiggles) should default to dark too — without
+     this, those bits of UI the page can't style directly stay light even
+     though every element below is explicitly dark. */
+  :root { color-scheme: dark; }
+  /* Form controls don't inherit color/background from the page the way
+     plain elements do — every browser's UA stylesheet gives them their own
+     opaque default (usually white/black) unless told otherwise. Several
+     specific input/select/textarea rules further down only override a
+     border or padding and were relying on inheriting the rest, which is
+     exactly what silently left them white — this blanket rule is the actual
+     fix, and it only fills in background/color/font where a more specific
+     rule doesn't already set them, so nothing already-correct changes. */
+  input, select, textarea { background: var(--surface); color: var(--ink); font-family: var(--sans); border-color: var(--border-strong); }
+  input::placeholder, textarea::placeholder { color: var(--ink-faint); opacity: 1; }
+  input:disabled, select:disabled, textarea:disabled { opacity: .5; }
   body { font-family: var(--sans); color: var(--ink);
     background:
       radial-gradient(circle at 8% 90%, rgba(255,255,255,.025), transparent 40%),
@@ -554,7 +570,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b45-2026-09-18";
+  var BUILD = "b46-2026-09-18";
   var todayD = new Date();
 
   function emptySiteDraft() {
