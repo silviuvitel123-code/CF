@@ -4,6 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ing. Assistant</title>
+<!-- Installable as a desktop/mobile app: manifest + icons + a service worker
+     with a fetch handler are what Chrome/Edge require before they'll offer
+     "Install app". The service worker (sw.js) deliberately caches nothing —
+     see the comment in that file for why. -->
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0b0e17">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ing. Assistant">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -544,7 +554,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b44-2026-09-18";
+  var BUILD = "b45-2026-09-18";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -3556,6 +3566,16 @@
     });
   }
 })();
+</script>
+<script>
+  // Progressive enhancement only — never lets a missing/failed registration
+  // (unsupported browser, file:// during local testing, offline) affect the
+  // app itself, since installability is a nice-to-have, not a dependency.
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("/sw.js").catch(function () {});
+    });
+  }
 </script>
 </body>
 </html>
