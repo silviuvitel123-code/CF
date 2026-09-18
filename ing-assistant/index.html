@@ -7,6 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- Motion (motion.dev) — vanilla-JS animation, no React/build step needed.
+     Purely a progressive enhancement: every call site below guards for its
+     absence (motionAnimate()), so a blocked/slow CDN never breaks the app,
+     it just skips the transition. -->
+<script src="https://cdn.jsdelivr.net/npm/motion@11/dist/motion.js" defer></script>
 <style>
   :root{
     --bg:oklch(97% 0.006 75); --surface:oklch(100% 0 0); --surface-2:oklch(94.5% 0.012 75);
@@ -30,10 +35,16 @@
   /* sidebar */
   .sidebar { width: 260px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border);
     display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
-  .app.sidebar-hidden .sidebar { display: none; }
+  /* Collapsed state is width:0 (animated via Motion, see toggleSidebarCollapsed())
+     rather than display:none, so the width change itself can be animated —
+     display can't be transitioned, but width can. */
+  .app.sidebar-hidden .sidebar { width: 0; min-width: 0; padding: 0; border-right: none; overflow: hidden; }
+  .app.sidebar-hidden .sidebar-collapse-btn { opacity: 0; pointer-events: none; }
   .sidebar-collapse-btn { position: absolute; top: 18px; right: -12px; width: 24px; height: 24px; border-radius: 50%;
     background: var(--surface); border: 1px solid var(--border-strong); display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: var(--ink-soft); box-shadow: 0 1px 4px rgba(20,20,30,.14); z-index: 5; }
+    cursor: pointer; color: var(--ink-soft); box-shadow: 0 1px 4px rgba(20,20,30,.14); z-index: 5;
+    transition: opacity .15s ease, transform .1s ease; }
+  .sidebar-collapse-btn:active, .sidebar-expand-btn:active { transform: scale(.9); }
   .sidebar-expand-btn { position: fixed; top: 18px; left: 14px; width: 28px; height: 28px; border-radius: 7px;
     background: var(--surface); border: 1px solid var(--border-strong); display: flex; align-items: center; justify-content: center;
     cursor: pointer; color: var(--ink-soft); box-shadow: 0 2px 8px rgba(20,20,30,.1); z-index: 50; }
@@ -44,15 +55,19 @@
   .brand-sub { font-size: 11px; color: var(--ink-faint); margin-top: 1px; }
   .nav { padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; }
   .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 7px;
-    font-size: 13.5px; font-weight: 500; color: var(--ink-soft); cursor: pointer; }
+    font-size: 13.5px; font-weight: 500; color: var(--ink-soft); cursor: pointer;
+    transition: background-color .15s ease, color .15s ease, transform .1s ease; }
   .nav-item:hover { background: var(--surface-2); }
+  .nav-item:active { transform: scale(.97); }
   .nav-item svg { flex-shrink: 0; color: var(--ink-faint); }
   .nav-item.active { background: var(--navy-soft); color: var(--navy); }
   .nav-item.active svg { color: var(--navy); }
   .sites { display: flex; flex-direction: column; gap: 1px; padding: 0 10px; }
   .site-row { display: flex; align-items: center; gap: 9px; padding: 8px 10px 8px 34px; border-radius: 7px;
-    font-size: 12.5px; color: var(--ink-soft); cursor: pointer; }
+    font-size: 12.5px; color: var(--ink-soft); cursor: pointer;
+    transition: background-color .15s ease, color .15s ease, transform .1s ease; }
   .site-row:hover { background: var(--surface-2); }
+  .site-row:active { transform: scale(.97); }
   .site-row.active { background: var(--surface-2); color: var(--ink); font-weight: 600; }
   .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
   .dot-activ { background: var(--green); }
@@ -79,11 +94,13 @@
   .h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
   .h1-sub { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
   .btn { display: inline-flex; align-items: center; gap: 7px; border-radius: 3px; font-family: var(--sans);
-    font-size: 13px; font-weight: 600; cursor: pointer; padding: 10px 16px; border: none; }
+    font-size: 13px; font-weight: 600; cursor: pointer; padding: 10px 16px; border: none;
+    transition: background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .1s ease; }
   .btn-primary { background: var(--navy); color: white; }
   .btn-ghost { border: 1px solid var(--border-strong); background: var(--surface); color: var(--ink); }
   .btn-sm { padding: 6px 11px; font-size: 11.5px; }
   .btn[disabled] { opacity: .4; cursor: not-allowed; }
+  .btn:active:not([disabled]) { transform: scale(.96); }
 
   /* dashboard */
   .topbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
@@ -140,14 +157,17 @@
   .ring-val { position: relative; font-family: var(--mono); font-size: 11px; font-weight: 700; }
   .tabs { display: flex; gap: 4px; margin-bottom: 22px; border-bottom: 1px solid var(--border); }
   .tab { padding: 10px 16px; font-size: 13px; font-weight: 600; color: var(--ink-soft); border-bottom: 2px solid transparent;
-    display: flex; align-items: center; gap: 7px; cursor: pointer; }
+    display: flex; align-items: center; gap: 7px; cursor: pointer;
+    transition: color .15s ease, border-color .15s ease, transform .1s ease; }
   .tab:hover { color: var(--ink); }
   .tab.active { color: var(--navy); border-bottom-color: var(--navy); }
+  .tab:active { transform: scale(.97); }
   .subtabs { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
   .subtab { padding: 8px 14px; font-size: 12.5px; font-weight: 600; color: var(--ink-faint); border-bottom: 2px solid transparent;
-    cursor: pointer; }
+    cursor: pointer; transition: color .15s ease, border-color .15s ease, transform .1s ease; }
   .subtab:hover { color: var(--ink-soft); }
   .subtab.active { color: var(--navy); border-bottom-color: var(--navy); }
+  .subtab:active { transform: scale(.97); }
   .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 22px; }
 
   /* pontaj */
@@ -505,7 +525,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b42-2026-09-18";
+  var BUILD = "b43-2026-09-18";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -2646,6 +2666,31 @@
       "</div>";
   }
 
+  // Motion (window.Motion, loaded via CDN <script> in <head>) is a pure
+  // progressive enhancement: every call goes through this helper, which
+  // no-ops silently if the library never loaded (blocked CDN, offline,
+  // ad-blocker, etc.) — a missing animation is fine, a thrown error that
+  // breaks the click that triggered it is not. onDone (optional) always
+  // fires exactly once, animated or not, so callers can rely on it to
+  // clean up (e.g. clear an inline style) either way.
+  function motionAnimate(el, keyframes, options, onDone) {
+    if (!el || typeof Motion === "undefined" || !Motion.animate) { if (onDone) onDone(); return; }
+    try {
+      var anim = Motion.animate(el, keyframes, options);
+      if (onDone) {
+        if (anim && anim.finished && anim.finished.then) anim.finished.then(onDone, onDone);
+        else setTimeout(onDone, ((options && options.duration) || 0.2) * 1000 + 30);
+      }
+    } catch (e) { if (onDone) onDone(); }
+  }
+
+  // Tracks which "place" in the app the last render showed, so a fresh
+  // entrance transition only plays on an actual navigation (tab, subtab,
+  // opening a site, switching view) — not on every render in general
+  // (typing in a cell, ticking a checkbox, a background save resolving…),
+  // which would be distracting rather than smooth.
+  var lastNavKey = null;
+
   function render() {
     if (progresDragActive) { renderQueuedDuringDrag = true; return; }
     var errorBanner = syncError ? '<div class="sync-error">' + esc(syncError) + '</div>' : "";
@@ -2666,6 +2711,10 @@
     else if (state.view === "detail") main = detailHTML();
     else if (state.view === "pontaj-global") main = pontajGlobalHTML();
 
+    var navKey = state.view + "|" + state.activeTab + "|" + state.siteForm.subTab + "|" + state.siteForm.progresSubTab + "|" + state.selectedSiteId;
+    var navChanged = navKey !== lastNavKey;
+    lastNavKey = navKey;
+
     var isWide = state.view === "detail" && state.activeTab === "progres";
     var expandBtn = state.sidebarCollapsed ? '<div class="sidebar-expand-btn" data-toggle-sidebar="1" title="Arată bara laterală">' + icon("chevronRight", 15) + '</div>' : "";
     document.getElementById("app").innerHTML = errorBanner + retryBanner + expandBtn +
@@ -2673,6 +2722,28 @@
       '<div class="main"><div class="main-inner' + (isWide ? " wide" : "") + '">' + main + '</div></div></div>';
     positionOpenPopover();
     positionColorPopover();
+    if (navChanged) {
+      var mainInner = document.querySelector(".main-inner");
+      motionAnimate(mainInner, { opacity: [0, 1], transform: ["translateY(6px)", "translateY(0px)"] }, { duration: 0.22, easing: "ease-out" });
+    }
+  }
+
+  // Sidebar collapse/expand: width is measured before and after the render
+  // (rather than relying on a CSS transition, which can't animate a full
+  // innerHTML rebuild — the new sidebar node just appears already at its
+  // final width) and handed to Motion as explicit from/to keyframes, so the
+  // collapse genuinely slides instead of snapping.
+  function toggleSidebarCollapsed() {
+    var sidebarEl = document.querySelector(".sidebar");
+    var oldWidth = sidebarEl ? sidebarEl.getBoundingClientRect().width : 0;
+    state.sidebarCollapsed = !state.sidebarCollapsed;
+    render();
+    var newSidebarEl = document.querySelector(".sidebar");
+    if (!newSidebarEl) return;
+    var newWidth = newSidebarEl.getBoundingClientRect().width;
+    motionAnimate(newSidebarEl, { width: [oldWidth + "px", newWidth + "px"] }, { duration: 0.25, easing: "ease" }, function () {
+      newSidebarEl.style.width = "";
+    });
   }
 
   function positionOpenPopover() {
@@ -2829,7 +2900,7 @@
       }
       else if (t.dataset.saveCompany) { saveCompanyFromInputs(); state.pontaj.editingCompany = false; }
       else if (t.dataset.logout) { doLogout(); return; }
-      else if (t.dataset.toggleSidebar) { state.sidebarCollapsed = !state.sidebarCollapsed; }
+      else if (t.dataset.toggleSidebar) { toggleSidebarCollapsed(); needsRender = false; }
       else if (t.dataset.toggleSelectMode) {
         state.pontaj.selectMode = !state.pontaj.selectMode;
         state.pontaj.selectedCells = [];
