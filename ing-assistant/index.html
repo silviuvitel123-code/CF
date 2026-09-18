@@ -251,8 +251,7 @@
   .progrid .progrid-sticky-2 { border-right: 1.5px solid var(--border-strong); }
   .progrid td.progrid-sticky-1, .progrid td.progrid-sticky-2 { background: var(--surface); }
   .progrid th.progrid-sticky-1, .progrid th.progrid-sticky-2 { background: var(--surface-2); }
-  .progrid tbody tr.progrow-group td.progrid-sticky-1, .progrid tbody tr.progrow-group td.progrid-sticky-2,
-  .progrid tbody tr.progrow-total td.progrid-sticky-1, .progrid tbody tr.progrow-total td.progrid-sticky-2 { background: var(--surface-2); }
+  .progrid tbody tr.progrow-group td.progrid-sticky-1, .progrid tbody tr.progrow-group td.progrid-sticky-2 { background: var(--surface-2); }
   .progrid-collapse-btn { cursor: pointer; color: var(--ink-soft); display: inline-flex; align-items: center;
     justify-content: center; width: 12px; font-size: 11px; font-weight: 700; vertical-align: middle; margin-right: 2px; }
   .progrid td.progrid-cell-editable:focus { outline: 2px solid var(--navy); outline-offset: -2px; }
@@ -273,8 +272,6 @@
   .progrid tbody tr.drag-over-top td { box-shadow: inset 0 2px 0 var(--navy); }
   .progrid tbody tr.drag-over-bottom td { box-shadow: inset 0 -2px 0 var(--navy); }
   .progrid tbody tr.progrow-group td { background: var(--surface-2); font-weight: 700; }
-  .progrid tbody tr.progrow-subtotal td { font-weight: 700; border-top: 1.5px solid var(--border-strong); }
-  .progrid tbody tr.progrow-total td { background: var(--surface-2); font-weight: 700; border-top: 2px solid var(--border-strong); text-align: center; }
   .progrid td { padding: 8px 10px; color: var(--ink); }
   .progrid-color-btn { width: 13px; height: 13px; border-radius: 50%; border: 1px solid var(--border-strong);
     cursor: pointer; flex-shrink: 0; display: inline-block; background: transparent; padding: 0; }
@@ -285,18 +282,8 @@
   .colorpop-clear { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 1px solid var(--border-strong);
     display: flex; align-items: center; justify-content: center; color: var(--ink-faint); background: var(--surface); font-size: 11px; padding: 0; }
   .progrid-rowsrc-btn { color: var(--ink-faint); cursor: pointer; display: flex; flex-shrink: 0; }
-  .progrid-rowsrc-btn.unconfigured { color: var(--amber-strong); }
   .progrid-rowsrc-btn:hover { color: var(--navy); }
-  .rowsrcpop { position: fixed; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(20,20,30,.18); padding: 12px; z-index: 40; width: 260px; max-height: 320px;
-    display: flex; flex-direction: column; gap: 8px; }
-  .rowsrcpop-title { font-size: 12px; font-weight: 700; color: var(--ink); }
-  .rowsrcpop-actions { display: flex; gap: 12px; }
-  .rowsrcpop-link { font-size: 11.5px; font-weight: 600; color: var(--navy); cursor: pointer; }
-  .rowsrcpop-link:hover { text-decoration: underline; }
-  .rowsrcpop-list { overflow-y: auto; max-height: 190px; display: flex; flex-direction: column; gap: 6px; }
-  .rowsrc-check { display: flex; align-items: center; gap: 7px; font-size: 12.5px; cursor: pointer; }
-  .progrid td.progrid-cell { text-align: center; }
+  .progrid td.progrid-cell { text-align: center; position: relative; }
   .progrid td.progrid-cell-editable { cursor: pointer; }
   .progrid td.progrid-cell-editable:hover { background: var(--surface-2); }
   .progrid td.progrid-cell-computed { color: var(--ink-soft); font-style: italic; }
@@ -307,8 +294,17 @@
   .progrid-del:hover { color: oklch(55% 0.18 25); }
   .progrid-cell-input { width: 100%; box-sizing: border-box; border: 1px solid var(--navy); border-radius: 3px;
     padding: 3px 5px; font-family: inherit; font-size: inherit; text-align: center; }
-  .progrid-num-input { font-family: var(--mono); }
   .doclist-empty.progrid-empty-cell { padding: 16px 22px; text-align: center; }
+
+  /* per-cell formula: the small "ƒ" toggle + the pick-cells builder mode */
+  .progrid-formula-btn { position: absolute; top: 1px; right: 2px; font-size: 9px; font-weight: 700; font-style: normal;
+    line-height: 1; color: var(--ink-faint); cursor: pointer; opacity: 0; padding: 1px 3px; border-radius: 3px; }
+  .progrid td:hover .progrid-formula-btn, .progrid-formula-btn.has-formula { opacity: 1; }
+  .progrid-formula-btn.has-formula { color: var(--navy); background: var(--navy-soft); }
+  .progrid-formula-btn:hover { background: var(--navy-soft); color: var(--navy); }
+  .progrid td.progrid-term-target { box-shadow: inset 0 0 0 2px var(--navy); background: var(--navy-soft) !important; }
+  .progrid td.progrid-term-pos { box-shadow: inset 0 0 0 2px var(--green); background: var(--green-soft) !important; }
+  .progrid td.progrid-term-neg { box-shadow: inset 0 0 0 2px var(--red); background: var(--red-soft) !important; }
 
   .progrid-toolbar { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
   .addcol-form { border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 12px;
@@ -491,7 +487,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b36-2026-09-18";
+  var BUILD = "b37-2026-09-18";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -525,7 +521,7 @@
       gridColLabelEdit: { colId: null, draft: "" },
       addColForm: { open: false, tabel: null, label: "", tip: "numar", numarator: "", numitor: "", surseSuma: {} },
       colorPickerOpen: { type: null, id: null },
-      rowSourcesOpen: null,
+      formulaBuilder: null,
       collapsedGroups: {},
       pasteAnchor: null
     },
@@ -1012,6 +1008,17 @@
   var progresUndoStack = {};
   var PROGRES_UNDO_LIMIT = 20;
 
+  // Deep-clones a row's formuleCelule map ({ colId: { terms: [{rowId,colId,sign}] } })
+  // so undo snapshots and reconciliation never share mutable term arrays
+  // with the live row.
+  function cloneFormuleCelule(formule) {
+    var out = {};
+    Object.keys(formule || {}).forEach(function (colId) {
+      out[colId] = { terms: (formule[colId].terms || []).map(function (t) { return { rowId: t.rowId, colId: t.colId, sign: t.sign }; }) };
+    });
+    return out;
+  }
+
   // Generic snapshot-based undo: every mutating action snapshots the site's
   // full columns+rows+order BEFORE it runs, so undo never needs a bespoke
   // "inverse" per action — it just reconciles current state back to the
@@ -1021,7 +1028,7 @@
   function snapshotProgres(site, tabel) {
     return {
       coloane: coloaneForSite(site, tabel).map(function (c) { return { id: c.id, label: c.label, tip: c.tip, formula: c.formula, surse: (c.surse || []).slice(), culoare: c.culoare, latime: c.latime }; }),
-      randuri: randuriForSite(site, tabel).map(function (r) { return { id: r.id, grup: r.grup, subtotal: r.subtotal, valori: Object.assign({}, r.valori), culoare: r.culoare, surseRanduri: (r.surseRanduri || []).slice() }; }),
+      randuri: randuriForSite(site, tabel).map(function (r) { return { id: r.id, grup: r.grup, valori: Object.assign({}, r.valori), culoare: r.culoare, formuleCelule: cloneFormuleCelule(r.formuleCelule) }; }),
       coloaneOrder: (site.progresColoaneOrder && site.progresColoaneOrder[tabel]) ? site.progresColoaneOrder[tabel].slice() : null,
       randuriOrder: (site.progresRanduriOrder && site.progresRanduriOrder[tabel]) ? site.progresRanduriOrder[tabel].slice() : null
     };
@@ -1069,12 +1076,12 @@
     targetRows.forEach(function (tr) {
       var existing = progresRanduri.filter(function (r) { return r.id === tr.id; })[0];
       if (!existing) {
-        var copy = { id: tr.id, santierId: site.id, grup: tr.grup, subtotal: tr.subtotal, valori: Object.assign({}, tr.valori), culoare: tr.culoare, surseRanduri: tr.surseRanduri.slice(), tabel: tabel };
+        var copy = { id: tr.id, santierId: site.id, grup: tr.grup, valori: Object.assign({}, tr.valori), culoare: tr.culoare, formuleCelule: cloneFormuleCelule(tr.formuleCelule), tabel: tabel };
         progresRanduri.push(copy);
-        sb.from("santier_progres_randuri").insert({ id: copy.id, santier_id: site.id, grup: copy.grup, subtotal: copy.subtotal, valori: copy.valori, culoare: copy.culoare, surse_randuri: copy.surseRanduri, tabel: tabel }).then(function (res) { if (res.error) console.error(res.error); });
+        sb.from("santier_progres_randuri").insert({ id: copy.id, santier_id: site.id, grup: copy.grup, valori: copy.valori, culoare: copy.culoare, formule_celule: copy.formuleCelule, tabel: tabel }).then(function (res) { if (res.error) console.error(res.error); });
       } else {
-        existing.grup = tr.grup; existing.subtotal = tr.subtotal; existing.valori = Object.assign({}, tr.valori); existing.culoare = tr.culoare; existing.surseRanduri = tr.surseRanduri.slice();
-        sb.from("santier_progres_randuri").update({ grup: existing.grup, subtotal: existing.subtotal, valori: existing.valori, culoare: existing.culoare, surse_randuri: existing.surseRanduri }).eq("id", existing.id).then(function (res) { if (res.error) console.error(res.error); });
+        existing.grup = tr.grup; existing.valori = Object.assign({}, tr.valori); existing.culoare = tr.culoare; existing.formuleCelule = cloneFormuleCelule(tr.formuleCelule);
+        sb.from("santier_progres_randuri").update({ grup: existing.grup, valori: existing.valori, culoare: existing.culoare, formule_celule: existing.formuleCelule }).eq("id", existing.id).then(function (res) { if (res.error) console.error(res.error); });
       }
     });
   }
@@ -1102,7 +1109,7 @@
   }
   function colWidth(col) { return col.latime || (col.tip === "text" ? 170 : 115); }
   function progresRandFromRow(r) {
-    return { id: r.id, santierId: r.santier_id, grup: !!r.grup, subtotal: !!r.subtotal, valori: r.valori || {}, culoare: r.culoare || null, surseRanduri: r.surse_randuri || [], tabel: r.tabel || "centralizare" };
+    return { id: r.id, santierId: r.santier_id, grup: !!r.grup, valori: r.valori || {}, culoare: r.culoare || null, formuleCelule: r.formule_celule || {}, tabel: r.tabel || "centralizare" };
   }
   var PROGRES_COLORS = [
     { key: "rosu", css: "var(--red-soft)" },
@@ -1213,11 +1220,6 @@
     });
   }
 
-  function cellNumber(row, colId) {
-    var v = row.valori[colId];
-    var n = typeof v === "number" ? v : parseFloat(v);
-    return isNaN(n) ? 0 : n;
-  }
   function numOf(valori, id) { var v = valori[id]; var n = typeof v === "number" ? v : parseFloat(v); return isNaN(n) ? 0 : n; }
   function computeCalcValue(col, valori) {
     if (col.formula === "suma") {
@@ -1271,12 +1273,17 @@
     return rounded.toLocaleString("ro-RO", { maximumFractionDigits: 2 });
   }
 
-  // Builds the fully-resolved grid for a site: column/row order applied.
-  // A grup or subtotal row sums ONLY the rows explicitly picked for it
-  // (row.surseRanduri) — never an automatic "everything below/until the
-  // next boundary" guess, since that silently added incompatible units
-  // (e.g. bucăți + metri liniari) together. The grand-total row is the
-  // one place a full automatic sum still makes sense: every item row.
+  // Builds the fully-resolved grid for a site: column/row order applied,
+  // every cell independent. "grup" is purely a visual/collapse marker now —
+  // every row (group or not) computes the same way: its own raw values,
+  // with column-level "calculat" columns (from a template or "Adaugă
+  // coloană") resolved first, then any per-cell formulas (row.formuleCelule
+  // — an arbitrary, user-picked set of +/- cells from anywhere in the grid)
+  // resolved on top, across the whole table. There is no automatic
+  // grand-total row anymore: with every cell independently editable, a full
+  // automatic column sum could silently double-count a row the user built
+  // as their own manual total — so a total is only ever what the user
+  // explicitly builds via a cell formula, like any other computed cell.
   function progresGridData(site, tabel) {
     var colsById = {};
     coloaneForSite(site, tabel).forEach(function (c) { colsById[c.id] = c; });
@@ -1286,12 +1293,8 @@
     randuriForSite(site, tabel).forEach(function (r) { rowsById[r.id] = r; });
     var orderedRows = orderedRandIds(site, tabel).map(function (id) { return rowsById[id]; }).filter(Boolean);
 
-    var numarCols = orderedCols.filter(function (c) { return c.tip === "numar"; });
-    var calcCols = orderedCols.filter(function (c) { return c.tip === "calculat"; });
     var displayValori = {};
-
     orderedRows.forEach(function (row) {
-      if (row.grup || row.subtotal) return;
       var vals = {};
       orderedCols.forEach(function (col) { if (col.tip !== "calculat") vals[col.id] = row.valori[col.id]; });
       // resolveCalcColumns lets a calculated column reference ANY other
@@ -1300,32 +1303,46 @@
       resolveCalcColumns(orderedCols, vals);
       displayValori[row.id] = vals;
     });
+    resolveCellFormulas(orderedRows, displayValori);
 
+    return { orderedCols: orderedCols, orderedRows: orderedRows, displayValori: displayValori };
+  }
+
+  // A cell formula (row.formuleCelule[colId] = { terms: [{rowId,colId,sign}] })
+  // adds/subtracts an arbitrary, user-picked set of OTHER cells — any row,
+  // any column — unlike the column-level "calculat" formulas above, which are
+  // always scoped to fixed columns. Same fixed-point approach so formula
+  // cells may reference other formula cells regardless of order.
+  function resolveCellFormulas(orderedRows, displayValori) {
+    var pending = [];
     orderedRows.forEach(function (row) {
-      if (!row.grup && !row.subtotal) return;
-      var sums = {};
-      numarCols.forEach(function (c) { sums[c.id] = 0; });
-      (row.surseRanduri || []).forEach(function (srcId) {
-        var srcRow = rowsById[srcId];
-        if (!srcRow || srcRow.grup || srcRow.subtotal) return; // ignore stale/invalid refs
-        numarCols.forEach(function (c) { sums[c.id] += cellNumber(srcRow, c.id); });
+      var formule = row.formuleCelule || {};
+      Object.keys(formule).forEach(function (colId) {
+        pending.push({ rowId: row.id, colId: colId, terms: formule[colId].terms || [] });
       });
-      orderedCols.forEach(function (c) { if (c.tip === "text") sums[c.id] = row.valori[c.id]; });
-      resolveCalcColumns(orderedCols, sums);
-      displayValori[row.id] = sums;
     });
-
-    var grandTotals = null;
-    var itemRows = orderedRows.filter(function (r) { return !r.grup && !r.subtotal; });
-    if (itemRows.length > 0) {
-      var gsums = {};
-      numarCols.forEach(function (c) { gsums[c.id] = 0; });
-      itemRows.forEach(function (row) { numarCols.forEach(function (c) { gsums[c.id] += cellNumber(row, c.id); }); });
-      resolveCalcColumns(orderedCols, gsums);
-      grandTotals = gsums;
+    function sumTerms(terms) {
+      return terms.reduce(function (acc, t) {
+        var rowVals = displayValori[t.rowId];
+        var v = rowVals ? rowVals[t.colId] : undefined;
+        var n = typeof v === "number" ? v : parseFloat(v);
+        return acc + (isNaN(n) ? 0 : n) * (t.sign || 1);
+      }, 0);
     }
-
-    return { orderedCols: orderedCols, orderedRows: orderedRows, displayValori: displayValori, grandTotals: grandTotals };
+    var progress = true;
+    while (pending.length && progress) {
+      progress = false;
+      pending = pending.filter(function (f) {
+        var ready = f.terms.every(function (t) { return displayValori[t.rowId] && displayValori[t.rowId].hasOwnProperty(t.colId); });
+        if (!ready) return true;
+        displayValori[f.rowId][f.colId] = sumTerms(f.terms);
+        progress = true;
+        return false;
+      });
+    }
+    // leftover = missing/cyclic reference — compute defensively (a missing
+    // source reads as 0) rather than leave the cell blank forever.
+    pending.forEach(function (f) { displayValori[f.rowId][f.colId] = sumTerms(f.terms); });
   }
 
   function rowDisplayLabel(site, row) {
@@ -1422,27 +1439,20 @@
   }
 
   // --- Rânduri: adăugare / ștergere / reordonare ---
-  // kind: null/undefined = rând normal, "grup" = antet de grup, "subtotal" =
-  // total intermediar. Un grup/subtotal nu adună nimic automat — adună DOAR
-  // rândurile pe care utilizatorul le bifează explicit (row.surseRanduri),
-  // ca să nu amestece unități incompatibile (ex. bucăți + metri liniari).
+  // kind: null/undefined = rând normal, "grup" = antet de capitol (doar
+  // vizual — bold, se poate restrânge/extinde — nu adună nimic automat).
+  // Fiecare celulă e independentă: dacă vrei un total, îl construiești
+  // printr-o formulă pe acea celulă (vezi startFormulaBuilder), alegând
+  // manual orice celule din orice rând/coloană vrei să aduni sau să scazi.
   function addRow(site, tabel, kind) {
     pushProgresUndo(site, tabel);
     var tempId = "tmp-" + Date.now();
     var isGrup = kind === "grup";
-    var isSubtotal = kind === "subtotal";
-    var initialValori = {};
-    if (isSubtotal) {
-      var labelCol = coloaneForSite(site, tabel).filter(function (c) { return c.tip === "text"; })[0];
-      if (labelCol) initialValori[labelCol.id] = "Subtotal";
-    }
-    progresRanduri.push({ id: tempId, santierId: site.id, grup: isGrup, subtotal: isSubtotal, valori: initialValori, culoare: null, surseRanduri: [], tabel: tabel });
-    if (isGrup || isSubtotal) state.siteForm.rowSourcesOpen = tempId; // prompt the user to pick sources right away
+    progresRanduri.push({ id: tempId, santierId: site.id, grup: isGrup, valori: {}, culoare: null, formuleCelule: {}, tabel: tabel });
     render();
-    sb.from("santier_progres_randuri").insert({ santier_id: site.id, grup: isGrup, subtotal: isSubtotal, valori: initialValori, tabel: tabel }).select().single().then(function (res) {
+    sb.from("santier_progres_randuri").insert({ santier_id: site.id, grup: isGrup, valori: {}, tabel: tabel }).select().single().then(function (res) {
       if (res.error) {
         progresRanduri = progresRanduri.filter(function (r) { return r.id !== tempId; });
-        if (state.siteForm.rowSourcesOpen === tempId) state.siteForm.rowSourcesOpen = null;
         flashSyncError("Nu am putut adăuga rândul."); console.error(res.error); render(); return;
       }
       var row = progresRanduri.filter(function (r) { return r.id === tempId; })[0];
@@ -1452,7 +1462,6 @@
         return;
       }
       row.id = res.data.id;
-      if (state.siteForm.rowSourcesOpen === tempId) state.siteForm.rowSourcesOpen = row.id;
       render();
     });
   }
@@ -1464,7 +1473,6 @@
     if (!confirmDelete("Ștergi " + label + "? Această acțiune nu poate fi anulată.")) return;
     pushProgresUndo(site, row.tabel);
     progresRanduri = progresRanduri.filter(function (r) { return r !== row; });
-    if (state.siteForm.rowSourcesOpen === rowId) state.siteForm.rowSourcesOpen = null;
     render();
     if (String(row.id).indexOf("tmp-") === 0) return;
     sb.from("santier_progres_randuri").delete().eq("id", row.id).then(function (res) {
@@ -1477,7 +1485,11 @@
     var tabel = row.tabel;
     pushProgresUndo(site, tabel);
     var tempId = "tmp-" + Date.now();
-    var copy = { id: tempId, santierId: site.id, grup: row.grup, subtotal: row.subtotal, valori: Object.assign({}, row.valori), culoare: row.culoare, surseRanduri: (row.surseRanduri || []).slice(), tabel: tabel };
+    // a duplicated cell formula still points at the ORIGINAL cells it was
+    // built from, not at the new row — copying the row copies its values,
+    // not a re-target of every formula, matching how a spreadsheet paste
+    // of a single cell (not a range) keeps its references literal here.
+    var copy = { id: tempId, santierId: site.id, grup: row.grup, valori: Object.assign({}, row.valori), culoare: row.culoare, formuleCelule: cloneFormuleCelule(row.formuleCelule), tabel: tabel };
     progresRanduri.push(copy);
     var current = orderedRandIds(site, tabel);
     var atIdx = current.indexOf(rowId);
@@ -1485,7 +1497,7 @@
     if (!site.progresRanduriOrder) site.progresRanduriOrder = {};
     site.progresRanduriOrder[tabel] = current;
     render();
-    sb.from("santier_progres_randuri").insert({ santier_id: site.id, grup: copy.grup, subtotal: copy.subtotal, valori: copy.valori, culoare: copy.culoare, surse_randuri: copy.surseRanduri, tabel: tabel }).select().single().then(function (res) {
+    sb.from("santier_progres_randuri").insert({ santier_id: site.id, grup: copy.grup, valori: copy.valori, culoare: copy.culoare, formule_celule: copy.formuleCelule, tabel: tabel }).select().single().then(function (res) {
       if (res.error) {
         progresRanduri = progresRanduri.filter(function (r) { return r.id !== tempId; });
         flashSyncError("Nu am putut duplica rândul."); console.error(res.error); render(); return;
@@ -1502,30 +1514,6 @@
       sb.from("santiere").update({ progres_randuri_order: site.progresRanduriOrder }).eq("id", site.id).then(function (r2) {
         if (r2.error) console.error(r2.error);
       });
-    });
-  }
-  function toggleRowSource(site, rowId, srcId) {
-    var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
-    if (!row) return;
-    pushProgresUndo(site, row.tabel);
-    var current = row.surseRanduri || [];
-    var idx = current.indexOf(srcId);
-    var next = current.slice();
-    if (idx === -1) next.push(srcId); else next.splice(idx, 1);
-    row.surseRanduri = next;
-    render();
-    sb.from("santier_progres_randuri").update({ surse_randuri: next }).eq("id", row.id).then(function (res) {
-      if (res.error) { flashSyncError("Nu am putut salva selecția rândurilor."); console.error(res.error); render(); }
-    });
-  }
-  function setAllRowSources(site, rowId, ids) {
-    var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
-    if (!row) return;
-    pushProgresUndo(site, row.tabel);
-    row.surseRanduri = ids;
-    render();
-    sb.from("santier_progres_randuri").update({ surse_randuri: ids }).eq("id", row.id).then(function (res) {
-      if (res.error) { flashSyncError("Nu am putut salva selecția rândurilor."); console.error(res.error); render(); }
     });
   }
   function reorderRows(site, draggedId, targetId, before) {
@@ -1574,7 +1562,15 @@
     });
   }
 
-  // --- Celule: editare in-place (text pe orice rând, număr doar pe rânduri normale) ---
+  // --- Celule: editare in-place — fiecare celulă e independentă. Ce se tastează
+  // decide tipul: dacă arată ca un număr, se salvează ca număr; altfel rămâne
+  // text — indiferent de coloană, indiferent de rând. ---
+  function parseCellInput(text) {
+    var trimmed = (text || "").trim();
+    if (trimmed === "") return "";
+    var normalized = trimmed.replace(",", ".");
+    return /^-?\d+(\.\d+)?$/.test(normalized) ? parseFloat(normalized) : trimmed;
+  }
   function startCellEdit(rowId, colId, currentValue) {
     state.siteForm.gridCellEdit = { rowId: rowId, colId: colId, draft: currentValue === undefined || currentValue === null ? "" : String(currentValue) };
   }
@@ -1587,15 +1583,8 @@
     if (!row || !col) { render(); return; }
     var cellSite = findSite(state.selectedSiteId);
     if (cellSite) pushProgresUndo(cellSite, row.tabel);
-    var value;
-    if (col.tip === "numar") {
-      var n = parseFloat(edit.draft);
-      value = isNaN(n) ? 0 : n;
-    } else {
-      value = (edit.draft || "").trim();
-    }
     row.valori = Object.assign({}, row.valori);
-    row.valori[col.id] = value;
+    row.valori[col.id] = parseCellInput(edit.draft);
     render();
     sb.from("santier_progres_randuri").update({ valori: row.valori }).eq("id", row.id).then(function (res) {
       if (res.error) { flashSyncError("Nu am putut salva valoarea."); console.error(res.error); render(); }
@@ -1605,8 +1594,9 @@
 
   // --- Lipire dintr-un tabel Excel: pornind de la celula selectată, valorile
   // separate prin tab/linie nouă din clipboard se scriu în celulele
-  // corespunzătoare (text/număr); coloanele calculate și rândurile de
-  // grup/subtotal sunt sărite, fără să strice alinierea restului lipirii. ---
+  // corespunzătoare (text sau număr, după cum arată fiecare valoare) —
+  // coloanele calculate și celulele cu formulă proprie sunt sărite, fără să
+  // strice alinierea restului lipirii. ---
   function pasteIntoGrid(site, anchorRowId, anchorColId, text) {
     var anchorRowLive = progresRanduri.filter(function (r) { return r.id === anchorRowId; })[0];
     if (!anchorRowLive) return;
@@ -1624,7 +1614,7 @@
     var touched = [];
     lines.forEach(function (line, i) {
       var targetRow = orderedRows[rowIdx + i];
-      if (!targetRow || targetRow.grup || targetRow.subtotal) return;
+      if (!targetRow) return;
       var liveRow = rowsById[targetRow.id];
       if (!liveRow) return;
       var cells = line.split("\t");
@@ -1632,7 +1622,8 @@
       cells.forEach(function (cellText, j) {
         var col = orderedCols[colIdx + j];
         if (!col || col.tip === "calculat") return;
-        liveRow.valori[col.id] = col.tip === "numar" ? (parseFloat(cellText.replace(",", ".")) || 0) : cellText.trim();
+        if (liveRow.formuleCelule && liveRow.formuleCelule[col.id]) return; // a formula cell keeps its formula — paste doesn't silently overwrite it
+        liveRow.valori[col.id] = parseCellInput(cellText);
         changed = true;
       });
       if (changed && touched.indexOf(liveRow) === -1) touched.push(liveRow);
@@ -1643,6 +1634,55 @@
       sb.from("santier_progres_randuri").update({ valori: row.valori }).eq("id", row.id).then(function (res) {
         if (res.error) { flashSyncError("Nu am putut salva datele lipite."); console.error(res.error); render(); }
       });
+    });
+  }
+
+  // --- Formula pe celulă: alegi manual orice celule din orice rând/coloană
+  // ca să le aduni sau să le scazi într-o celulă țintă — independent de
+  // structura rândului/coloanei (spre deosebire de coloanele "calculat",
+  // care sunt fixate pe aceleași coloane pentru tot tabelul). ---
+  function startFormulaBuilder(tabel, rowId, colId) {
+    var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
+    var existing = row && row.formuleCelule && row.formuleCelule[colId];
+    state.siteForm.formulaBuilder = { tabel: tabel, rowId: rowId, colId: colId, terms: existing ? existing.terms.map(function (t) { return { rowId: t.rowId, colId: t.colId, sign: t.sign }; }) : [] };
+  }
+  function cancelFormulaBuilder() { state.siteForm.formulaBuilder = null; }
+  // First click on a cell adds it (+), a second click flips it to (-), a
+  // third click removes it — no drag-select needed, and it works across
+  // any rows/columns since each click just names one specific cell.
+  function toggleFormulaTerm(rowId, colId) {
+    var fb = state.siteForm.formulaBuilder;
+    if (!fb) return;
+    if (rowId === fb.rowId && colId === fb.colId) return; // can't reference itself
+    var idx = fb.terms.findIndex(function (t) { return t.rowId === rowId && t.colId === colId; });
+    if (idx === -1) fb.terms.push({ rowId: rowId, colId: colId, sign: 1 });
+    else if (fb.terms[idx].sign === 1) fb.terms[idx].sign = -1;
+    else fb.terms.splice(idx, 1);
+  }
+  function saveFormulaBuilder(site) {
+    var fb = state.siteForm.formulaBuilder;
+    if (!fb) return;
+    var row = progresRanduri.filter(function (r) { return r.id === fb.rowId; })[0];
+    state.siteForm.formulaBuilder = null;
+    if (!row) { render(); return; }
+    pushProgresUndo(site, fb.tabel);
+    row.formuleCelule = Object.assign({}, row.formuleCelule);
+    if (fb.terms.length) row.formuleCelule[fb.colId] = { terms: fb.terms };
+    else delete row.formuleCelule[fb.colId]; // no terms picked — back to a plain, manually-editable cell
+    render();
+    sb.from("santier_progres_randuri").update({ formule_celule: row.formuleCelule }).eq("id", row.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva formula."); console.error(res.error); render(); }
+    });
+  }
+  function clearCellFormula(site, rowId, colId) {
+    var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
+    if (!row || !row.formuleCelule || !row.formuleCelule[colId]) return;
+    pushProgresUndo(site, row.tabel);
+    row.formuleCelule = Object.assign({}, row.formuleCelule);
+    delete row.formuleCelule[colId];
+    render();
+    sb.from("santier_progres_randuri").update({ formule_celule: row.formuleCelule }).eq("id", row.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut șterge formula."); console.error(res.error); render(); }
     });
   }
 
@@ -2129,40 +2169,20 @@
     '</div>';
   }
 
-  function rowSourcesPopoverHTML(site, rowId) {
-    var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
-    if (!row) return "";
-    var orderedIds = orderedRandIds(site, row.tabel);
-    var candidates = randuriForSite(site, row.tabel).filter(function (r) { return !r.grup && !r.subtotal; })
-      .sort(function (a, b) { return orderedIds.indexOf(a.id) - orderedIds.indexOf(b.id); });
-    var current = row.surseRanduri || [];
-    var checks = candidates.map(function (r) {
-      var label = rowDisplayLabel(site, r) || "(rând fără denumire)";
-      var checked = current.indexOf(r.id) !== -1 ? " checked" : "";
-      return '<label class="rowsrc-check"><input type="checkbox" data-toggle-rowsrc="' + rowId + '|' + r.id + '"' + checked + '> ' + esc(label) + '</label>';
-    }).join("");
-    var empty = candidates.length === 0 ? '<div style="color:var(--ink-faint);font-size:12px">Nu există alte rânduri de adunat.</div>' : "";
-    return '<div class="rowsrcpop">' +
-      '<div class="rowsrcpop-title">Ce rânduri să adune acest total?</div>' +
-      '<div class="rowsrcpop-actions">' +
-        '<span class="rowsrcpop-link" data-select-all-rowsrc="' + rowId + '">Selectează tot</span>' +
-        '<span class="rowsrcpop-link" data-select-none-rowsrc="' + rowId + '">Deselectează tot</span>' +
-      '</div>' +
-      '<div class="rowsrcpop-list">' + checks + empty + '</div>' +
-      '<button class="btn btn-ghost btn-sm" data-close-rowsrc="1">Închide</button>' +
-    '</div>';
-  }
-
   function progresLabelColId(orderedCols) {
     for (var i = 0; i < orderedCols.length; i++) if (orderedCols[i].tip === "text") return orderedCols[i].id;
     return null;
   }
+  // Cell content is independent of the column type now — a "numar" column
+  // can hold typed text, a "text" column can hold a number. Display follows
+  // what's actually stored (its runtime type), except "calculat" columns
+  // and formula cells, which are always numbers.
   function progresCellDisplayForExport(col, v) {
-    if (col.tip === "numar" || col.tip === "calculat") {
-      var n = typeof v === "number" ? v : (parseFloat(v) || 0);
-      var out = formatGridNumber(n);
-      return col.tip === "calculat" && isPercentFormula(col.formula) ? out + "%" : out;
+    if (col.tip === "calculat") {
+      var out = formatGridNumber(typeof v === "number" ? v : (parseFloat(v) || 0));
+      return isPercentFormula(col.formula) ? out + "%" : out;
     }
+    if (typeof v === "number") return formatGridNumber(v);
     return v || "";
   }
   function csvEscape(v) {
@@ -2173,18 +2193,11 @@
   function exportProgresCSV(site, tabel) {
     var data = progresGridData(site, tabel);
     var orderedCols = data.orderedCols, orderedRows = data.orderedRows, displayValori = data.displayValori;
-    var labelColId = progresLabelColId(orderedCols);
     var lines = [orderedCols.map(function (c) { return csvEscape(c.label); }).join(";")];
     orderedRows.forEach(function (row) {
       var vals = displayValori[row.id] || {};
       lines.push(orderedCols.map(function (col) { return csvEscape(progresCellDisplayForExport(col, vals[col.id])); }).join(";"));
     });
-    if (data.grandTotals) {
-      lines.push(orderedCols.map(function (col) {
-        if (col.tip === "text") return csvEscape(col.id === labelColId ? "TOTAL GENERAL" : "");
-        return csvEscape(progresCellDisplayForExport(col, data.grandTotals[col.id]));
-      }).join(";"));
-    }
     var csv = "﻿" + lines.join("\r\n");
     var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     var url = URL.createObjectURL(blob);
@@ -2200,30 +2213,22 @@
   function printProgres(site, tabel) {
     var data = progresGridData(site, tabel);
     var orderedCols = data.orderedCols, orderedRows = data.orderedRows, displayValori = data.displayValori;
-    var labelColId = progresLabelColId(orderedCols);
     var headHtml = orderedCols.map(function (c) { return "<th>" + esc(c.label) + "</th>"; }).join("");
     var rowsHtml = orderedRows.map(function (row) {
       var vals = displayValori[row.id] || {};
       var cells = orderedCols.map(function (col) {
-        var isNum = col.tip === "numar" || col.tip === "calculat";
-        return "<td" + (isNum ? ' style="text-align:right;font-family:monospace"' : "") + ">" + esc(progresCellDisplayForExport(col, vals[col.id])) + "</td>";
+        var v = vals[col.id];
+        var isNum = col.tip === "calculat" || typeof v === "number";
+        return "<td" + (isNum ? ' style="text-align:right;font-family:monospace"' : "") + ">" + esc(progresCellDisplayForExport(col, v)) + "</td>";
       }).join("");
-      var rowStyle = (row.grup || row.subtotal) ? ' style="font-weight:700;background:#f0ede7"' : "";
+      var rowStyle = row.grup ? ' style="font-weight:700;background:#f0ede7"' : "";
       return "<tr" + rowStyle + ">" + cells + "</tr>";
     }).join("");
-    var totalHtml = "";
-    if (data.grandTotals) {
-      var totalCells = orderedCols.map(function (col) {
-        if (col.tip === "text") return "<td>" + (col.id === labelColId ? "TOTAL GENERAL" : "") + "</td>";
-        return '<td style="text-align:right;font-family:monospace">' + esc(progresCellDisplayForExport(col, data.grandTotals[col.id])) + "</td>";
-      }).join("");
-      totalHtml = '<tr style="font-weight:700;background:#f0ede7;border-top:2px solid #333">' + totalCells + "</tr>";
-    }
     var html = '<div style="font-family:sans-serif;padding:10px">' +
       "<h2 style=\"margin:0 0 4px\">" + esc(site.nume) + "</h2>" +
       '<div style="font-size:12px;color:#555;margin-bottom:14px">Progres șantier — generat ' + new Date().toLocaleDateString("ro-RO") + "</div>" +
       '<table style="width:100%;border-collapse:collapse;font-size:11px" border="1" cellpadding="5">' +
-        "<thead><tr>" + headHtml + "</tr></thead><tbody>" + rowsHtml + totalHtml + "</tbody>" +
+        "<thead><tr>" + headHtml + "</tr></thead><tbody>" + rowsHtml + "</tbody>" +
       "</table></div>";
     var sheet = document.getElementById("print-sheet");
     if (sheet) sheet.innerHTML = html;
@@ -2270,43 +2275,55 @@
       if (!hiding) visibleRows.push(row);
     });
 
+    var fb = state.siteForm.formulaBuilder;
+    var fbActive = fb && fb.tabel === tabel;
+
     var bodyRows = visibleRows.map(function (row) {
       var vals = displayValori[row.id] || {};
       var rowBg = row.culoare ? progresColorCss(row.culoare) : null;
-      var unconfigured = (row.grup || row.subtotal) && (!row.surseRanduri || row.surseRanduri.length === 0);
       var cellsHtml = orderedCols.map(function (col, idx) {
-        var editable = col.tip === "text" || (!row.grup && !row.subtotal && col.tip === "numar");
-        var isEditingCell = editable && state.siteForm.gridCellEdit.rowId === row.id && state.siteForm.gridCellEdit.colId === col.id;
+        var isCalc = col.tip === "calculat";
+        var cellFormula = !isCalc ? (row.formuleCelule && row.formuleCelule[col.id]) : null;
+        var manualEditable = !isCalc && !cellFormula;
+        var isEditingCell = manualEditable && state.siteForm.gridCellEdit.rowId === row.id && state.siteForm.gridCellEdit.colId === col.id;
         var raw = vals[col.id];
-        var isNumCol = col.tip === "numar" || col.tip === "calculat";
-        var display;
-        if (isNumCol && unconfigured) display = "—";
-        else display = isNumCol ? (formatGridNumber(raw || 0) + (col.tip === "calculat" && isPercentFormula(col.formula) ? "%" : "")) : esc(raw || "");
+        // Cell content is independent of the column now — display follows
+        // what's actually stored (its runtime type), not the column's tip.
+        var isNumeric = isCalc || !!cellFormula || typeof raw === "number";
+        var display = isNumeric
+          ? (formatGridNumber(typeof raw === "number" ? raw : (parseFloat(raw) || 0)) + (isCalc && isPercentFormula(col.formula) ? "%" : ""))
+          : esc(raw || "");
         var stickyCls = idx === 0 ? " progrid-sticky-2" : "";
-        var cls = "progrid-cell" + (isNumCol ? " progrid-num" : "") + (col.tip === "calculat" ? " progrid-cell-computed" : "") + (editable ? " progrid-cell-editable" : "") + stickyCls;
+        var cls = "progrid-cell" + (isNumeric ? " progrid-num" : "") + ((isCalc || cellFormula) ? " progrid-cell-computed" : "") + (manualEditable ? " progrid-cell-editable" : "") + stickyCls;
+        if (fbActive) {
+          if (fb.rowId === row.id && fb.colId === col.id) cls += " progrid-term-target";
+          else {
+            var term = fb.terms.filter(function (t) { return t.rowId === row.id && t.colId === col.id; })[0];
+            if (term) cls += term.sign === 1 ? " progrid-term-pos" : " progrid-term-neg";
+          }
+        }
         var cellBg = rowBg || (col.culoare ? progresColorCss(col.culoare) : null);
         var bgStyle = cellBg ? ' style="background:' + cellBg + '"' : "";
 
         if (isEditingCell) {
-          var inputCls = "progrid-cell-input" + (col.tip === "numar" ? " progrid-num-input" : "");
-          var inputType = col.tip === "numar" ? ' type="number"' : "";
-          return '<td class="' + cls + '"' + bgStyle + '><input class="' + inputCls + '"' + inputType + ' id="progcell-edit-' + row.id + '-' + col.id + '" draggable="false" data-progcell-input="1" value="' + esc(raw === undefined || raw === null ? "" : String(raw)) + '"></td>';
+          return '<td class="' + cls + '"' + bgStyle + '><input class="progrid-cell-input" id="progcell-edit-' + row.id + '-' + col.id + '" draggable="false" data-progcell-input="1" value="' + esc(raw === undefined || raw === null ? "" : String(raw)) + '"></td>';
         }
-        var attrs = editable ? ' draggable="false" tabindex="0" data-edit-cell="' + row.id + '|' + col.id + '" title="Click = selectează (pentru lipire), dublu-click = editează"' : "";
+        var title = fbActive ? "Click pentru a adăuga/schimba semn/scoate din formulă" : (manualEditable ? "Click = selectează (pentru lipire), dublu-click = editează" : "Valoare calculată");
+        var attrs = ' draggable="false" tabindex="0" data-edit-cell="' + row.id + '|' + col.id + '" title="' + title + '"';
         var labelPrefix = (row.grup && col.id === labelColId && !isEditingCell) ? collapseToggleHTML(row) : "";
-        return '<td class="' + cls + '"' + attrs + bgStyle + '>' + labelPrefix + display + '</td>';
+        var formulaBadge = (!isCalc && !fbActive)
+          ? '<span class="progrid-formula-btn' + (cellFormula ? " has-formula" : "") + '" data-toggle-cell-formula="' + row.id + '|' + col.id + '" title="' + (cellFormula ? "Editează formula acestei celule" : "Fă din asta o formulă (adună/scade alte celule)") + '">ƒ</span>'
+          : "";
+        return '<td class="' + cls + '"' + attrs + bgStyle + '>' + labelPrefix + display + formulaBadge + '</td>';
       }).join("");
 
-      var rowCls = row.grup ? "progrow-group" : (row.subtotal ? "progrow-subtotal" : "");
+      var rowCls = row.grup ? "progrow-group" : "";
       var gripStyle = rowBg ? ' style="background:' + rowBg + '"' : "";
       var delStyle = rowBg ? ' style="background:' + rowBg + '"' : "";
-      var rowSrcBtn = (row.grup || row.subtotal)
-        ? '<span class="progrid-rowsrc-btn' + (unconfigured ? " unconfigured" : "") + '" data-open-rowsrc="' + row.id + '" title="Alege ce rânduri adună acest total">' + icon("gear", 12) + '</span>'
-        : "";
       var dupBtn = '<span class="progrid-rowsrc-btn" data-duplicate-row="' + site.id + '|' + row.id + '" title="Duplică rândul">' + icon("copy", 12) + '</span>';
       return '<tr class="' + rowCls + '" draggable="true" data-progrow-drag-id="' + row.id + '">' +
         '<td class="progrid-grip progrid-sticky-1"' + gripStyle + '>' +
-          '<span style="display:flex;align-items:center;gap:3px;justify-content:center;flex-wrap:wrap">' + icon("grip", 13) + colorSwatchHTML("row", row.id, row.culoare) + rowSrcBtn + '</span>' +
+          '<span style="display:flex;align-items:center;gap:3px;justify-content:center;flex-wrap:wrap">' + icon("grip", 13) + colorSwatchHTML("row", row.id, row.culoare) + '</span>' +
         '</td>' +
         cellsHtml +
         '<td class="progrid-del-cell"' + delStyle + '><span style="display:flex;align-items:center;gap:5px;justify-content:center">' + dupBtn + '<span class="progrid-del" data-remove-row="' + site.id + '|' + row.id + '" title="Șterge rândul">' + icon("trash", 13) + '</span></span></td>' +
@@ -2316,49 +2333,42 @@
     var colspan = orderedCols.length + 2;
     var emptyRow = orderedRows.length === 0 ? '<tr><td colspan="' + colspan + '" class="doclist-empty progrid-empty-cell">Niciun rând adăugat încă.</td></tr>' : "";
 
-    var totalRow = "";
-    if (data.grandTotals) {
-      var totalCells = orderedCols.map(function (col, idx) {
-        var stickyCls = idx === 0 ? " progrid-sticky-2" : "";
-        if (col.tip === "text") return '<td class="' + stickyCls.trim() + '">' + (col.id === labelColId ? "TOTAL GENERAL" : "") + "</td>";
-        var v = data.grandTotals[col.id];
-        var display = formatGridNumber(v || 0) + (col.tip === "calculat" && isPercentFormula(col.formula) ? "%" : "");
-        return '<td class="progrid-num' + stickyCls + '">' + display + '</td>';
-      }).join("");
-      totalRow = '<tr class="progrow-total"><td class="progrid-sticky-1"></td>' + totalCells + '<td></td></tr>';
-    }
-
-    var summaryHtml = "";
-    if (data.grandTotals) {
-      var pctCols = orderedCols.filter(function (c) { return c.tip === "calculat" && isPercentFormula(c.formula); });
-      // headline stat prefers a "Realizat" percentage when there's more than
-      // one (e.g. the capitole template also has Renunțat/Suplimentat/Rest %)
-      var pctCol = pctCols.filter(function (c) { return /realizat/i.test(c.label); })[0] || pctCols[0];
-      var itemRowCount = orderedRows.filter(function (r) { return !r.grup && !r.subtotal; }).length;
-      var stats = '<div class="meta-item"><div class="mv">' + itemRowCount + '</div><div class="ml">Linii</div></div>';
-      if (pctCol) stats += '<div class="meta-item"><div class="mv">' + formatGridNumber(data.grandTotals[pctCol.id] || 0) + '%</div><div class="ml">' + esc(pctCol.label) + '</div></div>';
-      summaryHtml = '<div class="summary"><div class="summary-meta">' + stats + '</div></div>';
-    }
+    var itemRowCount = orderedRows.filter(function (r) { return !r.grup; }).length;
+    var summaryHtml = orderedRows.length ? ('<div class="summary"><div class="summary-meta">' +
+      '<div class="meta-item"><div class="mv">' + itemRowCount + '</div><div class="ml">Linii</div></div>' +
+      '</div></div>') : "";
 
     var addColFormHtml = (state.siteForm.addColForm.open && state.siteForm.addColForm.tabel === tabel) ? addColFormHTML(site, orderedCols) : "";
     var colorPopHtml = state.siteForm.colorPickerOpen.id ? colorPopoverHTML(state.siteForm.colorPickerOpen.type, state.siteForm.colorPickerOpen.id) : "";
-    var rowSrcPopHtml = state.siteForm.rowSourcesOpen ? rowSourcesPopoverHTML(site, state.siteForm.rowSourcesOpen) : "";
+    var formulaBarHtml = fbActive ? formulaBuilderBarHTML(fb) : "";
 
     return '<div data-progres-tabel="' + tabel + '">' + summaryHtml +
       '<div class="progrid-wrap"><table class="progrid">' + colGroupHtml + '<thead><tr><th class="progrid-sticky-1"></th>' + headCells + '<th></th></tr></thead>' +
-      '<tbody>' + bodyRows + emptyRow + totalRow + '</tbody></table></div>' +
+      '<tbody>' + bodyRows + emptyRow + '</tbody></table></div>' +
       '<div class="progrid-toolbar">' +
         '<button class="btn btn-ghost btn-sm" data-undo-progres="' + site.id + '"' + (canUndoProgres(site, tabel) ? "" : ' disabled') + ' title="Anulează ultima acțiune">' + icon("undo", 13) + 'Anulează</button>' +
         '<button class="btn btn-ghost btn-sm" data-add-row="' + site.id + '">' + icon("plus", 13) + 'Adaugă linie</button>' +
         '<button class="btn btn-ghost btn-sm" data-add-group-row="' + site.id + '">' + icon("plus", 13) + 'Adaugă grup</button>' +
-        '<button class="btn btn-ghost btn-sm" data-add-subtotal-row="' + site.id + '">' + icon("plus", 13) + 'Total intermediar</button>' +
         '<button class="btn btn-ghost btn-sm" data-toggle-addcol="' + site.id + '">' + icon("plus", 13) + 'Adaugă coloană</button>' +
         '<button class="btn btn-ghost btn-sm" data-export-progres-csv="' + site.id + '">' + icon("doc", 13) + 'Exportă CSV</button>' +
         '<button class="btn btn-ghost btn-sm" data-print-progres="' + site.id + '">' + icon("printer", 13) + 'Printează</button>' +
       '</div>' +
-      '<div class="helper">Click pe o celulă o selectează (poți lipi din Excel cu Ctrl+V) · dublu-click o editează · trage mânerul ca să reordonezi · Ctrl+Z anulează ultima acțiune.</div>' +
-      addColFormHtml + colorPopHtml + rowSrcPopHtml +
-      '</div>';
+      '<div class="helper">Click pe o celulă o selectează (poți lipi din Excel cu Ctrl+V) · dublu-click o editează · ƒ pe o celulă = adună/scade alte celule alese de tine · trage mânerul ca să reordonezi · Ctrl+Z anulează ultima acțiune.</div>' +
+      addColFormHtml + colorPopHtml +
+      '</div>' + formulaBarHtml;
+  }
+
+  // Floating action bar shown while building a per-cell formula (click any
+  // OTHER cell in the grid to add/flip-sign/remove it as a term).
+  function formulaBuilderBarHTML(fb) {
+    var n = fb.terms.length;
+    return '<div class="bulk-bar">' +
+      '<b>Formulă' + (n ? ' — ' + n + (n === 1 ? " celulă adăugată" : " celule adăugate") : "") + '</b>' +
+      '<span style="opacity:.75">click pe alte celule ca să le adaugi · încă un click schimbă semnul · al treilea le scoate</span>' +
+      '<div class="bulk-opt" data-formula-save="1">Salvează</div>' +
+      '<div class="bulk-opt" data-formula-clear="1">Șterge formula</div>' +
+      '<div class="bulk-cancel" data-formula-cancel="1">Anulează</div>' +
+    '</div>';
   }
 
   // Two independent grid instances live under the "Progres Șantier" tab,
@@ -2494,7 +2504,6 @@
       '<div class="main"><div class="main-inner' + (isWide ? " wide" : "") + '">' + main + '</div></div></div>';
     positionOpenPopover();
     positionColorPopover();
-    positionRowSourcesPopover();
   }
 
   function positionOpenPopover() {
@@ -2524,34 +2533,26 @@
     pop.style.top = top + "px";
   }
 
-  function positionRowSourcesPopover() {
-    var rowId = state.siteForm.rowSourcesOpen;
-    if (!rowId) return;
-    var pop = document.querySelector(".rowsrcpop");
-    var btn = document.querySelector('[data-open-rowsrc="' + rowId + '"]');
-    if (!pop || !btn) return;
-    var r = btn.getBoundingClientRect();
-    var pw = pop.offsetWidth, ph = pop.offsetHeight;
-    var left = Math.min(Math.max(r.left, 8), window.innerWidth - pw - 8);
-    var top = (r.bottom + 4 + ph <= window.innerHeight) ? (r.bottom + 4) : Math.max(8, r.top - ph - 4);
-    pop.style.left = left + "px";
-    pop.style.top = top + "px";
-  }
-
   document.getElementById("app").addEventListener("click", function (e) {
     // A single click on an editable grid cell just selects it (as a paste
     // anchor for Ctrl+V) — it does NOT open the input, that's dblclick's job.
     // Crucially this must NOT call render() in the common case: replacing
     // the clicked <td> with a fresh DOM node between the two clicks of a
     // dblclick gesture stops the browser from ever firing "dblclick" on it.
+    // While a cell formula is being built, the same click instead toggles
+    // that cell in/out of the formula (add → flip sign → remove).
     var pasteTarget = e.target.closest("[data-edit-cell]");
     if (pasteTarget && e.target === pasteTarget) {
       var ptParts = pasteTarget.dataset.editCell.split("|");
+      if (state.siteForm.formulaBuilder) {
+        toggleFormulaTerm(ptParts[0], ptParts[1]);
+        render();
+        return;
+      }
       state.siteForm.pasteAnchor = { rowId: ptParts[0], colId: ptParts[1] };
-      var hadPopoverOpen = state.pontaj.openCell || state.siteForm.colorPickerOpen.id || state.siteForm.rowSourcesOpen;
+      var hadPopoverOpen = state.pontaj.openCell || state.siteForm.colorPickerOpen.id;
       state.pontaj.openCell = null;
       state.siteForm.colorPickerOpen = { type: null, id: null };
-      state.siteForm.rowSourcesOpen = null;
       if (hadPopoverOpen) {
         render();
         var refocus = document.querySelector('[data-edit-cell="' + ptParts[0] + '|' + ptParts[1] + '"]');
@@ -2570,10 +2571,10 @@
       "[data-open-add-site],[data-close-add-site],[data-save-new-site],[data-edit-site],[data-save-site-edit],[data-cancel-site-edit],[data-delete-site]," +
       "[data-site-subtab],[data-progres-subtab],[data-save-doc-valoare],[data-remove-doc-file],[data-add-aviz],[data-remove-aviz]," +
       "[data-add-gendoc],[data-remove-gendoc]," +
-      "[data-add-row],[data-add-group-row],[data-add-subtotal-row],[data-remove-row],[data-remove-col],[data-toggle-addcol],[data-cancel-addcol],[data-submit-addcol]," +
+      "[data-add-row],[data-add-group-row],[data-remove-row],[data-remove-col],[data-toggle-addcol],[data-cancel-addcol],[data-submit-addcol]," +
       "[data-toggle-color],[data-pick-color],[data-toggle-sidebar]," +
       "[data-toggle-collapse-group],[data-duplicate-row],[data-export-progres-csv],[data-print-progres]," +
-      "[data-open-rowsrc],[data-toggle-rowsrc],[data-select-all-rowsrc],[data-select-none-rowsrc],[data-close-rowsrc]," +
+      "[data-toggle-cell-formula],[data-formula-save],[data-formula-cancel],[data-formula-clear]," +
       "[data-undo-progres]"
     );
 
@@ -2597,12 +2598,6 @@
       needsRender = true;
     }
 
-    // clicking anywhere outside an open "which rows does this total add" popover closes it
-    if (state.siteForm.rowSourcesOpen && !(t && (t.dataset.openRowsrc || t.dataset.toggleRowsrc || t.dataset.selectAllRowsrc || t.dataset.selectNoneRowsrc || t.dataset.closeRowsrc))) {
-      state.siteForm.rowSourcesOpen = null;
-      needsRender = true;
-    }
-
     var isNav = false;
     if (t) {
       needsRender = true;
@@ -2618,12 +2613,12 @@
           clearTimeout(sidebarClickTimer);
           sidebarClickTimer = setTimeout(function () {
             state.view = "detail"; state.selectedSiteId = deferSiteId; state.activeTab = "date-santier";
-            state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; state.siteForm.progresSubTab = "capitole";
+            state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; state.siteForm.progresSubTab = "capitole"; state.siteForm.formulaBuilder = null;
             render();
             window.scrollTo(0, 0);
           }, 260);
         } else {
-          state.view = "detail"; state.selectedSiteId = t.dataset.openSite; state.activeTab = "date-santier"; state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; state.siteForm.progresSubTab = "capitole"; isNav = true;
+          state.view = "detail"; state.selectedSiteId = t.dataset.openSite; state.activeTab = "date-santier"; state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; state.siteForm.progresSubTab = "capitole"; state.siteForm.formulaBuilder = null; isNav = true;
         }
       }
       else if (t.dataset.tab) {
@@ -2704,7 +2699,7 @@
         state.siteForm.gridColLabelEdit = { colId: null, draft: "" };
         state.siteForm.addColForm = emptyAddColForm();
         state.siteForm.colorPickerOpen = { type: null, id: null };
-        state.siteForm.rowSourcesOpen = null;
+        state.siteForm.formulaBuilder = null;
         state.siteForm.pasteAnchor = null;
         var psSite = findSite(state.selectedSiteId);
         if (psSite) seedDefaultProgresColumns(psSite, t.dataset.progresSubtab);
@@ -2732,7 +2727,6 @@
       }
       else if (t.dataset.addRow) { var arSite = findSite(t.dataset.addRow); if (arSite) addRow(arSite, progresTabelFromEl(t), null); }
       else if (t.dataset.addGroupRow) { var agSite = findSite(t.dataset.addGroupRow); if (agSite) addRow(agSite, progresTabelFromEl(t), "grup"); }
-      else if (t.dataset.addSubtotalRow) { var asSite = findSite(t.dataset.addSubtotalRow); if (asSite) addRow(asSite, progresTabelFromEl(t), "subtotal"); }
       else if (t.dataset.toggleColor) {
         var tcParts = t.dataset.toggleColor.split("|");
         var open = state.siteForm.colorPickerOpen;
@@ -2806,28 +2800,21 @@
         var undoTabel = progresTabelFromEl(t);
         if (undoSite && canUndoProgres(undoSite, undoTabel)) undoProgres(undoSite, undoTabel);
       }
-      else if (t.dataset.openRowsrc) {
-        state.siteForm.rowSourcesOpen = state.siteForm.rowSourcesOpen === t.dataset.openRowsrc ? null : t.dataset.openRowsrc;
+      else if (t.dataset.toggleCellFormula) {
+        var tcfParts = t.dataset.toggleCellFormula.split("|");
+        startFormulaBuilder(progresTabelFromEl(t), tcfParts[0], tcfParts[1]);
       }
-      else if (t.dataset.toggleRowsrc) {
-        var trsParts = t.dataset.toggleRowsrc.split("|");
-        var trsSite = findSite(state.selectedSiteId);
-        if (trsSite) toggleRowSource(trsSite, trsParts[0], trsParts[1]);
+      else if (t.dataset.formulaSave) {
+        var fsSite = findSite(state.selectedSiteId);
+        if (fsSite) saveFormulaBuilder(fsSite); else state.siteForm.formulaBuilder = null;
       }
-      else if (t.dataset.selectAllRowsrc) {
-        var saSite = findSite(state.selectedSiteId);
-        if (saSite) {
-          var saRow = progresRanduri.filter(function (r) { return r.id === t.dataset.selectAllRowsrc; })[0];
-          var saTabel = saRow ? saRow.tabel : "centralizare";
-          var allIds = randuriForSite(saSite, saTabel).filter(function (r) { return !r.grup && !r.subtotal; }).map(function (r) { return r.id; });
-          setAllRowSources(saSite, t.dataset.selectAllRowsrc, allIds);
-        }
+      else if (t.dataset.formulaCancel) { cancelFormulaBuilder(); }
+      else if (t.dataset.formulaClear) {
+        var fcSite = findSite(state.selectedSiteId);
+        var fb = state.siteForm.formulaBuilder;
+        if (fcSite && fb) clearCellFormula(fcSite, fb.rowId, fb.colId);
+        state.siteForm.formulaBuilder = null;
       }
-      else if (t.dataset.selectNoneRowsrc) {
-        var snSite = findSite(state.selectedSiteId);
-        if (snSite) setAllRowSources(snSite, t.dataset.selectNoneRowsrc, []);
-      }
-      else if (t.dataset.closeRowsrc) { state.siteForm.rowSourcesOpen = null; }
     }
 
     if (needsRender) {
@@ -2941,7 +2928,14 @@
       var cellParts = cellT.dataset.editCell.split("|");
       var cellRowId = cellParts[0], cellColId = cellParts[1];
       var cellRow = progresRanduri.filter(function (r) { return r.id === cellRowId; })[0];
-      var currentCellVal = cellRow ? cellRow.valori[cellColId] : "";
+      var cellCol = progresColoane.filter(function (c) { return c.id === cellColId; })[0];
+      if (!cellRow || !cellCol || cellCol.tip === "calculat") return; // computed by a column formula — not directly editable
+      if (cellRow.formuleCelule && cellRow.formuleCelule[cellColId]) {
+        startFormulaBuilder(cellRow.tabel, cellRowId, cellColId);
+        render();
+        return;
+      }
+      var currentCellVal = cellRow.valori[cellColId];
       startCellEdit(cellRowId, cellColId, currentCellVal);
       render();
       var cellInput = document.getElementById("progcell-edit-" + cellRowId + "-" + cellColId);
