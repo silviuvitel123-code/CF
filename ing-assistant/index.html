@@ -491,7 +491,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b35-2026-09-18";
+  var BUILD = "b36-2026-09-18";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -1145,15 +1145,43 @@
         { id: ids.pct, label: "Realizat total %", tip: "calculat", formula: "procent", surse: [ids.valTotal, ids.valContract] }
       ];
     },
+    // Tracks progress per chapter across up to 3 situations (Renunțat /
+    // Realizat / Suplimentat each), plus totals & percentages derived from
+    // them. "Realizat %" and "Rest de realizat %" use the offer adjusted for
+    // extra/cancelled work (oferta + suplimentat - renunțat) as their base,
+    // not the raw offer — "Renunțat %" and "Suplimentat %" use the raw offer.
     capitole: function () {
       var ids = {};
-      ["nrCrt", "simbol", "denumire", "um", "valoare"].forEach(function (k) { ids[k] = crypto.randomUUID(); });
+      ["nrCrt", "simbol", "denumire", "um", "valoare",
+        "s1Renuntat", "s1Realizat", "s1Suplimentat",
+        "s2Renuntat", "s2Realizat", "s2Suplimentat",
+        "s3Renuntat", "s3Realizat", "s3Suplimentat",
+        "renuntatPct", "renuntatLei", "realizatPct", "realizatLei", "suplimentatPct", "suplimentatLei",
+        "restPct", "restLei"
+      ].forEach(function (k) { ids[k] = crypto.randomUUID(); });
       return [
         { id: ids.nrCrt, label: "Nr Crt", tip: "text" },
         { id: ids.simbol, label: "Simbol", tip: "text" },
         { id: ids.denumire, label: "Denumire", tip: "text" },
         { id: ids.um, label: "U.M.", tip: "text" },
-        { id: ids.valoare, label: "Valoare ofertă", tip: "numar" }
+        { id: ids.valoare, label: "Valoare ofertă", tip: "numar" },
+        { id: ids.s1Renuntat, label: "Situația 1 - Renunțat", tip: "numar" },
+        { id: ids.s1Realizat, label: "Situația 1 - Realizat", tip: "numar" },
+        { id: ids.s1Suplimentat, label: "Situația 1 - Suplimentat", tip: "numar" },
+        { id: ids.s2Renuntat, label: "Situația 2 - Renunțat", tip: "numar" },
+        { id: ids.s2Realizat, label: "Situația 2 - Realizat", tip: "numar" },
+        { id: ids.s2Suplimentat, label: "Situația 2 - Suplimentat", tip: "numar" },
+        { id: ids.s3Renuntat, label: "Situația 3 - Renunțat", tip: "numar" },
+        { id: ids.s3Realizat, label: "Situația 3 - Realizat", tip: "numar" },
+        { id: ids.s3Suplimentat, label: "Situația 3 - Suplimentat", tip: "numar" },
+        { id: ids.renuntatPct, label: "Renunțat total %", tip: "calculat", formula: "procent", surse: [ids.renuntatLei, ids.valoare] },
+        { id: ids.renuntatLei, label: "Renunțat total lei", tip: "calculat", formula: "suma", surse: [ids.s1Renuntat, ids.s2Renuntat, ids.s3Renuntat] },
+        { id: ids.realizatPct, label: "Realizat total %", tip: "calculat", formula: "procent_pool", surse: [ids.realizatLei, ids.valoare, ids.suplimentatLei, ids.renuntatLei] },
+        { id: ids.realizatLei, label: "Realizat total lei", tip: "calculat", formula: "suma", surse: [ids.s1Realizat, ids.s2Realizat, ids.s3Realizat] },
+        { id: ids.suplimentatPct, label: "Suplimentat total %", tip: "calculat", formula: "procent", surse: [ids.suplimentatLei, ids.valoare] },
+        { id: ids.suplimentatLei, label: "Suplimentat total lei", tip: "calculat", formula: "suma", surse: [ids.s1Suplimentat, ids.s2Suplimentat, ids.s3Suplimentat] },
+        { id: ids.restPct, label: "Rest de realizat %", tip: "calculat", formula: "procent_pool", surse: [ids.restLei, ids.valoare, ids.suplimentatLei, ids.renuntatLei] },
+        { id: ids.restLei, label: "Rest de realizat lei", tip: "calculat", formula: "rest_lei", surse: [ids.valoare, ids.suplimentatLei, ids.realizatLei, ids.renuntatLei] }
       ];
     }
   };
@@ -1190,21 +1218,53 @@
     var n = typeof v === "number" ? v : parseFloat(v);
     return isNaN(n) ? 0 : n;
   }
+  function numOf(valori, id) { var v = valori[id]; var n = typeof v === "number" ? v : parseFloat(v); return isNaN(n) ? 0 : n; }
   function computeCalcValue(col, valori) {
     if (col.formula === "suma") {
-      return (col.surse || []).reduce(function (sum, srcId) {
-        var v = valori[srcId];
-        var n = typeof v === "number" ? v : parseFloat(v);
-        return sum + (isNaN(n) ? 0 : n);
-      }, 0);
+      return (col.surse || []).reduce(function (sum, srcId) { return sum + numOf(valori, srcId); }, 0);
     }
     if (col.formula === "procent") {
-      var numV = valori[col.surse[0]]; var num = typeof numV === "number" ? numV : (parseFloat(numV) || 0);
-      var denV = valori[col.surse[1]]; var den = typeof denV === "number" ? denV : (parseFloat(denV) || 0);
+      var num = numOf(valori, col.surse[0]);
+      var den = numOf(valori, col.surse[1]);
       return den ? (num / den * 100) : 0;
+    }
+    // "rest_lei": surse = [oferta, suplimentatLei, realizatLei, renuntatLei]
+    // -> oferta + suplimentat - realizat - renuntat (used for "Rest de realizat")
+    if (col.formula === "rest_lei") {
+      return numOf(valori, col.surse[0]) + numOf(valori, col.surse[1]) - numOf(valori, col.surse[2]) - numOf(valori, col.surse[3]);
+    }
+    // "procent_pool": surse = [numeratorLei, oferta, suplimentatLei, renuntatLei]
+    // -> numerator / (oferta + suplimentat - renuntat) * 100 — used where the
+    // percentage base isn't the raw offer but the offer adjusted for
+    // extra/cancelled work (e.g. "Realizat total %", "Rest de realizat %").
+    if (col.formula === "procent_pool") {
+      var pool = numOf(valori, col.surse[1]) + numOf(valori, col.surse[2]) - numOf(valori, col.surse[3]);
+      return pool ? (numOf(valori, col.surse[0]) / pool * 100) : 0;
     }
     return 0;
   }
+  // Resolves every "calculat" column into `vals` via fixed-point iteration,
+  // so calculated columns may reference each other regardless of left-to-right
+  // display order (unlike a single forward pass, this doesn't require a
+  // dependency to be positioned before its dependent column).
+  function resolveCalcColumns(orderedCols, vals) {
+    var pending = orderedCols.filter(function (c) { return c.tip === "calculat"; });
+    var progress = true;
+    while (pending.length && progress) {
+      progress = false;
+      pending = pending.filter(function (c) {
+        var ready = (c.surse || []).every(function (s) { return vals.hasOwnProperty(s); });
+        if (!ready) return true;
+        vals[c.id] = computeCalcValue(c, vals);
+        progress = true;
+        return false;
+      });
+    }
+    // any left over have a missing/cyclic dependency — compute defensively
+    // (missing sources read as 0) rather than leave the cell blank forever.
+    pending.forEach(function (c) { vals[c.id] = computeCalcValue(c, vals); });
+  }
+  function isPercentFormula(formula) { return formula === "procent" || formula === "procent_pool"; }
   function formatGridNumber(n) {
     if (n === null || n === undefined || isNaN(n)) return "";
     var rounded = Math.round(n * 100) / 100;
@@ -1233,13 +1293,11 @@
     orderedRows.forEach(function (row) {
       if (row.grup || row.subtotal) return;
       var vals = {};
-      orderedCols.forEach(function (col) {
-        // pass the accumulating `vals` (not raw row.valori) so a calculated
-        // column can reference another calculated column that appears
-        // earlier in the column order (e.g. a "%" column dividing by a
-        // "total" column that is itself a sum of other columns).
-        vals[col.id] = col.tip === "calculat" ? computeCalcValue(col, vals) : row.valori[col.id];
-      });
+      orderedCols.forEach(function (col) { if (col.tip !== "calculat") vals[col.id] = row.valori[col.id]; });
+      // resolveCalcColumns lets a calculated column reference ANY other
+      // calculated column regardless of display order (e.g. a "%" column
+      // placed before the "total" column it divides by).
+      resolveCalcColumns(orderedCols, vals);
       displayValori[row.id] = vals;
     });
 
@@ -1253,7 +1311,7 @@
         numarCols.forEach(function (c) { sums[c.id] += cellNumber(srcRow, c.id); });
       });
       orderedCols.forEach(function (c) { if (c.tip === "text") sums[c.id] = row.valori[c.id]; });
-      calcCols.forEach(function (c) { sums[c.id] = computeCalcValue(c, sums); });
+      resolveCalcColumns(orderedCols, sums);
       displayValori[row.id] = sums;
     });
 
@@ -1263,7 +1321,7 @@
       var gsums = {};
       numarCols.forEach(function (c) { gsums[c.id] = 0; });
       itemRows.forEach(function (row) { numarCols.forEach(function (c) { gsums[c.id] += cellNumber(row, c.id); }); });
-      calcCols.forEach(function (c) { gsums[c.id] = computeCalcValue(c, gsums); });
+      resolveCalcColumns(orderedCols, gsums);
       grandTotals = gsums;
     }
 
@@ -2103,7 +2161,7 @@
     if (col.tip === "numar" || col.tip === "calculat") {
       var n = typeof v === "number" ? v : (parseFloat(v) || 0);
       var out = formatGridNumber(n);
-      return col.tip === "calculat" && col.formula === "procent" ? out + "%" : out;
+      return col.tip === "calculat" && isPercentFormula(col.formula) ? out + "%" : out;
     }
     return v || "";
   }
@@ -2188,7 +2246,7 @@
         : '<span class="progrid-col-label" draggable="false" data-edit-col-label="' + col.id + '" title="Dublu-click pentru a redenumi">' + esc(col.label || "(fără nume)") + '</span>';
       var typeTag = "";
       if (col.tip === "calculat") {
-        var tagSymbol = col.formula === "procent" ? "%" : "Σ";
+        var tagSymbol = isPercentFormula(col.formula) ? "%" : "Σ";
         if (col.label.indexOf(tagSymbol) === -1) typeTag = " " + tagSymbol;
       }
       var thStyle = col.culoare ? ' style="background:' + progresColorCss(col.culoare) + '"' : "";
@@ -2223,7 +2281,7 @@
         var isNumCol = col.tip === "numar" || col.tip === "calculat";
         var display;
         if (isNumCol && unconfigured) display = "—";
-        else display = isNumCol ? (formatGridNumber(raw || 0) + (col.tip === "calculat" && col.formula === "procent" ? "%" : "")) : esc(raw || "");
+        else display = isNumCol ? (formatGridNumber(raw || 0) + (col.tip === "calculat" && isPercentFormula(col.formula) ? "%" : "")) : esc(raw || "");
         var stickyCls = idx === 0 ? " progrid-sticky-2" : "";
         var cls = "progrid-cell" + (isNumCol ? " progrid-num" : "") + (col.tip === "calculat" ? " progrid-cell-computed" : "") + (editable ? " progrid-cell-editable" : "") + stickyCls;
         var cellBg = rowBg || (col.culoare ? progresColorCss(col.culoare) : null);
@@ -2264,7 +2322,7 @@
         var stickyCls = idx === 0 ? " progrid-sticky-2" : "";
         if (col.tip === "text") return '<td class="' + stickyCls.trim() + '">' + (col.id === labelColId ? "TOTAL GENERAL" : "") + "</td>";
         var v = data.grandTotals[col.id];
-        var display = formatGridNumber(v || 0) + (col.tip === "calculat" && col.formula === "procent" ? "%" : "");
+        var display = formatGridNumber(v || 0) + (col.tip === "calculat" && isPercentFormula(col.formula) ? "%" : "");
         return '<td class="progrid-num' + stickyCls + '">' + display + '</td>';
       }).join("");
       totalRow = '<tr class="progrow-total"><td class="progrid-sticky-1"></td>' + totalCells + '<td></td></tr>';
@@ -2272,7 +2330,10 @@
 
     var summaryHtml = "";
     if (data.grandTotals) {
-      var pctCol = orderedCols.filter(function (c) { return c.tip === "calculat" && c.formula === "procent"; })[0];
+      var pctCols = orderedCols.filter(function (c) { return c.tip === "calculat" && isPercentFormula(c.formula); });
+      // headline stat prefers a "Realizat" percentage when there's more than
+      // one (e.g. the capitole template also has Renunțat/Suplimentat/Rest %)
+      var pctCol = pctCols.filter(function (c) { return /realizat/i.test(c.label); })[0] || pctCols[0];
       var itemRowCount = orderedRows.filter(function (r) { return !r.grup && !r.subtotal; }).length;
       var stats = '<div class="meta-item"><div class="mv">' + itemRowCount + '</div><div class="ml">Linii</div></div>';
       if (pctCol) stats += '<div class="meta-item"><div class="mv">' + formatGridNumber(data.grandTotals[pctCol.id] || 0) + '%</div><div class="ml">' + esc(pctCol.label) + '</div></div>';
