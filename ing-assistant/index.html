@@ -491,7 +491,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b38-2026-09-18";
+  var BUILD = "b39-2026-09-18";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -2483,6 +2483,7 @@
   }
 
   function render() {
+    if (progresDragActive) { renderQueuedDuringDrag = true; return; }
     var errorBanner = syncError ? '<div class="sync-error">' + esc(syncError) + '</div>' : "";
     var failedCount = Object.keys(failedCells).length;
     var retryBanner = failedCount > 0 ? '' +
@@ -2962,6 +2963,20 @@
   var dragState = { tip: null, scope: null };
   var progRowDragState = { id: null };
   var progColDragState = { id: null };
+  // A native HTML5 drag is tied to the exact DOM node the gesture started
+  // on. render() replaces #app's entire innerHTML, so if it runs WHILE a
+  // progres-grid row/column drag is active, it destroys that node out from
+  // under the browser's own drag session — the drag never gets a dragend,
+  // the cursor stays stuck on the "grab" icon, and the page stops
+  // responding to clicks (though other tabs are unaffected, since only this
+  // page's drag session is orphaned, not the whole browser). This can be
+  // triggered by something as ordinary as a Supabase write from an EARLIER
+  // action resolving its .then() (which calls render() to reconcile a
+  // temp-id) while the user is mid-drag on a different row. Guard render()
+  // itself so it can never fire mid-drag; queue it and flush once the drag
+  // actually ends.
+  var progresDragActive = false;
+  var renderQueuedDuringDrag = false;
   function clearDocDragClasses() {
     document.querySelectorAll(".docrow.dragging, .docrow.drag-over-top, .docrow.drag-over-bottom").forEach(function (el) {
       el.classList.remove("dragging", "drag-over-top", "drag-over-bottom");
@@ -2986,6 +3001,7 @@
     var progRow = e.target.closest("[data-progrow-drag-id]");
     if (progRow) {
       progRowDragState.id = progRow.dataset.progrowDragId;
+      progresDragActive = true;
       progRow.classList.add("dragging");
       if (e.dataTransfer) { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setDragImage(dragGhostEl, 0, 0); }
       return;
@@ -2993,6 +3009,7 @@
     var progCol = e.target.closest("[data-progcol-drag-id]");
     if (progCol) {
       progColDragState.id = progCol.dataset.progcolDragId;
+      progresDragActive = true;
       progCol.classList.add("dragging");
       if (e.dataTransfer) { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setDragImage(dragGhostEl, 0, 0); }
       return;
@@ -3070,6 +3087,7 @@
       var rTargetId = progRow.dataset.progrowDragId;
       var rDraggedId = progRowDragState.id;
       progRowDragState.id = null;
+      progresDragActive = false; // clear BEFORE reorderRows(), so its render() actually runs
       clearDocDragClasses();
       var rSite = findSite(state.selectedSiteId);
       if (rSite) reorderRows(rSite, rDraggedId, rTargetId, rbefore);
@@ -3083,6 +3101,7 @@
       var cTargetId = progCol.dataset.progcolDragId;
       var cDraggedId = progColDragState.id;
       progColDragState.id = null;
+      progresDragActive = false; // clear BEFORE reorderColumns(), so its render() actually runs
       clearDocDragClasses();
       var cSite = findSite(state.selectedSiteId);
       if (cSite) reorderColumns(cSite, cDraggedId, cTargetId, cbefore);
@@ -3106,9 +3125,13 @@
     dragState.tip = null; dragState.scope = null;
     progRowDragState.id = null;
     progColDragState.id = null;
+    progresDragActive = false;
     if (dragoverRAF) { cancelAnimationFrame(dragoverRAF); dragoverRAF = null; }
     dragoverPending = null;
     clearDocDragClasses();
+    // Any render() suppressed while this drag was active (e.g. an unrelated
+    // Supabase write resolving mid-drag) is applied now that it's safe.
+    if (renderQueuedDuringDrag) { renderQueuedDuringDrag = false; render(); }
   });
 
   // Column resize: a narrow handle at the right edge of each header cell.
