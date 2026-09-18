@@ -263,11 +263,9 @@
   .progrid-col-tag { color: var(--ink-faint); font-weight: 700; }
   .progrid-col-del { cursor: pointer; color: var(--ink-faint); flex-shrink: 0; display: flex; }
   .progrid-col-del:hover { color: oklch(55% 0.18 25); }
-  .progrid th[draggable="true"] { cursor: default; }
   .progrid th.dragging { opacity: .4; }
   .progrid th.drag-over-left { box-shadow: inset 2px 0 0 var(--navy); }
   .progrid th.drag-over-right { box-shadow: inset -2px 0 0 var(--navy); }
-  .progrid tbody tr[draggable="true"] { cursor: default; }
   .progrid tbody tr.dragging { opacity: .4; }
   .progrid tbody tr.drag-over-top td { box-shadow: inset 0 2px 0 var(--navy); }
   .progrid tbody tr.drag-over-bottom td { box-shadow: inset 0 -2px 0 var(--navy); }
@@ -287,7 +285,13 @@
   .progrid td.progrid-cell-editable { cursor: pointer; }
   .progrid td.progrid-cell-editable:hover { background: var(--surface-2); }
   .progrid td.progrid-cell-computed { color: var(--ink-soft); font-style: italic; }
-  .progrid .progrid-grip { text-align: center; width: 22px; padding: 8px 6px; color: var(--ink-faint); cursor: grab; }
+  .progrid .progrid-grip { text-align: center; width: 22px; padding: 8px 6px; color: var(--ink-faint); }
+  /* Manual (mousedown/mousemove/mouseup) row/column reordering — see the
+     comment above endManualProgDrag() for why this replaced native HTML5
+     drag-and-drop. Suppress text selection and show a consistent "grabbing"
+     cursor for the whole page while a grip is held down. */
+  body.progrid-manual-drag { cursor: grabbing !important; user-select: none !important; }
+  body.progrid-manual-drag * { cursor: grabbing !important; }
   .progrid .progrid-num { font-family: var(--mono); }
   .progrid .progrid-del-cell { text-align: center; width: 30px; padding: 8px 6px; }
   .progrid-del { color: var(--ink-faint); cursor: pointer; display: inline-flex; }
@@ -491,7 +495,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b40-2026-09-18";
+  var BUILD = "b41-2026-09-18";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -2260,8 +2264,8 @@
       }
       var thStyle = col.culoare ? ' style="background:' + progresColorCss(col.culoare) + '"' : "";
       var stickyCls = idx === 0 ? " progrid-sticky-2" : "";
-      return '<th class="' + stickyCls.trim() + '" draggable="true" data-progcol-drag-id="' + col.id + '"' + thStyle + '><div class="progrid-th-inner">' +
-        '<span class="progrid-col-grip" title="Trage pentru a reordona">' + icon("grip", 13) + '</span>' +
+      return '<th class="' + stickyCls.trim() + '" data-progcol-id="' + col.id + '"' + thStyle + '><div class="progrid-th-inner">' +
+        '<span class="progrid-col-grip" data-col-grip-handle="' + col.id + '" title="Trage pentru a reordona">' + icon("grip", 13) + '</span>' +
         colorSwatchHTML("col", col.id, col.culoare) +
         labelHtml + (typeTag ? '<span class="progrid-col-tag">' + esc(typeTag) + '</span>' : "") +
         '<span class="progrid-col-del" data-remove-col="' + site.id + '|' + col.id + '" title="Șterge coloana">' + icon("trash", 12) + '</span>' +
@@ -2325,9 +2329,12 @@
       var gripStyle = rowBg ? ' style="background:' + rowBg + '"' : "";
       var delStyle = rowBg ? ' style="background:' + rowBg + '"' : "";
       var dupBtn = '<span class="progrid-rowsrc-btn" data-duplicate-row="' + site.id + '|' + row.id + '" title="Duplică rândul">' + icon("copy", 12) + '</span>';
-      return '<tr class="' + rowCls + '" draggable="true" data-progrow-drag-id="' + row.id + '">' +
+      return '<tr class="' + rowCls + '" data-progrow-id="' + row.id + '">' +
         '<td class="progrid-grip progrid-sticky-1"' + gripStyle + '>' +
-          '<span style="display:flex;align-items:center;gap:3px;justify-content:center;flex-wrap:wrap">' + icon("grip", 13) + colorSwatchHTML("row", row.id, row.culoare) + '</span>' +
+          '<span style="display:flex;align-items:center;gap:3px;justify-content:center;flex-wrap:wrap">' +
+            '<span class="progrid-row-grip-handle" data-row-grip-handle="' + row.id + '" style="cursor:grab;display:inline-flex">' + icon("grip", 13) + '</span>' +
+            colorSwatchHTML("row", row.id, row.culoare) +
+          '</span>' +
         '</td>' +
         cellsHtml +
         '<td class="progrid-del-cell"' + delStyle + '><span style="display:flex;align-items:center;gap:5px;justify-content:center">' + dupBtn + '<span class="progrid-del" data-remove-row="' + site.id + '|' + row.id + '" title="Șterge rândul">' + icon("trash", 13) + '</span></span></td>' +
@@ -2961,23 +2968,8 @@
   // DOM instead of through render(), so the drag gesture isn't interrupted
   // by a full rebuild on every dragover.
   var dragState = { tip: null, scope: null };
-  var progRowDragState = { id: null };
-  var progColDragState = { id: null };
-  // A native HTML5 drag is tied to the exact DOM node the gesture started
-  // on. render() replaces #app's entire innerHTML, so if it runs WHILE a
-  // progres-grid row/column drag is active, it destroys that node out from
-  // under the browser's own drag session — the drag never gets a dragend,
-  // the cursor stays stuck on the "grab" icon, and the page stops
-  // responding to clicks (though other tabs are unaffected, since only this
-  // page's drag session is orphaned, not the whole browser). This can be
-  // triggered by something as ordinary as a Supabase write from an EARLIER
-  // action resolving its .then() (which calls render() to reconcile a
-  // temp-id) while the user is mid-drag on a different row. Guard render()
-  // itself so it can never fire mid-drag; queue it and flush once the drag
-  // actually ends.
   var progresDragActive = false;
   var renderQueuedDuringDrag = false;
-  var progresDragWatchdog = null;
   function clearDocDragClasses() {
     document.querySelectorAll(".docrow.dragging, .docrow.drag-over-top, .docrow.drag-over-bottom").forEach(function (el) {
       el.classList.remove("dragging", "drag-over-top", "drag-over-bottom");
@@ -2989,34 +2981,7 @@
       el.classList.remove("dragging", "drag-over-left", "drag-over-right");
     });
   }
-  // A native drag needs a ghost image, and by default the browser rasterizes
-  // the dragged element itself. Doing that for a <tr>/<th> that contains
-  // position:sticky cells inside a horizontally-scrolling table is a known
-  // freeze trigger in Chromium — so hand it a trivial offscreen element to
-  // snapshot instead. (Synthetic DragEvents in automated tests skip this
-  // rendering path entirely, which is why it never showed up there.)
-  var dragGhostEl = document.createElement("div");
-  dragGhostEl.style.cssText = "position:fixed;top:-999px;left:-999px;width:1px;height:1px;";
-  document.body.appendChild(dragGhostEl);
   document.getElementById("app").addEventListener("dragstart", function (e) {
-    var progRow = e.target.closest("[data-progrow-drag-id]");
-    if (progRow) {
-      progRowDragState.id = progRow.dataset.progrowDragId;
-      progresDragActive = true;
-      progresDragWatchdog = setTimeout(endProgresDragGuard, 8000);
-      progRow.classList.add("dragging");
-      if (e.dataTransfer) { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setDragImage(dragGhostEl, 0, 0); }
-      return;
-    }
-    var progCol = e.target.closest("[data-progcol-drag-id]");
-    if (progCol) {
-      progColDragState.id = progCol.dataset.progcolDragId;
-      progresDragActive = true;
-      progresDragWatchdog = setTimeout(endProgresDragGuard, 8000);
-      progCol.classList.add("dragging");
-      if (e.dataTransfer) { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setDragImage(dragGhostEl, 0, 0); }
-      return;
-    }
     var row = e.target.closest("[data-doc-drag-tip]");
     if (!row) return;
     dragState.tip = row.dataset.docDragTip;
@@ -3024,45 +2989,7 @@
     row.classList.add("dragging");
     if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
   });
-  // dragover can fire far more often than once per frame, and reading
-  // getBoundingClientRect() forces a synchronous layout every time — on a
-  // wide table-layout:fixed table this adds up fast and reads as a freeze
-  // during the drag itself. Coalesce it to at most once per animation frame.
-  var dragoverRAF = null;
-  var dragoverPending = null;
-  function scheduleDragoverUpdate(el, coord, kind) {
-    dragoverPending = { el: el, coord: coord, kind: kind };
-    if (dragoverRAF) return;
-    dragoverRAF = requestAnimationFrame(function () {
-      dragoverRAF = null;
-      var p = dragoverPending;
-      dragoverPending = null;
-      if (!p || !document.contains(p.el)) return;
-      var rect = p.el.getBoundingClientRect();
-      if (p.kind === "row") {
-        var before = (p.coord - rect.top) < rect.height / 2;
-        p.el.classList.toggle("drag-over-top", before);
-        p.el.classList.toggle("drag-over-bottom", !before);
-      } else {
-        var beforeCol = (p.coord - rect.left) < rect.width / 2;
-        p.el.classList.toggle("drag-over-left", beforeCol);
-        p.el.classList.toggle("drag-over-right", !beforeCol);
-      }
-    });
-  }
   document.getElementById("app").addEventListener("dragover", function (e) {
-    var progRow = e.target.closest("[data-progrow-drag-id]");
-    if (progRow && progRowDragState.id) {
-      e.preventDefault();
-      scheduleDragoverUpdate(progRow, e.clientY, "row");
-      return;
-    }
-    var progCol = e.target.closest("[data-progcol-drag-id]");
-    if (progCol && progColDragState.id) {
-      e.preventDefault();
-      scheduleDragoverUpdate(progCol, e.clientX, "col");
-      return;
-    }
     var row = e.target.closest("[data-doc-drag-tip]");
     if (!row || !dragState.tip || row.dataset.dragScope !== dragState.scope) return;
     e.preventDefault();
@@ -3072,44 +2999,10 @@
     row.classList.toggle("drag-over-bottom", !before);
   });
   document.getElementById("app").addEventListener("dragleave", function (e) {
-    var progRow = e.target.closest("[data-progrow-drag-id]");
-    if (progRow) { progRow.classList.remove("drag-over-top", "drag-over-bottom"); return; }
-    var progCol = e.target.closest("[data-progcol-drag-id]");
-    if (progCol) { progCol.classList.remove("drag-over-left", "drag-over-right"); return; }
     var row = e.target.closest("[data-doc-drag-tip]");
     if (row) row.classList.remove("drag-over-top", "drag-over-bottom");
   });
   document.getElementById("app").addEventListener("drop", function (e) {
-    var progRow = e.target.closest("[data-progrow-drag-id]");
-    if (progRow && progRowDragState.id) {
-      e.preventDefault();
-      // Computed fresh here (not read off the throttled dragover class,
-      // which may not have caught up to this exact event yet).
-      var rrect = progRow.getBoundingClientRect();
-      var rbefore = (e.clientY - rrect.top) < rrect.height / 2;
-      var rTargetId = progRow.dataset.progrowDragId;
-      var rDraggedId = progRowDragState.id;
-      progRowDragState.id = null;
-      progresDragActive = false; // clear BEFORE reorderRows(), so its render() actually runs
-      clearDocDragClasses();
-      var rSite = findSite(state.selectedSiteId);
-      if (rSite) reorderRows(rSite, rDraggedId, rTargetId, rbefore);
-      return;
-    }
-    var progCol = e.target.closest("[data-progcol-drag-id]");
-    if (progCol && progColDragState.id) {
-      e.preventDefault();
-      var crect = progCol.getBoundingClientRect();
-      var cbefore = (e.clientX - crect.left) < crect.width / 2;
-      var cTargetId = progCol.dataset.progcolDragId;
-      var cDraggedId = progColDragState.id;
-      progColDragState.id = null;
-      progresDragActive = false; // clear BEFORE reorderColumns(), so its render() actually runs
-      clearDocDragClasses();
-      var cSite = findSite(state.selectedSiteId);
-      if (cSite) reorderColumns(cSite, cDraggedId, cTargetId, cbefore);
-      return;
-    }
     var row = e.target.closest("[data-doc-drag-tip]");
     if (!row || !dragState.tip || row.dataset.dragScope !== dragState.scope) return;
     e.preventDefault();
@@ -3124,28 +3017,126 @@
     var scopeTips = scope === "avize" ? avizeTips(site) : mainListTips(site);
     reorderWithinScope(draggedTip, targetTip, before, scopeTips);
   });
-  function endProgresDragGuard() {
+  document.getElementById("app").addEventListener("dragend", function () {
     dragState.tip = null; dragState.scope = null;
-    progRowDragState.id = null;
-    progColDragState.id = null;
+    clearDocDragClasses();
+  });
+
+  // Progres grid row/column reordering: deliberately NOT the browser's
+  // native HTML5 drag-and-drop (draggable="true" + dragstart/dragover/drop/
+  // dragend). That API ties the gesture to the browser's own internal
+  // drag-tracking state, which — confirmed by a screen recording — can get
+  // stuck: the whole page stops responding to ANY click or hover anywhere
+  // (not just the dragged element) until something clears it, because the
+  // browser itself, not just this page's JS, considers itself mid-drag.
+  // Once the browser is in that state, nothing this page's JS does (guard
+  // render(), watch for mouseup, a watchdog timer — all tried already) can
+  // un-stick it, since the stuck state lives outside the page entirely.
+  // A manual mousedown/mousemove/mouseup implementation never touches that
+  // native machinery, so there is no browser-level state to get stuck in —
+  // mouseup is a plain DOM event this page fully controls and which always
+  // fires when the mouse button is released.
+  var manualRowDrag = { id: null };
+  var manualColDrag = { id: null };
+  var manualDragRAF = null;
+  var manualDragPending = null;
+  function scheduleManualDragUpdate(x, y) {
+    manualDragPending = { x: x, y: y };
+    if (manualDragRAF) return;
+    manualDragRAF = requestAnimationFrame(function () {
+      manualDragRAF = null;
+      var p = manualDragPending;
+      manualDragPending = null;
+      if (!p) return;
+      if (manualRowDrag.id) {
+        var overEl = document.elementFromPoint(p.x, p.y);
+        var tr = overEl && overEl.closest("[data-progrow-id]");
+        document.querySelectorAll(".progrid tbody tr.drag-over-top, .progrid tbody tr.drag-over-bottom").forEach(function (r) {
+          if (r !== tr) r.classList.remove("drag-over-top", "drag-over-bottom");
+        });
+        if (tr && tr.dataset.progrowId !== manualRowDrag.id) {
+          var rect = tr.getBoundingClientRect();
+          var before = (p.y - rect.top) < rect.height / 2;
+          tr.classList.toggle("drag-over-top", before);
+          tr.classList.toggle("drag-over-bottom", !before);
+        }
+      } else if (manualColDrag.id) {
+        var overEl2 = document.elementFromPoint(p.x, p.y);
+        var th = overEl2 && overEl2.closest("[data-progcol-id]");
+        document.querySelectorAll(".progrid th.drag-over-left, .progrid th.drag-over-right").forEach(function (c) {
+          if (c !== th) c.classList.remove("drag-over-left", "drag-over-right");
+        });
+        if (th && th.dataset.progcolId !== manualColDrag.id) {
+          var rect2 = th.getBoundingClientRect();
+          var beforeCol = (p.x - rect2.left) < rect2.width / 2;
+          th.classList.toggle("drag-over-left", beforeCol);
+          th.classList.toggle("drag-over-right", !beforeCol);
+        }
+      }
+    });
+  }
+  document.getElementById("app").addEventListener("mousedown", function (e) {
+    var rowGrip = e.target.closest("[data-row-grip-handle]");
+    if (rowGrip) {
+      e.preventDefault();
+      manualRowDrag.id = rowGrip.dataset.rowGripHandle;
+      progresDragActive = true;
+      var tr = rowGrip.closest("[data-progrow-id]");
+      if (tr) tr.classList.add("dragging");
+      document.body.classList.add("progrid-manual-drag");
+      return;
+    }
+    var colGrip = e.target.closest("[data-col-grip-handle]");
+    if (colGrip) {
+      e.preventDefault();
+      manualColDrag.id = colGrip.dataset.colGripHandle;
+      progresDragActive = true;
+      var th = colGrip.closest("[data-progcol-id]");
+      if (th) th.classList.add("dragging");
+      document.body.classList.add("progrid-manual-drag");
+      return;
+    }
+  });
+  document.addEventListener("mousemove", function (e) {
+    if (!manualRowDrag.id && !manualColDrag.id) return;
+    // If the button was released while the cursor was outside the browser
+    // viewport (e.g. dragged off the edge of the window), no mouseup event
+    // is ever delivered to this page. The next mousemove that re-enters the
+    // page reports e.buttons === 0, which is the only signal we get that
+    // the drag actually ended — treat it exactly like a mouseup with no
+    // valid drop target, so the drag can never get left dangling.
+    if (e.buttons === 0) { endManualProgDrag(); return; }
+    scheduleManualDragUpdate(e.clientX, e.clientY);
+  });
+  function endManualProgDrag() {
+    manualRowDrag.id = null;
+    manualColDrag.id = null;
     progresDragActive = false;
-    if (progresDragWatchdog) { clearTimeout(progresDragWatchdog); progresDragWatchdog = null; }
-    if (dragoverRAF) { cancelAnimationFrame(dragoverRAF); dragoverRAF = null; }
-    dragoverPending = null;
+    if (manualDragRAF) { cancelAnimationFrame(manualDragRAF); manualDragRAF = null; }
+    manualDragPending = null;
+    document.body.classList.remove("progrid-manual-drag");
     clearDocDragClasses();
     // Any render() suppressed while this drag was active (e.g. an unrelated
     // Supabase write resolving mid-drag) is applied now that it's safe.
     if (renderQueuedDuringDrag) { renderQueuedDuringDrag = false; render(); }
   }
-  document.getElementById("app").addEventListener("dragend", endProgresDragGuard);
-  // Safety nets in case dragend itself never fires (browser quirks, the
-  // drop landing outside any recognized target, etc.) — without one of
-  // these, progresDragActive would stay stuck at true forever and every
-  // future render() would silently no-op, which looks exactly like the
-  // whole page going dead. mouseup covers the normal "let go of the mouse
-  // button" case; the watchdog timeout covers anything mouseup misses.
-  document.addEventListener("mouseup", function () {
-    if (progresDragActive) endProgresDragGuard();
+  document.addEventListener("mouseup", function (e) {
+    if (!manualRowDrag.id && !manualColDrag.id) return;
+    var isRow = !!manualRowDrag.id;
+    var draggedId = isRow ? manualRowDrag.id : manualColDrag.id;
+    var overEl = document.elementFromPoint(e.clientX, e.clientY);
+    var targetEl = overEl && overEl.closest(isRow ? "[data-progrow-id]" : "[data-progcol-id]");
+    var targetId = targetEl ? (isRow ? targetEl.dataset.progrowId : targetEl.dataset.progcolId) : null;
+    var before = true;
+    if (targetEl) {
+      var rect = targetEl.getBoundingClientRect();
+      before = isRow ? ((e.clientY - rect.top) < rect.height / 2) : ((e.clientX - rect.left) < rect.width / 2);
+    }
+    endManualProgDrag();
+    if (targetId && targetId !== draggedId) {
+      var site = findSite(state.selectedSiteId);
+      if (site) { if (isRow) reorderRows(site, draggedId, targetId, before); else reorderColumns(site, draggedId, targetId, before); }
+    }
   });
 
   // Column resize: a narrow handle at the right edge of each header cell.
