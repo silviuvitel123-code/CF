@@ -491,7 +491,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b39-2026-09-18";
+  var BUILD = "b40-2026-09-18";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -2977,6 +2977,7 @@
   // actually ends.
   var progresDragActive = false;
   var renderQueuedDuringDrag = false;
+  var progresDragWatchdog = null;
   function clearDocDragClasses() {
     document.querySelectorAll(".docrow.dragging, .docrow.drag-over-top, .docrow.drag-over-bottom").forEach(function (el) {
       el.classList.remove("dragging", "drag-over-top", "drag-over-bottom");
@@ -3002,6 +3003,7 @@
     if (progRow) {
       progRowDragState.id = progRow.dataset.progrowDragId;
       progresDragActive = true;
+      progresDragWatchdog = setTimeout(endProgresDragGuard, 8000);
       progRow.classList.add("dragging");
       if (e.dataTransfer) { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setDragImage(dragGhostEl, 0, 0); }
       return;
@@ -3010,6 +3012,7 @@
     if (progCol) {
       progColDragState.id = progCol.dataset.progcolDragId;
       progresDragActive = true;
+      progresDragWatchdog = setTimeout(endProgresDragGuard, 8000);
       progCol.classList.add("dragging");
       if (e.dataTransfer) { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setDragImage(dragGhostEl, 0, 0); }
       return;
@@ -3121,17 +3124,28 @@
     var scopeTips = scope === "avize" ? avizeTips(site) : mainListTips(site);
     reorderWithinScope(draggedTip, targetTip, before, scopeTips);
   });
-  document.getElementById("app").addEventListener("dragend", function () {
+  function endProgresDragGuard() {
     dragState.tip = null; dragState.scope = null;
     progRowDragState.id = null;
     progColDragState.id = null;
     progresDragActive = false;
+    if (progresDragWatchdog) { clearTimeout(progresDragWatchdog); progresDragWatchdog = null; }
     if (dragoverRAF) { cancelAnimationFrame(dragoverRAF); dragoverRAF = null; }
     dragoverPending = null;
     clearDocDragClasses();
     // Any render() suppressed while this drag was active (e.g. an unrelated
     // Supabase write resolving mid-drag) is applied now that it's safe.
     if (renderQueuedDuringDrag) { renderQueuedDuringDrag = false; render(); }
+  }
+  document.getElementById("app").addEventListener("dragend", endProgresDragGuard);
+  // Safety nets in case dragend itself never fires (browser quirks, the
+  // drop landing outside any recognized target, etc.) — without one of
+  // these, progresDragActive would stay stuck at true forever and every
+  // future render() would silently no-op, which looks exactly like the
+  // whole page going dead. mouseup covers the normal "let go of the mouse
+  // button" case; the watchdog timeout covers anything mouseup misses.
+  document.addEventListener("mouseup", function () {
+    if (progresDragActive) endProgresDragGuard();
   });
 
   // Column resize: a narrow handle at the right edge of each header cell.
