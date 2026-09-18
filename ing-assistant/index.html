@@ -491,7 +491,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b34-2026-09-18";
+  var BUILD = "b35-2026-09-18";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -517,12 +517,13 @@
       editing: false,
       editDraft: emptySiteDraft(),
       subTab: "sintetice",
+      progresSubTab: "capitole",
       docDrafts: {},
       docUploading: {},
       labelEdit: { tip: null, siteId: null, draft: "" },
       gridCellEdit: { rowId: null, colId: null, draft: "" },
       gridColLabelEdit: { colId: null, draft: "" },
-      addColForm: { open: false, label: "", tip: "numar", numarator: "", numitor: "", surseSuma: {} },
+      addColForm: { open: false, tabel: null, label: "", tip: "numar", numarator: "", numitor: "", surseSuma: {} },
       colorPickerOpen: { type: null, id: null },
       rowSourcesOpen: null,
       collapsedGroups: {},
@@ -1015,23 +1016,26 @@
   // full columns+rows+order BEFORE it runs, so undo never needs a bespoke
   // "inverse" per action — it just reconciles current state back to the
   // last snapshot (insert/update/delete whatever differs) and re-syncs it.
-  function snapshotProgres(site) {
+  // Each grid instance ("tabel": "centralizare" | "capitole") gets its own
+  // stack, keyed by site+tabel, so undoing in one grid never touches the other.
+  function snapshotProgres(site, tabel) {
     return {
-      coloane: coloaneForSite(site).map(function (c) { return { id: c.id, label: c.label, tip: c.tip, formula: c.formula, surse: (c.surse || []).slice(), culoare: c.culoare, latime: c.latime }; }),
-      randuri: randuriForSite(site).map(function (r) { return { id: r.id, grup: r.grup, subtotal: r.subtotal, valori: Object.assign({}, r.valori), culoare: r.culoare, surseRanduri: (r.surseRanduri || []).slice() }; }),
-      coloaneOrder: site.progresColoaneOrder ? site.progresColoaneOrder.slice() : null,
-      randuriOrder: site.progresRanduriOrder ? site.progresRanduriOrder.slice() : null
+      coloane: coloaneForSite(site, tabel).map(function (c) { return { id: c.id, label: c.label, tip: c.tip, formula: c.formula, surse: (c.surse || []).slice(), culoare: c.culoare, latime: c.latime }; }),
+      randuri: randuriForSite(site, tabel).map(function (r) { return { id: r.id, grup: r.grup, subtotal: r.subtotal, valori: Object.assign({}, r.valori), culoare: r.culoare, surseRanduri: (r.surseRanduri || []).slice() }; }),
+      coloaneOrder: (site.progresColoaneOrder && site.progresColoaneOrder[tabel]) ? site.progresColoaneOrder[tabel].slice() : null,
+      randuriOrder: (site.progresRanduriOrder && site.progresRanduriOrder[tabel]) ? site.progresRanduriOrder[tabel].slice() : null
     };
   }
-  function pushProgresUndo(site) {
-    if (!progresUndoStack[site.id]) progresUndoStack[site.id] = [];
-    var stack = progresUndoStack[site.id];
-    stack.push(snapshotProgres(site));
+  function pushProgresUndo(site, tabel) {
+    var key = site.id + "::" + tabel;
+    if (!progresUndoStack[key]) progresUndoStack[key] = [];
+    var stack = progresUndoStack[key];
+    stack.push(snapshotProgres(site, tabel));
     if (stack.length > PROGRES_UNDO_LIMIT) stack.shift();
   }
-  function canUndoProgres(site) { return !!(progresUndoStack[site.id] && progresUndoStack[site.id].length); }
-  function reconcileProgresColumns(site, targetCols) {
-    var current = coloaneForSite(site).slice();
+  function canUndoProgres(site, tabel) { var key = site.id + "::" + tabel; return !!(progresUndoStack[key] && progresUndoStack[key].length); }
+  function reconcileProgresColumns(site, tabel, targetCols) {
+    var current = coloaneForSite(site, tabel).slice();
     var targetIds = targetCols.map(function (c) { return c.id; });
     current.forEach(function (c) {
       if (targetIds.indexOf(c.id) !== -1) return;
@@ -1043,17 +1047,17 @@
     targetCols.forEach(function (tc) {
       var existing = progresColoane.filter(function (c) { return c.id === tc.id; })[0];
       if (!existing) {
-        var copy = { id: tc.id, santierId: site.id, label: tc.label, tip: tc.tip, formula: tc.formula, surse: tc.surse.slice(), culoare: tc.culoare, latime: tc.latime };
+        var copy = { id: tc.id, santierId: site.id, label: tc.label, tip: tc.tip, formula: tc.formula, surse: tc.surse.slice(), culoare: tc.culoare, latime: tc.latime, tabel: tabel };
         progresColoane.push(copy);
-        sb.from("santier_progres_coloane").insert({ id: copy.id, santier_id: site.id, label: copy.label, tip: copy.tip, formula: copy.formula, surse: copy.surse, culoare: copy.culoare, latime: copy.latime }).then(function (res) { if (res.error) console.error(res.error); });
+        sb.from("santier_progres_coloane").insert({ id: copy.id, santier_id: site.id, label: copy.label, tip: copy.tip, formula: copy.formula, surse: copy.surse, culoare: copy.culoare, latime: copy.latime, tabel: tabel }).then(function (res) { if (res.error) console.error(res.error); });
       } else {
         existing.label = tc.label; existing.tip = tc.tip; existing.formula = tc.formula; existing.surse = tc.surse.slice(); existing.culoare = tc.culoare; existing.latime = tc.latime;
         sb.from("santier_progres_coloane").update({ label: existing.label, tip: existing.tip, formula: existing.formula, surse: existing.surse, culoare: existing.culoare, latime: existing.latime }).eq("id", existing.id).then(function (res) { if (res.error) console.error(res.error); });
       }
     });
   }
-  function reconcileProgresRows(site, targetRows) {
-    var current = randuriForSite(site).slice();
+  function reconcileProgresRows(site, tabel, targetRows) {
+    var current = randuriForSite(site, tabel).slice();
     var targetIds = targetRows.map(function (r) { return r.id; });
     current.forEach(function (r) {
       if (targetIds.indexOf(r.id) !== -1) return;
@@ -1065,23 +1069,26 @@
     targetRows.forEach(function (tr) {
       var existing = progresRanduri.filter(function (r) { return r.id === tr.id; })[0];
       if (!existing) {
-        var copy = { id: tr.id, santierId: site.id, grup: tr.grup, subtotal: tr.subtotal, valori: Object.assign({}, tr.valori), culoare: tr.culoare, surseRanduri: tr.surseRanduri.slice() };
+        var copy = { id: tr.id, santierId: site.id, grup: tr.grup, subtotal: tr.subtotal, valori: Object.assign({}, tr.valori), culoare: tr.culoare, surseRanduri: tr.surseRanduri.slice(), tabel: tabel };
         progresRanduri.push(copy);
-        sb.from("santier_progres_randuri").insert({ id: copy.id, santier_id: site.id, grup: copy.grup, subtotal: copy.subtotal, valori: copy.valori, culoare: copy.culoare, surse_randuri: copy.surseRanduri }).then(function (res) { if (res.error) console.error(res.error); });
+        sb.from("santier_progres_randuri").insert({ id: copy.id, santier_id: site.id, grup: copy.grup, subtotal: copy.subtotal, valori: copy.valori, culoare: copy.culoare, surse_randuri: copy.surseRanduri, tabel: tabel }).then(function (res) { if (res.error) console.error(res.error); });
       } else {
         existing.grup = tr.grup; existing.subtotal = tr.subtotal; existing.valori = Object.assign({}, tr.valori); existing.culoare = tr.culoare; existing.surseRanduri = tr.surseRanduri.slice();
         sb.from("santier_progres_randuri").update({ grup: existing.grup, subtotal: existing.subtotal, valori: existing.valori, culoare: existing.culoare, surse_randuri: existing.surseRanduri }).eq("id", existing.id).then(function (res) { if (res.error) console.error(res.error); });
       }
     });
   }
-  function undoProgres(site) {
-    var stack = progresUndoStack[site.id];
+  function undoProgres(site, tabel) {
+    var key = site.id + "::" + tabel;
+    var stack = progresUndoStack[key];
     if (!stack || !stack.length) return;
     var snap = stack.pop();
-    reconcileProgresColumns(site, snap.coloane);
-    reconcileProgresRows(site, snap.randuri);
-    site.progresColoaneOrder = snap.coloaneOrder;
-    site.progresRanduriOrder = snap.randuriOrder;
+    reconcileProgresColumns(site, tabel, snap.coloane);
+    reconcileProgresRows(site, tabel, snap.randuri);
+    if (!site.progresColoaneOrder) site.progresColoaneOrder = {};
+    if (!site.progresRanduriOrder) site.progresRanduriOrder = {};
+    site.progresColoaneOrder[tabel] = snap.coloaneOrder;
+    site.progresRanduriOrder[tabel] = snap.randuriOrder;
     state.siteForm.gridCellEdit = { rowId: null, colId: null, draft: "" };
     state.siteForm.gridColLabelEdit = { colId: null, draft: "" };
     render();
@@ -1091,11 +1098,11 @@
   }
 
   function progresColFromRow(r) {
-    return { id: r.id, santierId: r.santier_id, label: r.label || "", tip: r.tip || "numar", formula: r.formula || null, surse: r.surse || [], culoare: r.culoare || null, latime: r.latime || null };
+    return { id: r.id, santierId: r.santier_id, label: r.label || "", tip: r.tip || "numar", formula: r.formula || null, surse: r.surse || [], culoare: r.culoare || null, latime: r.latime || null, tabel: r.tabel || "centralizare" };
   }
   function colWidth(col) { return col.latime || (col.tip === "text" ? 170 : 115); }
   function progresRandFromRow(r) {
-    return { id: r.id, santierId: r.santier_id, grup: !!r.grup, subtotal: !!r.subtotal, valori: r.valori || {}, culoare: r.culoare || null, surseRanduri: r.surse_randuri || [] };
+    return { id: r.id, santierId: r.santier_id, grup: !!r.grup, subtotal: !!r.subtotal, valori: r.valori || {}, culoare: r.culoare || null, surseRanduri: r.surse_randuri || [], tabel: r.tabel || "centralizare" };
   }
   var PROGRES_COLORS = [
     { key: "rosu", css: "var(--red-soft)" },
@@ -1109,40 +1116,66 @@
     var found = PROGRES_COLORS.filter(function (c) { return c.key === key; })[0];
     return found ? found.css : null;
   }
-  function coloaneForSite(site) { return progresColoane.filter(function (c) { return c.santierId === site.id; }); }
-  function randuriForSite(site) { return progresRanduri.filter(function (r) { return r.santierId === site.id; }); }
-  function orderedColIds(site) { return orderedTipsFor(coloaneForSite(site).map(function (c) { return c.id; }), site.progresColoaneOrder); }
-  function orderedRandIds(site) { return orderedTipsFor(randuriForSite(site).map(function (r) { return r.id; }), site.progresRanduriOrder); }
+  function coloaneForSite(site, tabel) { return progresColoane.filter(function (c) { return c.santierId === site.id && c.tabel === tabel; }); }
+  function randuriForSite(site, tabel) { return progresRanduri.filter(function (r) { return r.santierId === site.id && r.tabel === tabel; }); }
+  function orderedColIds(site, tabel) { return orderedTipsFor(coloaneForSite(site, tabel).map(function (c) { return c.id; }), site.progresColoaneOrder && site.progresColoaneOrder[tabel]); }
+  function orderedRandIds(site, tabel) { return orderedTipsFor(randuriForSite(site, tabel).map(function (r) { return r.id; }), site.progresRanduriOrder && site.progresRanduriOrder[tabel]); }
 
-  function emptyAddColForm() { return { open: false, label: "", tip: "numar", numarator: "", numitor: "", surseSuma: {} }; }
+  function emptyAddColForm() { return { open: false, tabel: null, label: "", tip: "numar", numarator: "", numitor: "", surseSuma: {} }; }
 
-  // A brand-new site (never touched) gets seeded once with the column layout
-  // matching the centralizator cantități/valori template, so the grid isn't
-  // blank on first open. No rows are seeded — real progress is never fabricated.
-  function seedDefaultProgresColumns(site) {
-    if (progresSeededSites[site.id]) return;
-    progresSeededSites[site.id] = true;
-    if (coloaneForSite(site).length > 0 || randuriForSite(site).length > 0) return;
+  // Default (empty) column layout for each grid instance, keyed by "tabel".
+  // "centralizare" mirrors the original cantități/valori template;
+  // "capitole" is the simpler Nr Crt / Simbol / Denumire / U.M. / Valoare
+  // ofertă layout used to track progress per chapter of the offer.
+  var PROGRES_TABEL_TEMPLATES = {
+    centralizare: function () {
+      var ids = {};
+      ["descriere", "um", "cantContract", "valContract", "cantSl1", "valSl1", "cantTotal", "valTotal", "pct"].forEach(function (k) {
+        ids[k] = crypto.randomUUID();
+      });
+      return [
+        { id: ids.descriere, label: "Descriere", tip: "text" },
+        { id: ids.um, label: "U.M.", tip: "text" },
+        { id: ids.cantContract, label: "Cantitate contract", tip: "numar" },
+        { id: ids.valContract, label: "Valoare contract", tip: "numar" },
+        { id: ids.cantSl1, label: "Realizat SL1 - Cantitate", tip: "numar" },
+        { id: ids.valSl1, label: "Realizat SL1 - Valoare", tip: "numar" },
+        { id: ids.cantTotal, label: "Realizat total - Cantitate", tip: "calculat", formula: "suma", surse: [ids.cantSl1] },
+        { id: ids.valTotal, label: "Realizat total - Valoare", tip: "calculat", formula: "suma", surse: [ids.valSl1] },
+        { id: ids.pct, label: "Realizat total %", tip: "calculat", formula: "procent", surse: [ids.valTotal, ids.valContract] }
+      ];
+    },
+    capitole: function () {
+      var ids = {};
+      ["nrCrt", "simbol", "denumire", "um", "valoare"].forEach(function (k) { ids[k] = crypto.randomUUID(); });
+      return [
+        { id: ids.nrCrt, label: "Nr Crt", tip: "text" },
+        { id: ids.simbol, label: "Simbol", tip: "text" },
+        { id: ids.denumire, label: "Denumire", tip: "text" },
+        { id: ids.um, label: "U.M.", tip: "text" },
+        { id: ids.valoare, label: "Valoare ofertă", tip: "numar" }
+      ];
+    }
+  };
 
-    var ids = {};
-    ["descriere", "um", "cantContract", "valContract", "cantSl1", "valSl1", "cantTotal", "valTotal", "pct"].forEach(function (k) {
-      ids[k] = crypto.randomUUID();
+  // A brand-new site/tabel combo (never touched) gets seeded once with its
+  // default column layout, so the grid isn't blank on first open. No rows
+  // are seeded — real progress is never fabricated.
+  function seedDefaultProgresColumns(site, tabel) {
+    var seedKey = site.id + "::" + tabel;
+    if (progresSeededSites[seedKey]) return;
+    progresSeededSites[seedKey] = true;
+    if (coloaneForSite(site, tabel).length > 0 || randuriForSite(site, tabel).length > 0) return;
+
+    var specs = PROGRES_TABEL_TEMPLATES[tabel]();
+    var rows = specs.map(function (s) {
+      return { id: s.id, santier_id: site.id, label: s.label, tip: s.tip, formula: s.formula || null, surse: s.surse || [], tabel: tabel };
     });
-    var rows = [
-      { id: ids.descriere, santier_id: site.id, label: "Descriere", tip: "text" },
-      { id: ids.um, santier_id: site.id, label: "U.M.", tip: "text" },
-      { id: ids.cantContract, santier_id: site.id, label: "Cantitate contract", tip: "numar" },
-      { id: ids.valContract, santier_id: site.id, label: "Valoare contract", tip: "numar" },
-      { id: ids.cantSl1, santier_id: site.id, label: "Realizat SL1 - Cantitate", tip: "numar" },
-      { id: ids.valSl1, santier_id: site.id, label: "Realizat SL1 - Valoare", tip: "numar" },
-      { id: ids.cantTotal, santier_id: site.id, label: "Realizat total - Cantitate", tip: "calculat", formula: "suma", surse: [ids.cantSl1] },
-      { id: ids.valTotal, santier_id: site.id, label: "Realizat total - Valoare", tip: "calculat", formula: "suma", surse: [ids.valSl1] },
-      { id: ids.pct, santier_id: site.id, label: "Realizat total %", tip: "calculat", formula: "procent", surse: [ids.valTotal, ids.valContract] }
-    ];
     rows.forEach(function (r) {
-      progresColoane.push({ id: r.id, santierId: site.id, label: r.label, tip: r.tip, formula: r.formula || null, surse: r.surse || [] });
+      progresColoane.push({ id: r.id, santierId: site.id, label: r.label, tip: r.tip, formula: r.formula || null, surse: r.surse || [], tabel: tabel });
     });
-    site.progresColoaneOrder = rows.map(function (r) { return r.id; });
+    if (!site.progresColoaneOrder) site.progresColoaneOrder = {};
+    site.progresColoaneOrder[tabel] = rows.map(function (r) { return r.id; });
     render();
     sb.from("santier_progres_coloane").insert(rows).then(function (res) {
       if (res.error) { flashSyncError("Nu am putut crea coloanele implicite."); console.error(res.error); }
@@ -1184,14 +1217,14 @@
   // next boundary" guess, since that silently added incompatible units
   // (e.g. bucăți + metri liniari) together. The grand-total row is the
   // one place a full automatic sum still makes sense: every item row.
-  function progresGridData(site) {
+  function progresGridData(site, tabel) {
     var colsById = {};
-    coloaneForSite(site).forEach(function (c) { colsById[c.id] = c; });
-    var orderedCols = orderedColIds(site).map(function (id) { return colsById[id]; }).filter(Boolean);
+    coloaneForSite(site, tabel).forEach(function (c) { colsById[c.id] = c; });
+    var orderedCols = orderedColIds(site, tabel).map(function (id) { return colsById[id]; }).filter(Boolean);
 
     var rowsById = {};
-    randuriForSite(site).forEach(function (r) { rowsById[r.id] = r; });
-    var orderedRows = orderedRandIds(site).map(function (id) { return rowsById[id]; }).filter(Boolean);
+    randuriForSite(site, tabel).forEach(function (r) { rowsById[r.id] = r; });
+    var orderedRows = orderedRandIds(site, tabel).map(function (id) { return rowsById[id]; }).filter(Boolean);
 
     var numarCols = orderedCols.filter(function (c) { return c.tip === "numar"; });
     var calcCols = orderedCols.filter(function (c) { return c.tip === "calculat"; });
@@ -1238,19 +1271,19 @@
   }
 
   function rowDisplayLabel(site, row) {
-    var labelCol = coloaneForSite(site).filter(function (c) { return c.tip === "text"; })[0];
+    var labelCol = coloaneForSite(site, row.tabel).filter(function (c) { return c.tip === "text"; })[0];
     return labelCol ? (row.valori[labelCol.id] || "") : "";
   }
 
   // --- Coloane: adăugare / ștergere / redenumire / reordonare ---
-  function addColumn(site, spec) {
-    pushProgresUndo(site);
+  function addColumn(site, tabel, spec) {
+    pushProgresUndo(site, tabel);
     var tempId = "tmp-" + Date.now();
-    var col = { id: tempId, santierId: site.id, label: spec.label, tip: spec.tip, formula: spec.formula || null, surse: spec.surse || [], culoare: null, latime: null };
+    var col = { id: tempId, santierId: site.id, label: spec.label, tip: spec.tip, formula: spec.formula || null, surse: spec.surse || [], culoare: null, latime: null, tabel: tabel };
     progresColoane.push(col);
     state.siteForm.addColForm = emptyAddColForm();
     render();
-    var payload = { santier_id: site.id, label: spec.label, tip: spec.tip };
+    var payload = { santier_id: site.id, label: spec.label, tip: spec.tip, tabel: tabel };
     if (spec.formula) payload.formula = spec.formula;
     if (spec.surse && spec.surse.length) payload.surse = spec.surse;
     sb.from("santier_progres_coloane").insert(payload).select().single().then(function (res) {
@@ -1272,7 +1305,7 @@
     if (!col) return;
     var label = col.label ? ('coloana "' + col.label + '"') : "această coloană";
     if (!confirmDelete("Ștergi " + label + "? Se pierd toate valorile completate pe această coloană.")) return;
-    pushProgresUndo(site);
+    pushProgresUndo(site, col.tabel);
     progresColoane = progresColoane.filter(function (c) { return c !== col; });
     render();
     if (String(col.id).indexOf("tmp-") === 0) return;
@@ -1289,7 +1322,7 @@
     state.siteForm.gridColLabelEdit = { colId: null, draft: "" };
     if (!col || !label) { render(); return; } // never blank out a column name
     var labelSite = findSite(state.selectedSiteId);
-    if (labelSite) pushProgresUndo(labelSite);
+    if (labelSite) pushProgresUndo(labelSite, col.tabel);
     col.label = label;
     render();
     sb.from("santier_progres_coloane").update({ label: label }).eq("id", col.id).then(function (res) {
@@ -1300,7 +1333,10 @@
 
   function reorderColumns(site, draggedId, targetId, before) {
     if (draggedId === targetId) return;
-    var current = orderedColIds(site);
+    var draggedCol = progresColoane.filter(function (c) { return c.id === draggedId; })[0];
+    if (!draggedCol) return;
+    var tabel = draggedCol.tabel;
+    var current = orderedColIds(site, tabel);
     var fromIdx = current.indexOf(draggedId);
     if (fromIdx === -1) return;
     current.splice(fromIdx, 1);
@@ -1308,17 +1344,18 @@
     if (toIdx === -1) return;
     if (!before) toIdx += 1;
     current.splice(toIdx, 0, draggedId);
-    pushProgresUndo(site);
-    site.progresColoaneOrder = current;
+    pushProgresUndo(site, tabel);
+    if (!site.progresColoaneOrder) site.progresColoaneOrder = {};
+    site.progresColoaneOrder[tabel] = current;
     render();
-    sb.from("santiere").update({ progres_coloane_order: current }).eq("id", site.id).then(function (res) {
+    sb.from("santiere").update({ progres_coloane_order: site.progresColoaneOrder }).eq("id", site.id).then(function (res) {
       if (res.error) { flashSyncError("Nu am putut salva ordinea coloanelor."); console.error(res.error); }
     });
   }
   function resizeColumn(site, colId, widthPx) {
     var col = progresColoane.filter(function (c) { return c.id === colId; })[0];
     if (!col) return;
-    pushProgresUndo(site);
+    pushProgresUndo(site, col.tabel);
     col.latime = Math.max(50, Math.round(widthPx));
     render();
     sb.from("santier_progres_coloane").update({ latime: col.latime }).eq("id", col.id).then(function (res) {
@@ -1331,20 +1368,20 @@
   // total intermediar. Un grup/subtotal nu adună nimic automat — adună DOAR
   // rândurile pe care utilizatorul le bifează explicit (row.surseRanduri),
   // ca să nu amestece unități incompatibile (ex. bucăți + metri liniari).
-  function addRow(site, kind) {
-    pushProgresUndo(site);
+  function addRow(site, tabel, kind) {
+    pushProgresUndo(site, tabel);
     var tempId = "tmp-" + Date.now();
     var isGrup = kind === "grup";
     var isSubtotal = kind === "subtotal";
     var initialValori = {};
     if (isSubtotal) {
-      var labelCol = coloaneForSite(site).filter(function (c) { return c.tip === "text"; })[0];
+      var labelCol = coloaneForSite(site, tabel).filter(function (c) { return c.tip === "text"; })[0];
       if (labelCol) initialValori[labelCol.id] = "Subtotal";
     }
-    progresRanduri.push({ id: tempId, santierId: site.id, grup: isGrup, subtotal: isSubtotal, valori: initialValori, culoare: null, surseRanduri: [] });
+    progresRanduri.push({ id: tempId, santierId: site.id, grup: isGrup, subtotal: isSubtotal, valori: initialValori, culoare: null, surseRanduri: [], tabel: tabel });
     if (isGrup || isSubtotal) state.siteForm.rowSourcesOpen = tempId; // prompt the user to pick sources right away
     render();
-    sb.from("santier_progres_randuri").insert({ santier_id: site.id, grup: isGrup, subtotal: isSubtotal, valori: initialValori }).select().single().then(function (res) {
+    sb.from("santier_progres_randuri").insert({ santier_id: site.id, grup: isGrup, subtotal: isSubtotal, valori: initialValori, tabel: tabel }).select().single().then(function (res) {
       if (res.error) {
         progresRanduri = progresRanduri.filter(function (r) { return r.id !== tempId; });
         if (state.siteForm.rowSourcesOpen === tempId) state.siteForm.rowSourcesOpen = null;
@@ -1367,7 +1404,7 @@
     var text = rowDisplayLabel(site, row);
     var label = text ? ('rândul "' + text + '"') : (row.grup ? "acest grup" : "acest rând");
     if (!confirmDelete("Ștergi " + label + "? Această acțiune nu poate fi anulată.")) return;
-    pushProgresUndo(site);
+    pushProgresUndo(site, row.tabel);
     progresRanduri = progresRanduri.filter(function (r) { return r !== row; });
     if (state.siteForm.rowSourcesOpen === rowId) state.siteForm.rowSourcesOpen = null;
     render();
@@ -1379,16 +1416,18 @@
   function duplicateRow(site, rowId) {
     var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
     if (!row) return;
-    pushProgresUndo(site);
+    var tabel = row.tabel;
+    pushProgresUndo(site, tabel);
     var tempId = "tmp-" + Date.now();
-    var copy = { id: tempId, santierId: site.id, grup: row.grup, subtotal: row.subtotal, valori: Object.assign({}, row.valori), culoare: row.culoare, surseRanduri: (row.surseRanduri || []).slice() };
+    var copy = { id: tempId, santierId: site.id, grup: row.grup, subtotal: row.subtotal, valori: Object.assign({}, row.valori), culoare: row.culoare, surseRanduri: (row.surseRanduri || []).slice(), tabel: tabel };
     progresRanduri.push(copy);
-    var current = orderedRandIds(site);
+    var current = orderedRandIds(site, tabel);
     var atIdx = current.indexOf(rowId);
     current.splice(atIdx === -1 ? current.length : atIdx + 1, 0, tempId);
-    site.progresRanduriOrder = current;
+    if (!site.progresRanduriOrder) site.progresRanduriOrder = {};
+    site.progresRanduriOrder[tabel] = current;
     render();
-    sb.from("santier_progres_randuri").insert({ santier_id: site.id, grup: copy.grup, subtotal: copy.subtotal, valori: copy.valori, culoare: copy.culoare, surse_randuri: copy.surseRanduri }).select().single().then(function (res) {
+    sb.from("santier_progres_randuri").insert({ santier_id: site.id, grup: copy.grup, subtotal: copy.subtotal, valori: copy.valori, culoare: copy.culoare, surse_randuri: copy.surseRanduri, tabel: tabel }).select().single().then(function (res) {
       if (res.error) {
         progresRanduri = progresRanduri.filter(function (r) { return r.id !== tempId; });
         flashSyncError("Nu am putut duplica rândul."); console.error(res.error); render(); return;
@@ -1399,10 +1438,10 @@
         return;
       }
       copy.id = res.data.id;
-      var order = orderedRandIds(site).map(function (id) { return id === tempId ? res.data.id : id; });
-      site.progresRanduriOrder = order;
+      var order = orderedRandIds(site, tabel).map(function (id) { return id === tempId ? res.data.id : id; });
+      site.progresRanduriOrder[tabel] = order;
       render();
-      sb.from("santiere").update({ progres_randuri_order: order }).eq("id", site.id).then(function (r2) {
+      sb.from("santiere").update({ progres_randuri_order: site.progresRanduriOrder }).eq("id", site.id).then(function (r2) {
         if (r2.error) console.error(r2.error);
       });
     });
@@ -1410,7 +1449,7 @@
   function toggleRowSource(site, rowId, srcId) {
     var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
     if (!row) return;
-    pushProgresUndo(site);
+    pushProgresUndo(site, row.tabel);
     var current = row.surseRanduri || [];
     var idx = current.indexOf(srcId);
     var next = current.slice();
@@ -1424,7 +1463,7 @@
   function setAllRowSources(site, rowId, ids) {
     var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
     if (!row) return;
-    pushProgresUndo(site);
+    pushProgresUndo(site, row.tabel);
     row.surseRanduri = ids;
     render();
     sb.from("santier_progres_randuri").update({ surse_randuri: ids }).eq("id", row.id).then(function (res) {
@@ -1433,7 +1472,10 @@
   }
   function reorderRows(site, draggedId, targetId, before) {
     if (draggedId === targetId) return;
-    var current = orderedRandIds(site);
+    var draggedRow = progresRanduri.filter(function (r) { return r.id === draggedId; })[0];
+    if (!draggedRow) return;
+    var tabel = draggedRow.tabel;
+    var current = orderedRandIds(site, tabel);
     var fromIdx = current.indexOf(draggedId);
     if (fromIdx === -1) return;
     current.splice(fromIdx, 1);
@@ -1441,10 +1483,11 @@
     if (toIdx === -1) return;
     if (!before) toIdx += 1;
     current.splice(toIdx, 0, draggedId);
-    pushProgresUndo(site);
-    site.progresRanduriOrder = current;
+    pushProgresUndo(site, tabel);
+    if (!site.progresRanduriOrder) site.progresRanduriOrder = {};
+    site.progresRanduriOrder[tabel] = current;
     render();
-    sb.from("santiere").update({ progres_randuri_order: current }).eq("id", site.id).then(function (res) {
+    sb.from("santiere").update({ progres_randuri_order: site.progresRanduriOrder }).eq("id", site.id).then(function (res) {
       if (res.error) { flashSyncError("Nu am putut salva ordinea rândurilor."); console.error(res.error); }
     });
   }
@@ -1453,7 +1496,7 @@
   function setColumnColor(site, colId, color) {
     var col = progresColoane.filter(function (c) { return c.id === colId; })[0];
     if (!col) return;
-    pushProgresUndo(site);
+    pushProgresUndo(site, col.tabel);
     col.culoare = color;
     state.siteForm.colorPickerOpen = { type: null, id: null };
     render();
@@ -1464,7 +1507,7 @@
   function setRowColor(site, rowId, color) {
     var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
     if (!row) return;
-    pushProgresUndo(site);
+    pushProgresUndo(site, row.tabel);
     row.culoare = color;
     state.siteForm.colorPickerOpen = { type: null, id: null };
     render();
@@ -1485,7 +1528,7 @@
     state.siteForm.gridCellEdit = { rowId: null, colId: null, draft: "" };
     if (!row || !col) { render(); return; }
     var cellSite = findSite(state.selectedSiteId);
-    if (cellSite) pushProgresUndo(cellSite);
+    if (cellSite) pushProgresUndo(cellSite, row.tabel);
     var value;
     if (col.tip === "numar") {
       var n = parseFloat(edit.draft);
@@ -1507,16 +1550,19 @@
   // corespunzătoare (text/număr); coloanele calculate și rândurile de
   // grup/subtotal sunt sărite, fără să strice alinierea restului lipirii. ---
   function pasteIntoGrid(site, anchorRowId, anchorColId, text) {
-    var data = progresGridData(site);
+    var anchorRowLive = progresRanduri.filter(function (r) { return r.id === anchorRowId; })[0];
+    if (!anchorRowLive) return;
+    var tabel = anchorRowLive.tabel;
+    var data = progresGridData(site, tabel);
     var orderedCols = data.orderedCols, orderedRows = data.orderedRows;
     var rowIdx = orderedRows.findIndex(function (r) { return r.id === anchorRowId; });
     var colIdx = orderedCols.findIndex(function (c) { return c.id === anchorColId; });
     if (rowIdx === -1 || colIdx === -1) return;
-    pushProgresUndo(site);
+    pushProgresUndo(site, tabel);
     var lines = text.replace(/\r/g, "").split("\n");
     if (lines.length > 1 && lines[lines.length - 1] === "") lines.pop();
     var rowsById = {};
-    randuriForSite(site).forEach(function (r) { rowsById[r.id] = r; });
+    randuriForSite(site, tabel).forEach(function (r) { rowsById[r.id] = r; });
     var touched = [];
     lines.forEach(function (line, i) {
       var targetRow = orderedRows[rowIdx + i];
@@ -1544,6 +1590,13 @@
 
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function findSite(id) { for (var i = 0; i < sites.length; i++) if (sites[i].id === id) return sites[i]; return null; }
+  // Resolves which grid instance ("centralizare" vs "capitole") a click
+  // inside the Progres Șantier panel belongs to, via the wrapping
+  // [data-progres-tabel] container each progresPanelHTML() render emits.
+  function progresTabelFromEl(el) {
+    var wrap = el.closest("[data-progres-tabel]");
+    return wrap ? wrap.dataset.progresTabel : "centralizare";
+  }
 
   function icon(name, size) {
     size = size || 17;
@@ -2021,8 +2074,8 @@
   function rowSourcesPopoverHTML(site, rowId) {
     var row = progresRanduri.filter(function (r) { return r.id === rowId; })[0];
     if (!row) return "";
-    var orderedIds = orderedRandIds(site);
-    var candidates = randuriForSite(site).filter(function (r) { return !r.grup && !r.subtotal; })
+    var orderedIds = orderedRandIds(site, row.tabel);
+    var candidates = randuriForSite(site, row.tabel).filter(function (r) { return !r.grup && !r.subtotal; })
       .sort(function (a, b) { return orderedIds.indexOf(a.id) - orderedIds.indexOf(b.id); });
     var current = row.surseRanduri || [];
     var checks = candidates.map(function (r) {
@@ -2059,8 +2112,8 @@
     if (/[";\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
     return s;
   }
-  function exportProgresCSV(site) {
-    var data = progresGridData(site);
+  function exportProgresCSV(site, tabel) {
+    var data = progresGridData(site, tabel);
     var orderedCols = data.orderedCols, orderedRows = data.orderedRows, displayValori = data.displayValori;
     var labelColId = progresLabelColId(orderedCols);
     var lines = [orderedCols.map(function (c) { return csvEscape(c.label); }).join(";")];
@@ -2080,14 +2133,14 @@
     var a = document.createElement("a");
     a.href = url;
     var slug = (site.numeScurt || site.nume || "santier").toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
-    a.download = "progres-" + slug + ".csv";
+    a.download = "progres-" + slug + (tabel === "capitole" ? "-capitole" : "") + ".csv";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
-  function printProgres(site) {
-    var data = progresGridData(site);
+  function printProgres(site, tabel) {
+    var data = progresGridData(site, tabel);
     var orderedCols = data.orderedCols, orderedRows = data.orderedRows, displayValori = data.displayValori;
     var labelColId = progresLabelColId(orderedCols);
     var headHtml = orderedCols.map(function (c) { return "<th>" + esc(c.label) + "</th>"; }).join("");
@@ -2119,8 +2172,8 @@
     window.print();
   }
 
-  function progresPanelHTML(site) {
-    var data = progresGridData(site);
+  function progresPanelHTML(site, tabel) {
+    var data = progresGridData(site, tabel);
     var orderedCols = data.orderedCols, orderedRows = data.orderedRows, displayValori = data.displayValori;
     var labelColId = progresLabelColId(orderedCols);
 
@@ -2226,15 +2279,15 @@
       summaryHtml = '<div class="summary"><div class="summary-meta">' + stats + '</div></div>';
     }
 
-    var addColFormHtml = state.siteForm.addColForm.open ? addColFormHTML(site, orderedCols) : "";
+    var addColFormHtml = (state.siteForm.addColForm.open && state.siteForm.addColForm.tabel === tabel) ? addColFormHTML(site, orderedCols) : "";
     var colorPopHtml = state.siteForm.colorPickerOpen.id ? colorPopoverHTML(state.siteForm.colorPickerOpen.type, state.siteForm.colorPickerOpen.id) : "";
     var rowSrcPopHtml = state.siteForm.rowSourcesOpen ? rowSourcesPopoverHTML(site, state.siteForm.rowSourcesOpen) : "";
 
-    return summaryHtml +
+    return '<div data-progres-tabel="' + tabel + '">' + summaryHtml +
       '<div class="progrid-wrap"><table class="progrid">' + colGroupHtml + '<thead><tr><th class="progrid-sticky-1"></th>' + headCells + '<th></th></tr></thead>' +
       '<tbody>' + bodyRows + emptyRow + totalRow + '</tbody></table></div>' +
       '<div class="progrid-toolbar">' +
-        '<button class="btn btn-ghost btn-sm" data-undo-progres="' + site.id + '"' + (canUndoProgres(site) ? "" : ' disabled') + ' title="Anulează ultima acțiune">' + icon("undo", 13) + 'Anulează</button>' +
+        '<button class="btn btn-ghost btn-sm" data-undo-progres="' + site.id + '"' + (canUndoProgres(site, tabel) ? "" : ' disabled') + ' title="Anulează ultima acțiune">' + icon("undo", 13) + 'Anulează</button>' +
         '<button class="btn btn-ghost btn-sm" data-add-row="' + site.id + '">' + icon("plus", 13) + 'Adaugă linie</button>' +
         '<button class="btn btn-ghost btn-sm" data-add-group-row="' + site.id + '">' + icon("plus", 13) + 'Adaugă grup</button>' +
         '<button class="btn btn-ghost btn-sm" data-add-subtotal-row="' + site.id + '">' + icon("plus", 13) + 'Total intermediar</button>' +
@@ -2243,7 +2296,21 @@
         '<button class="btn btn-ghost btn-sm" data-print-progres="' + site.id + '">' + icon("printer", 13) + 'Printează</button>' +
       '</div>' +
       '<div class="helper">Click pe o celulă o selectează (poți lipi din Excel cu Ctrl+V) · dublu-click o editează · trage mânerul ca să reordonezi · Ctrl+Z anulează ultima acțiune.</div>' +
-      addColFormHtml + colorPopHtml + rowSrcPopHtml;
+      addColFormHtml + colorPopHtml + rowSrcPopHtml +
+      '</div>';
+  }
+
+  // Two independent grid instances live under the "Progres Șantier" tab,
+  // exactly like "Date șantier" has its own sub-tabs: "Progres Șantier" (by
+  // chapter, tabel="capitole") and "Centralizare Proiect" (the original
+  // cantități/valori grid, tabel="centralizare").
+  function progresMainPanelHTML(site) {
+    var subTab = state.siteForm.progresSubTab || "capitole";
+    var subtabsNav = '<div class="subtabs">' +
+      '<div class="subtab' + (subTab === "capitole" ? " active" : "") + '" data-progres-subtab="capitole">Progres Șantier</div>' +
+      '<div class="subtab' + (subTab === "centralizare" ? " active" : "") + '" data-progres-subtab="centralizare">Centralizare Proiect</div>' +
+    '</div>';
+    return subtabsNav + progresPanelHTML(site, subTab);
   }
 
   function docsPanelHTML(site) {
@@ -2279,7 +2346,7 @@
     var tabContent = "";
     if (state.activeTab === "date-santier") tabContent = dateSantierPanelHTML(site);
     else if (state.activeTab === "pv") tabContent = pvPanelHTML(site);
-    else if (state.activeTab === "progres") tabContent = progresPanelHTML(site);
+    else if (state.activeTab === "progres") tabContent = progresMainPanelHTML(site);
     else if (state.activeTab === "documente") tabContent = docsPanelHTML(site);
 
     return '' +
@@ -2440,7 +2507,7 @@
       "[data-add-worker],[data-remove-worker],[data-print-pontaj],[data-toggle-company],[data-save-company],[data-logout]," +
       "[data-toggle-select-mode],[data-bulk-status],[data-clear-selection],[data-retry-failed]," +
       "[data-open-add-site],[data-close-add-site],[data-save-new-site],[data-edit-site],[data-save-site-edit],[data-cancel-site-edit],[data-delete-site]," +
-      "[data-site-subtab],[data-save-doc-valoare],[data-remove-doc-file],[data-add-aviz],[data-remove-aviz]," +
+      "[data-site-subtab],[data-progres-subtab],[data-save-doc-valoare],[data-remove-doc-file],[data-add-aviz],[data-remove-aviz]," +
       "[data-add-gendoc],[data-remove-gendoc]," +
       "[data-add-row],[data-add-group-row],[data-add-subtotal-row],[data-remove-row],[data-remove-col],[data-toggle-addcol],[data-cancel-addcol],[data-submit-addcol]," +
       "[data-toggle-color],[data-pick-color],[data-toggle-sidebar]," +
@@ -2490,19 +2557,19 @@
           clearTimeout(sidebarClickTimer);
           sidebarClickTimer = setTimeout(function () {
             state.view = "detail"; state.selectedSiteId = deferSiteId; state.activeTab = "date-santier";
-            state.siteForm.editing = false; state.siteForm.subTab = "sintetice";
+            state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; state.siteForm.progresSubTab = "capitole";
             render();
             window.scrollTo(0, 0);
           }, 260);
         } else {
-          state.view = "detail"; state.selectedSiteId = t.dataset.openSite; state.activeTab = "date-santier"; state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; isNav = true;
+          state.view = "detail"; state.selectedSiteId = t.dataset.openSite; state.activeTab = "date-santier"; state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; state.siteForm.progresSubTab = "capitole"; isNav = true;
         }
       }
       else if (t.dataset.tab) {
         state.activeTab = t.dataset.tab;
         if (t.dataset.tab === "progres") {
           var pgSite = findSite(state.selectedSiteId);
-          if (pgSite) seedDefaultProgresColumns(pgSite);
+          if (pgSite) seedDefaultProgresColumns(pgSite, state.siteForm.progresSubTab || "capitole");
         }
       }
       else if (t.dataset.globalSite) state.globalSiteId = t.dataset.globalSite;
@@ -2570,6 +2637,17 @@
       else if (t.dataset.cancelSiteEdit) { state.siteForm.editing = false; }
       else if (t.dataset.deleteSite) { removeSite(t.dataset.deleteSite); }
       else if (t.dataset.siteSubtab) { state.siteForm.subTab = t.dataset.siteSubtab; }
+      else if (t.dataset.progresSubtab) {
+        state.siteForm.progresSubTab = t.dataset.progresSubtab;
+        state.siteForm.gridCellEdit = { rowId: null, colId: null, draft: "" };
+        state.siteForm.gridColLabelEdit = { colId: null, draft: "" };
+        state.siteForm.addColForm = emptyAddColForm();
+        state.siteForm.colorPickerOpen = { type: null, id: null };
+        state.siteForm.rowSourcesOpen = null;
+        state.siteForm.pasteAnchor = null;
+        var psSite = findSite(state.selectedSiteId);
+        if (psSite) seedDefaultProgresColumns(psSite, t.dataset.progresSubtab);
+      }
       else if (t.dataset.saveDocValoare) {
         var dvParts = t.dataset.saveDocValoare.split("|");
         saveDocValoare(dvParts[0], dvParts[1]);
@@ -2591,9 +2669,9 @@
         var rgSite = findSite(rgParts[0]);
         if (rgSite) removeRepeatableDoc(rgSite, rgParts[1], "documentul", "acest document", "documentul");
       }
-      else if (t.dataset.addRow) { var arSite = findSite(t.dataset.addRow); if (arSite) addRow(arSite, null); }
-      else if (t.dataset.addGroupRow) { var agSite = findSite(t.dataset.addGroupRow); if (agSite) addRow(agSite, "grup"); }
-      else if (t.dataset.addSubtotalRow) { var asSite = findSite(t.dataset.addSubtotalRow); if (asSite) addRow(asSite, "subtotal"); }
+      else if (t.dataset.addRow) { var arSite = findSite(t.dataset.addRow); if (arSite) addRow(arSite, progresTabelFromEl(t), null); }
+      else if (t.dataset.addGroupRow) { var agSite = findSite(t.dataset.addGroupRow); if (agSite) addRow(agSite, progresTabelFromEl(t), "grup"); }
+      else if (t.dataset.addSubtotalRow) { var asSite = findSite(t.dataset.addSubtotalRow); if (asSite) addRow(asSite, progresTabelFromEl(t), "subtotal"); }
       else if (t.dataset.toggleColor) {
         var tcParts = t.dataset.toggleColor.split("|");
         var open = state.siteForm.colorPickerOpen;
@@ -2620,24 +2698,26 @@
         if (rcSite) removeColumn(rcSite, rcParts[1]);
       }
       else if (t.dataset.toggleAddcol) {
-        state.siteForm.addColForm = state.siteForm.addColForm.open ? emptyAddColForm() : Object.assign(emptyAddColForm(), { open: true });
+        var addcolTabel = progresTabelFromEl(t);
+        state.siteForm.addColForm = state.siteForm.addColForm.open ? emptyAddColForm() : Object.assign(emptyAddColForm(), { open: true, tabel: addcolTabel });
       }
       else if (t.dataset.cancelAddcol) { state.siteForm.addColForm = emptyAddColForm(); }
       else if (t.dataset.submitAddcol) {
         var acSite = findSite(t.dataset.submitAddcol);
         if (acSite) {
           var f = state.siteForm.addColForm;
+          var acTabel = f.tabel || progresTabelFromEl(t);
           var colLabel = (f.label || "").trim();
           if (!colLabel) { flashSyncError("Dă un nume coloanei."); }
           else if (f.tip === "calculat_procent") {
             if (!f.numarator || !f.numitor) flashSyncError("Alege numărătorul și numitorul.");
-            else addColumn(acSite, { label: colLabel, tip: "calculat", formula: "procent", surse: [f.numarator, f.numitor] });
+            else addColumn(acSite, acTabel, { label: colLabel, tip: "calculat", formula: "procent", surse: [f.numarator, f.numitor] });
           } else if (f.tip === "calculat_suma") {
             var surseSuma = Object.keys(f.surseSuma);
             if (!surseSuma.length) flashSyncError("Alege cel puțin o coloană de adunat.");
-            else addColumn(acSite, { label: colLabel, tip: "calculat", formula: "suma", surse: surseSuma });
+            else addColumn(acSite, acTabel, { label: colLabel, tip: "calculat", formula: "suma", surse: surseSuma });
           } else {
-            addColumn(acSite, { label: colLabel, tip: f.tip });
+            addColumn(acSite, acTabel, { label: colLabel, tip: f.tip });
           }
         }
       }
@@ -2652,17 +2732,18 @@
       }
       else if (t.dataset.exportProgresCsv) {
         var ecSite = findSite(t.dataset.exportProgresCsv);
-        if (ecSite) exportProgresCSV(ecSite);
+        if (ecSite) exportProgresCSV(ecSite, progresTabelFromEl(t));
         needsRender = false;
       }
       else if (t.dataset.printProgres) {
         var ppSite = findSite(t.dataset.printProgres);
-        if (ppSite) printProgres(ppSite);
+        if (ppSite) printProgres(ppSite, progresTabelFromEl(t));
         needsRender = false;
       }
       else if (t.dataset.undoProgres) {
         var undoSite = findSite(t.dataset.undoProgres);
-        if (undoSite && canUndoProgres(undoSite)) undoProgres(undoSite);
+        var undoTabel = progresTabelFromEl(t);
+        if (undoSite && canUndoProgres(undoSite, undoTabel)) undoProgres(undoSite, undoTabel);
       }
       else if (t.dataset.openRowsrc) {
         state.siteForm.rowSourcesOpen = state.siteForm.rowSourcesOpen === t.dataset.openRowsrc ? null : t.dataset.openRowsrc;
@@ -2675,7 +2756,9 @@
       else if (t.dataset.selectAllRowsrc) {
         var saSite = findSite(state.selectedSiteId);
         if (saSite) {
-          var allIds = randuriForSite(saSite).filter(function (r) { return !r.grup && !r.subtotal; }).map(function (r) { return r.id; });
+          var saRow = progresRanduri.filter(function (r) { return r.id === t.dataset.selectAllRowsrc; })[0];
+          var saTabel = saRow ? saRow.tabel : "centralizare";
+          var allIds = randuriForSite(saSite, saTabel).filter(function (r) { return !r.grup && !r.subtotal; }).map(function (r) { return r.id; });
           setAllRowSources(saSite, t.dataset.selectAllRowsrc, allIds);
         }
       }
@@ -3031,7 +3114,8 @@
     if (tag === "INPUT" || tag === "TEXTAREA") return;
     if (state.view !== "detail" || state.activeTab !== "progres") return;
     var site = findSite(state.selectedSiteId);
-    if (site && canUndoProgres(site)) { e.preventDefault(); undoProgres(site); }
+    var tabel = state.siteForm.progresSubTab || "capitole";
+    if (site && canUndoProgres(site, tabel)) { e.preventDefault(); undoProgres(site, tabel); }
   });
 
   render();
