@@ -22,6 +22,13 @@
      absence (motionAnimate()), so a blocked/slow CDN never breaks the app,
      it just skips the transition. -->
 <script src="https://cdn.jsdelivr.net/npm/motion@11/dist/motion.js" defer></script>
+<!-- Generate real .docx PV files client-side from the templates in
+     /templates/*.docx (a copy of the original Word document per tronson
+     category, with {field} placeholders in place of the variable text —
+     everything else, incl. header/footer/spacing, is byte-identical to
+     what the user supplied). No server, no PDF step. -->
+<script src="https://cdn.jsdelivr.net/npm/pizzip@3/dist/pizzip.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/docxtemplater@3/js/docxtemplater.min.js" defer></script>
 <style>
   :root{
     /* "Bento 2026" — dark, industrial-blueprint base with a purple-blue/teal
@@ -363,6 +370,10 @@
   .progrid-cell-input { width: 100%; box-sizing: border-box; border: 1px solid var(--navy); border-radius: 3px;
     padding: 3px 5px; font-family: inherit; font-size: inherit; text-align: center; }
   .doclist-empty.progrid-empty-cell { padding: 16px 22px; text-align: center; }
+  .tronson-input { width: 100%; min-width: 90px; box-sizing: border-box; border: 1px solid transparent; border-radius: 3px;
+    padding: 6px 7px; font-family: var(--sans); font-size: 12.5px; background: transparent; }
+  .tronson-input:hover { border-color: var(--border-strong); }
+  .tronson-input:focus { border-color: var(--navy); outline: none; background: var(--surface); }
 
   /* per-cell formula: the small "ƒ" toggle + the pick-cells builder mode.
      Deliberately NOT hover-revealed: a "td:hover .child" rule forces the
@@ -570,7 +581,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b46-2026-09-18";
+  var BUILD = "b47-2026-09-20";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -607,7 +618,9 @@
       formulaBuilder: null,
       collapsedGroups: {},
       pasteAnchor: null,
-      cellRangeSelect: null
+      cellRangeSelect: null,
+      pvDateEditing: false,
+      pvDateDraft: null
     },
     sidebarNameEdit: { siteId: null, draft: "" }
   };
@@ -722,9 +735,11 @@
       sb.from("santiere").select("*").order("created_at"),
       sb.from("santier_documente").select("*"),
       sb.from("santier_progres_coloane").select("*"),
-      sb.from("santier_progres_randuri").select("*")
+      sb.from("santier_progres_randuri").select("*"),
+      sb.from("santier_pv_date").select("*"),
+      sb.from("santier_tronsoane").select("*").order("ordine")
     ]).then(function (results) {
-      var mRes = results[0], eRes = results[1], cRes = results[2], sRes = results[3], dRes = results[4], pcRes = results[5], prRes = results[6];
+      var mRes = results[0], eRes = results[1], cRes = results[2], sRes = results[3], dRes = results[4], pcRes = results[5], prRes = results[6], pvRes = results[7], trRes = results[8];
       workers = (mRes.data || []).map(function (w) {
         return { id: w.id, name: w.nume, functie: w.functie || "", salariu: w.salariu, metodaPlata: w.metoda_plata || "CARD", telefon: w.telefon || "" };
       });
@@ -735,6 +750,8 @@
       projectDocs = (dRes.data || []).map(docFromRow);
       progresColoane = (pcRes.data || []).map(progresColFromRow);
       progresRanduri = (prRes.data || []).map(progresRandFromRow);
+      pvDateList = (pvRes.data || []).map(pvDateFromRow);
+      tronsoane = (trRes.data || []).map(tronsonFromRow);
     }).catch(function (err) {
       flashSyncError("Nu am putut încărca datele din Supabase.");
       console.error(err);
@@ -761,6 +778,7 @@
       authState.session = null;
       workers = []; entries = {}; company = { name: "", cif: "", docTipOrder: null, docTipLabels: null }; sites = []; projectDocs = [];
       progresColoane = []; progresRanduri = []; progresSeededSites = {}; progresUndoStack = {};
+      pvDateList = []; tronsoane = [];
       state.view = "dashboard"; state.selectedSiteId = null;
       render();
     });
@@ -1093,6 +1111,195 @@
   var progresUndoStack = {};
   var PROGRES_UNDO_LIMIT = 20;
 
+  // --- Procese-verbale generate din șablon: date fixe per șantier + tronsoane ---
+  var pvDateList = [];
+  var tronsoane = [];
+
+  // Câmpurile completate O SINGURĂ DATĂ per șantier (nu se repetă per tronson) —
+  // apar identic în toate procesele-verbale generate pentru acel șantier.
+  // Numele lor (a doua valoare din fiecare pereche) sunt exact tag-urile
+  // {câmp} din șabloanele .docx din /templates — nu redenumi fără să
+  // actualizezi și șabloanele.
+  var PV_FIELDS = [
+    ["locatie", "Localitate", "ex: Stăuceni"],
+    ["obiectiv", "Obiectiv / denumire lucrare", "ex: MODERNIZARE ȘI EXTINDERE REȚEA DE ALIMENTARE CU APĂ ȘI CANALIZARE ÎN COMUNA STĂUCENI, JUDEȚUL BOTOȘANI"],
+    ["autorizatieNr", "Nr. autorizație construire", "ex: 56"],
+    ["autorizatieData", "Data autorizației", "ex: 21.05.2025"],
+    ["proiectNr", "Nr. proiect", "ex: 1805/2024"],
+    ["proiectantCompanie", "Proiectant (companie)", "S.C. ......... S.R.L."],
+    ["proiectantReprezentant", "Reprezentant proiectant", "ex: Dragoș Cojocaru"],
+    ["dirigenteNume", "Diriginte de șantier (nume)", "ex: Bota Petru Serban"],
+    ["dirigenteAutorizatie", "Nr. autorizație diriginte", "ex: 00028425 din 15.11.2013"],
+    ["dirigenteDomenii", "Domenii autorizație diriginte", "ex: 6, 3.3"],
+    ["rteNume", "RTE — responsabil tehnic execuție (nume)", "ex: Daniliuc Corneliu-Vicentiu"],
+    ["rteAtestat", "Nr. atestat RTE", "ex: 00000503 / 04.10.2017"],
+    ["rteDomenii", "Domenii atestat RTE", "ex: 9.1; 1.1; 6.2; 8.2"],
+    ["constructorReprezentant", "Reprezentant constructor", "ex: Vitel Silviu"]
+  ];
+  function emptyPvDateDraft() {
+    var d = {};
+    PV_FIELDS.forEach(function (f) { d[f[0]] = ""; });
+    return d;
+  }
+  function pvDateFromRow(r) {
+    return {
+      santierId: r.santier_id,
+      locatie: r.locatie || "", obiectiv: r.obiectiv || "",
+      autorizatieNr: r.autorizatie_nr || "", autorizatieData: r.autorizatie_data || "",
+      proiectNr: r.proiect_nr || "", proiectantCompanie: r.proiectant_companie || "", proiectantReprezentant: r.proiectant_reprezentant || "",
+      dirigenteNume: r.diriginte_nume || "", dirigenteAutorizatie: r.diriginte_autorizatie || "", dirigenteDomenii: r.diriginte_domenii || "",
+      rteNume: r.rte_nume || "", rteAtestat: r.rte_atestat || "", rteDomenii: r.rte_domenii || "",
+      constructorReprezentant: r.constructor_reprezentant || ""
+    };
+  }
+  function pvDateForSite(site) { return pvDateList.filter(function (p) { return p.santierId === site.id; })[0] || null; }
+  function startPvDateEdit(site) {
+    var existing = pvDateForSite(site);
+    state.siteForm.pvDateDraft = existing ? Object.assign({}, existing) : emptyPvDateDraft();
+    state.siteForm.pvDateEditing = true;
+  }
+  function cancelPvDateEdit() { state.siteForm.pvDateEditing = false; state.siteForm.pvDateDraft = null; }
+  function savePvDateFromInput(siteId) {
+    var draft = state.siteForm.pvDateDraft;
+    if (!draft) return;
+    var payload = {
+      santier_id: siteId,
+      locatie: draft.locatie || null, obiectiv: draft.obiectiv || null,
+      autorizatie_nr: draft.autorizatieNr || null, autorizatie_data: draft.autorizatieData || null,
+      proiect_nr: draft.proiectNr || null, proiectant_companie: draft.proiectantCompanie || null, proiectant_reprezentant: draft.proiectantReprezentant || null,
+      diriginte_nume: draft.dirigenteNume || null, diriginte_autorizatie: draft.dirigenteAutorizatie || null, diriginte_domenii: draft.dirigenteDomenii || null,
+      rte_nume: draft.rteNume || null, rte_atestat: draft.rteAtestat || null, rte_domenii: draft.rteDomenii || null,
+      constructor_reprezentant: draft.constructorReprezentant || null
+    };
+    var existing = pvDateList.filter(function (p) { return p.santierId === siteId; })[0];
+    if (existing) Object.assign(existing, draft);
+    else pvDateList.push(Object.assign({ santierId: siteId }, draft));
+    state.siteForm.pvDateEditing = false;
+    state.siteForm.pvDateDraft = null;
+    render();
+    sb.from("santier_pv_date").upsert(payload).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva datele pentru procese-verbale."); console.error(res.error); render(); }
+    });
+  }
+
+  // Tronsoane: liste simple per categorie (cd/cm/cr acum; camine/spau/
+  // imprejmuiri/electrice se adaugă ulterior în aceeași listă, doar cu o
+  // nouă categorie + un nou șablon .docx în TRONSON_TEMPLATE_URLS).
+  var TRONSON_CATEGORII = ["cd", "cm", "cr"];
+  var TRONSON_CATEGORIE_LABEL = { cd: "Conductă apă (CD)", cm: "Conductă canalizare (CM)", cr: "Conductă refulare (CR)" };
+  var TRONSON_FIELDS = [
+    ["cod", "Cod tronson", "ex: CD5"],
+    ["specificatieConducta", "Specificație conductă", "ex: PEHD PN10, De 110 mm"],
+    ["reperStart", "Reper start", "ex: Pct 42 / CV6.1"],
+    ["reperEnd", "Reper stop", "ex: Pct 29 / SPAU 3"],
+    ["lungime", "Lungime (m)", "ex: 386"],
+    ["planse", "Planșe", "ex: 2, PB5, PB6"],
+    ["profilLongitudinal", "Profil longitudinal", "ex: PL5 (opțional)"]
+  ];
+  var TRONSON_DB_FIELD = { cod: "cod", specificatieConducta: "specificatie_conducta", reperStart: "reper_start", reperEnd: "reper_end", lungime: "lungime", planse: "planse", profilLongitudinal: "profil_longitudinal" };
+  function tronsonFromRow(r) {
+    return {
+      id: r.id, santierId: r.santier_id, categorie: r.categorie,
+      cod: r.cod || "", specificatieConducta: r.specificatie_conducta || "",
+      reperStart: r.reper_start || "", reperEnd: r.reper_end || "", lungime: r.lungime || "",
+      planse: r.planse || "", profilLongitudinal: r.profil_longitudinal || "", ordine: r.ordine || 0
+    };
+  }
+  function tronsoaneForSite(site, categorie) {
+    return tronsoane.filter(function (t) { return t.santierId === site.id && t.categorie === categorie; })
+      .sort(function (a, b) { return a.ordine - b.ordine; });
+  }
+  function addTronson(site, categorie) {
+    var tempId = "tmp-" + Date.now();
+    var existing = tronsoaneForSite(site, categorie);
+    var ordine = existing.length ? Math.max.apply(null, existing.map(function (t) { return t.ordine; })) + 1 : 0;
+    tronsoane.push({ id: tempId, santierId: site.id, categorie: categorie, cod: "", specificatieConducta: "", reperStart: "", reperEnd: "", lungime: "", planse: "", profilLongitudinal: "", ordine: ordine });
+    render();
+    sb.from("santier_tronsoane").insert({ santier_id: site.id, categorie: categorie, ordine: ordine }).select().single().then(function (res) {
+      if (res.error) {
+        tronsoane = tronsoane.filter(function (t) { return t.id !== tempId; });
+        flashSyncError("Nu am putut adăuga tronsonul."); console.error(res.error); render(); return;
+      }
+      var live = tronsoane.filter(function (t) { return t.id === tempId; })[0];
+      if (!live) { sb.from("santier_tronsoane").delete().eq("id", res.data.id).then(function (r2) { if (r2.error) console.error(r2.error); }); return; }
+      live.id = res.data.id;
+      render();
+    });
+  }
+  function removeTronson(id) {
+    var t = tronsoane.filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    var label = t.cod ? ('tronsonul "' + t.cod + '"') : "acest tronson";
+    if (!confirmDelete("Ștergi " + label + "? Această acțiune nu poate fi anulată.")) return;
+    tronsoane = tronsoane.filter(function (x) { return x !== t; });
+    render();
+    if (String(t.id).indexOf("tmp-") === 0) return;
+    sb.from("santier_tronsoane").delete().eq("id", t.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut șterge tronsonul."); console.error(res.error); }
+    });
+  }
+  function persistTronsonField(id, field) {
+    var t = tronsoane.filter(function (x) { return x.id === id; })[0];
+    if (!t || String(t.id).indexOf("tmp-") === 0) return; // still being created — the insert already carries current values
+    var dbField = TRONSON_DB_FIELD[field];
+    if (!dbField) return;
+    var payload = {}; payload[dbField] = t[field];
+    sb.from("santier_tronsoane").update(payload).eq("id", t.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva tronsonul."); console.error(res.error); render(); }
+    });
+  }
+
+  // Generare .docx real, în browser, dintr-un șablon din /templates —
+  // niciun server, niciun pas prin PDF. Fiecare șablon e o copie exactă a
+  // documentului Word furnizat, cu textul variabil înlocuit de tag-uri
+  // {câmp}; docxtemplater completează acele tag-uri și produce un .docx nou,
+  // descărcat direct (vezi comentariul din <head> despre pizzip/docxtemplater).
+  var TRONSON_TEMPLATE_URLS = { cd: "/templates/pv-cd.docx", cm: "/templates/pv-cm.docx", cr: "/templates/pv-cr.docx" };
+  function generatePvForTronson(site, tronsonId) {
+    var t = tronsoane.filter(function (x) { return x.id === tronsonId; })[0];
+    if (!t) return;
+    var pv = pvDateForSite(site);
+    if (!pv) { flashSyncError("Completează mai întâi Date șantier → Date generale ale proiectului → Date pentru procese-verbale."); return; }
+    var templateUrl = TRONSON_TEMPLATE_URLS[t.categorie];
+    if (!templateUrl) { flashSyncError("Nu există încă șablon pentru această categorie."); return; }
+    var DocxCtor = window.docxtemplater || window.Docxtemplater;
+    if (typeof PizZip === "undefined" || !DocxCtor) {
+      flashSyncError("Generatorul de procese-verbale nu s-a încărcat (verifică conexiunea la internet) — reîncearcă.");
+      return;
+    }
+    fetch(templateUrl).then(function (res) {
+      if (!res.ok) throw new Error("nu am putut încărca șablonul (" + res.status + ")");
+      return res.arrayBuffer();
+    }).then(function (buf) {
+      var zip = new PizZip(buf);
+      var doc = new DocxCtor(zip, { paragraphLoop: true, linebreaks: true });
+      doc.render({
+        locatie: pv.locatie, obiectiv: pv.obiectiv,
+        autorizatie_nr: pv.autorizatieNr, autorizatie_data: pv.autorizatieData,
+        proiect_nr: pv.proiectNr, proiectant_companie: pv.proiectantCompanie, proiectant_reprezentant: pv.proiectantReprezentant,
+        diriginte_nume: pv.dirigenteNume, diriginte_autorizatie: pv.dirigenteAutorizatie, diriginte_domenii: pv.dirigenteDomenii,
+        rte_nume: pv.rteNume, rte_atestat: pv.rteAtestat, rte_domenii: pv.rteDomenii,
+        constructor_reprezentant: pv.constructorReprezentant,
+        tronson_cod: t.cod, specificatie_conducta: t.specificatieConducta,
+        reper_start: t.reperStart, reper_end: t.reperEnd, lungime: t.lungime,
+        planse: t.planse, profil_longitudinal: t.profilLongitudinal
+      });
+      var blob = doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+      var codSlug = (t.cod || t.categorie).toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
+      var siteSlug = (site.numeScurt || site.nume || "santier").toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "PV-" + codSlug + "-" + siteSlug + ".docx";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    }).catch(function (err) {
+      console.error(err);
+      flashSyncError("Nu am putut genera procesul verbal.");
+    });
+  }
+
   // Deep-clones a row's formuleCelule map ({ colId: { terms: [{rowId,colId,sign}] } })
   // so undo snapshots and reconciliation never share mutable term arrays
   // with the live row.
@@ -1402,6 +1609,7 @@
   // default column layout, so the grid isn't blank on first open. No rows
   // are seeded — real progress is never fabricated.
   function seedDefaultProgresColumns(site, tabel) {
+    if (!PROGRES_TABEL_TEMPLATES[tabel]) return; // e.g. "tronsoane" — its own subtab, not a progres grid instance
     var seedKey = site.id + "::" + tabel;
     if (progresSeededSites[seedKey]) return;
     progresSeededSites[seedKey] = true;
@@ -2097,6 +2305,41 @@
       '<div class="panel-sub">Mediu, Ape Române, Drumuri Naționale etc. — adaugă câte e nevoie.</div>' +
       '<div class="doclist-docs">' + avizeRows + avizeEmpty + '</div>' +
       '<button class="btn btn-ghost btn-sm" style="margin-top:10px" data-add-aviz="' + site.id + '">' + icon("plus", 13) + 'Adaugă aviz</button>' +
+    '</div>' +
+    pvDateSectionHTML(site);
+  }
+
+  // Câmpurile care se completează o singură dată per șantier și se preiau
+  // automat la generarea fiecărui proces-verbal (vezi generatePvForTronson).
+  function pvDateSectionHTML(site) {
+    var pv = pvDateForSite(site);
+    if (state.siteForm.pvDateEditing) {
+      var draft = state.siteForm.pvDateDraft || emptyPvDateDraft();
+      var inputsHtml = PV_FIELDS.map(function (f) {
+        var key = f[0], label = f[1], ph = f[2];
+        var inputId = "pv-date-" + key;
+        var isLong = key === "obiectiv";
+        return '<div class="modal-field"' + (isLong ? ' style="grid-column:1 / -1"' : '') + '><label for="' + inputId + '">' + esc(label) + '</label>' +
+          '<input id="' + inputId + '" data-pv-date-field="' + key + '" placeholder="' + esc(ph) + '" value="' + esc(draft[key] || "") + '"></div>';
+      }).join("");
+      return '<div class="panel" style="margin-top:16px"><div class="panel-title">Date pentru procese-verbale</div>' +
+        '<div class="panel-sub">Completate o singură dată — se preiau automat la generarea fiecărui proces-verbal pentru acest șantier.</div>' +
+        '<div class="site-field-grid">' + inputsHtml + '</div>' +
+        '<div class="modal-actions" style="justify-content:flex-start;margin-top:16px">' +
+          '<button class="btn btn-primary btn-sm" data-save-pv-date="' + site.id + '">Salvează</button>' +
+          '<button class="btn btn-ghost btn-sm" data-cancel-pv-date="1">Anulează</button>' +
+        '</div></div>';
+    }
+    var rowsHtml = PV_FIELDS.map(function (f) {
+      var key = f[0], label = f[1];
+      var val = pv ? pv[key] : "";
+      return '<div class="site-info-row"><div class="site-info-label">' + esc(label) + '</div>' +
+        '<div class="site-info-val' + (val ? "" : " empty") + '">' + (val ? esc(val) : "Necompletat") + '</div></div>';
+    }).join("");
+    return '<div class="panel" style="margin-top:16px"><div class="panel-title">Date pentru procese-verbale</div>' +
+      '<div class="panel-sub">Completate o singură dată — se preiau automat la generarea fiecărui proces-verbal pentru acest șantier.</div>' +
+      '<div class="site-info-list">' + rowsHtml + '</div>' +
+      '<button class="btn btn-ghost btn-sm" style="margin-top:14px" data-edit-pv-date="' + site.id + '">' + icon("pencil", 13) + 'Editează</button>' +
     '</div>';
   }
 
@@ -2613,8 +2856,41 @@
     var subtabsNav = '<div class="subtabs">' +
       '<div class="subtab' + (subTab === "capitole" ? " active" : "") + '" data-progres-subtab="capitole">Progres Șantier</div>' +
       '<div class="subtab' + (subTab === "centralizare" ? " active" : "") + '" data-progres-subtab="centralizare">Centralizare Proiect</div>' +
+      '<div class="subtab' + (subTab === "tronsoane" ? " active" : "") + '" data-progres-subtab="tronsoane">Tronsoane PV</div>' +
     '</div>';
+    if (subTab === "tronsoane") return subtabsNav + tronsoanePanelHTML(site);
     return subtabsNav + progresPanelHTML(site, subTab);
+  }
+
+  // Tronsoanele care alimentează generarea automată a proceselor-verbale —
+  // grupate pe categorie (vezi TRONSON_CATEGORII), fiecare rând complet
+  // editabil inline; "Generează PV" produce un .docx nou din șablonul
+  // categoriei, completat cu datele acestui tronson + cele de la Date
+  // șantier → Date generale ale proiectului → Date pentru procese-verbale.
+  function tronsonCategoryTableHTML(site, categorie) {
+    var rows = tronsoaneForSite(site, categorie);
+    var headHtml = TRONSON_FIELDS.map(function (f) { return '<th><div class="progrid-th-inner">' + esc(f[1]) + '</div></th>'; }).join("") + '<th></th>';
+    var bodyHtml = rows.map(function (row) {
+      var cellsHtml = TRONSON_FIELDS.map(function (f) {
+        return '<td class="progrid-cell"><input class="tronson-input" data-tronson-field="' + row.id + '|' + f[0] + '" placeholder="' + esc(f[2]) + '" value="' + esc(row[f[0]]) + '"></td>';
+      }).join("");
+      return '<tr data-tronson-row="' + row.id + '">' + cellsHtml +
+        '<td class="progrid-del-cell"><span style="display:flex;align-items:center;gap:8px;justify-content:center;white-space:nowrap">' +
+          '<span class="btn btn-ghost btn-sm" data-generate-pv="' + row.id + '">' + icon("doc", 13) + 'Generează PV</span>' +
+          '<span class="progrid-del" data-remove-tronson="' + row.id + '" title="Șterge tronsonul">' + icon("trash", 13) + '</span>' +
+        '</span></td>' +
+      '</tr>';
+    }).join("");
+    var emptyHtml = rows.length === 0 ? '<tr><td colspan="' + (TRONSON_FIELDS.length + 1) + '" class="doclist-empty progrid-empty-cell">Niciun tronson adăugat încă.</td></tr>' : "";
+    return '<div class="panel" style="margin-bottom:16px">' +
+      '<div class="panel-title">' + esc(TRONSON_CATEGORIE_LABEL[categorie] || categorie) + '</div>' +
+      '<div class="progrid-wrap" style="margin-top:10px"><table class="progrid" style="table-layout:auto"><thead><tr>' + headHtml + '</tr></thead><tbody>' + bodyHtml + emptyHtml + '</tbody></table></div>' +
+      '<button class="btn btn-ghost btn-sm" style="margin-top:10px" data-add-tronson="' + site.id + '|' + categorie + '">' + icon("plus", 13) + 'Adaugă tronson</button>' +
+    '</div>';
+  }
+  function tronsoanePanelHTML(site) {
+    return TRONSON_CATEGORII.map(function (cat) { return tronsonCategoryTableHTML(site, cat); }).join("") +
+      '<div class="helper">Completează câmpurile fiecărui tronson, apoi apasă „Generează PV” — se descarcă un fișier Word complet, cu antetul, subsolul și structura șablonului tău, doar cu datele acestui tronson completate automat.</div>';
   }
 
   function docsPanelHTML(site) {
@@ -2864,7 +3140,9 @@
       "[data-toggle-collapse-group],[data-duplicate-row],[data-export-progres-csv],[data-print-progres]," +
       "[data-toggle-cell-formula],[data-formula-save],[data-formula-cancel],[data-formula-clear]," +
       "[data-merge-cells-confirm],[data-merge-cells-cancel],[data-unmerge-cell]," +
-      "[data-undo-progres]"
+      "[data-undo-progres]," +
+      "[data-edit-pv-date],[data-save-pv-date],[data-cancel-pv-date]," +
+      "[data-add-tronson],[data-remove-tronson],[data-generate-pv]"
     );
 
     // Only re-render when something actually changes. A blanket render() on every
@@ -2903,11 +3181,13 @@
           sidebarClickTimer = setTimeout(function () {
             state.view = "detail"; state.selectedSiteId = deferSiteId; state.activeTab = "date-santier";
             state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; state.siteForm.progresSubTab = "capitole"; state.siteForm.formulaBuilder = null;
+            state.siteForm.pvDateEditing = false; state.siteForm.pvDateDraft = null;
             render();
             window.scrollTo(0, 0);
           }, 260);
         } else {
           state.view = "detail"; state.selectedSiteId = t.dataset.openSite; state.activeTab = "date-santier"; state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; state.siteForm.progresSubTab = "capitole"; state.siteForm.formulaBuilder = null; isNav = true;
+          state.siteForm.pvDateEditing = false; state.siteForm.pvDateDraft = null;
         }
       }
       else if (t.dataset.tab) {
@@ -3115,6 +3395,23 @@
         var umSite = findSite(state.selectedSiteId);
         if (umSite) unmergeCells(umSite, progresTabelFromEl(t), t.dataset.unmergeCell);
       }
+      else if (t.dataset.editPvDate) {
+        var epvSite = findSite(t.dataset.editPvDate);
+        if (epvSite) startPvDateEdit(epvSite);
+      }
+      else if (t.dataset.savePvDate) { savePvDateFromInput(t.dataset.savePvDate); }
+      else if (t.dataset.cancelPvDate) { cancelPvDateEdit(); }
+      else if (t.dataset.addTronson) {
+        var atParts = t.dataset.addTronson.split("|");
+        var atSite = findSite(atParts[0]);
+        if (atSite) addTronson(atSite, atParts[1]);
+      }
+      else if (t.dataset.removeTronson) { removeTronson(t.dataset.removeTronson); }
+      else if (t.dataset.generatePv) {
+        var gpvSite = findSite(state.selectedSiteId);
+        if (gpvSite) generatePvForTronson(gpvSite, t.dataset.generatePv);
+        needsRender = false;
+      }
     }
 
     if (needsRender) {
@@ -3136,12 +3433,27 @@
     else if (id === "company-cif-input") cd.cif = e.target.value;
     else if (id.indexOf("new-site-") === 0) state.siteForm.addDraft[id.slice(9)] = e.target.value;
     else if (id.indexOf("site-edit-") === 0) state.siteForm.editDraft[id.slice(10)] = e.target.value;
+    else if (id.indexOf("pv-date-") === 0) { if (state.siteForm.pvDateDraft) state.siteForm.pvDateDraft[id.slice(8)] = e.target.value; }
     else if (e.target.dataset.docValoareKey) state.siteForm.docDrafts[e.target.dataset.docValoareKey] = e.target.value;
     else if (e.target.dataset.labelEditInput) state.siteForm.labelEdit.draft = e.target.value;
     else if (e.target.dataset.progcolLabelInput) state.siteForm.gridColLabelEdit.draft = e.target.value;
     else if (e.target.dataset.progcellInput) state.siteForm.gridCellEdit.draft = e.target.value;
     else if (e.target.dataset.addcolLabelInput) state.siteForm.addColForm.label = e.target.value;
     else if (e.target.dataset.sidebarNameInput) state.sidebarNameEdit.draft = e.target.value;
+    else if (e.target.dataset.tronsonField) {
+      var tfParts = e.target.dataset.tronsonField.split("|");
+      var tfRow = tronsoane.filter(function (t) { return t.id === tfParts[0]; })[0];
+      if (tfRow) tfRow[tfParts[1]] = e.target.value;
+    }
+  });
+  // focusout (not blur — blur doesn't bubble, so it can't be handled via
+  // delegation on #app) persists a tronson field once the user moves on,
+  // matching the rest of the app's "type freely, save when you leave" feel.
+  document.getElementById("app").addEventListener("focusout", function (e) {
+    if (e.target.dataset && e.target.dataset.tronsonField) {
+      var parts = e.target.dataset.tronsonField.split("|");
+      persistTronsonField(parts[0], parts[1]);
+    }
   });
   document.getElementById("app").addEventListener("change", function (e) {
     if (e.target.id === "new-worker-metoda") state.pontaj.newWorker.metoda = e.target.value;
