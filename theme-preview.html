@@ -1,0 +1,506 @@
+<title>Teme Ing. Assistant</title>
+<style>
+  /* ============ Fonts ============ */
+  @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  /* ============ Chrome tokens (the picker tool itself — theme-aware) ============ */
+  :root{
+    --c-bg:#f6f5f2; --c-panel:#ffffff; --c-panel-2:#f1efe9; --c-line:#e3e0d6;
+    --c-ink:#201f1c; --c-ink-soft:#5c5950; --c-ink-faint:#928d80;
+    --c-accent:#3a4a63; --c-accent-ink:#ffffff;
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, monospace;
+    --display:'Chakra Petch', var(--sans);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --c-bg:#0d0f12; --c-panel:#15181c; --c-panel-2:#1b1f24; --c-line:#272c32;
+      --c-ink:#ecebe7; --c-ink-soft:#a9a79f; --c-ink-faint:#6f6d66;
+      --c-accent:#8aa0c2; --c-accent-ink:#0d0f12;
+    }
+  }
+  :root[data-theme="dark"]{
+    --c-bg:#0d0f12; --c-panel:#15181c; --c-panel-2:#1b1f24; --c-line:#272c32;
+    --c-ink:#ecebe7; --c-ink-soft:#a9a79f; --c-ink-faint:#6f6d66;
+    --c-accent:#8aa0c2; --c-accent-ink:#0d0f12;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body{
+    background: var(--c-bg); color: var(--c-ink); font-family: var(--sans);
+    padding-inline: 20px; padding-block: 28px 60px;
+  }
+  h1,h2,h3{ font-family: var(--display); text-wrap: balance; margin: 0; }
+  p{ margin: 0; }
+  .wrap{ max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; }
+
+  /* ============ Header ============ */
+  .head{ display: flex; align-items: flex-start; gap: 16px; }
+  .head-mark{
+    width: 44px; height: 44px; border-radius: 11px; background: var(--c-accent);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .head-mark svg{ color: var(--c-accent-ink); }
+  .head h1{ font-size: 23px; font-weight: 600; letter-spacing: .01em; }
+  .head p{ color: var(--c-ink-soft); font-size: 14.5px; margin-top: 5px; max-width: 62ch; line-height: 1.55; }
+
+  /* ============ Picker ============ */
+  .picker{
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(198px, 1fr)); gap: 10px;
+  }
+  .pick{
+    text-align: left; cursor: pointer; border-radius: 13px; padding: 14px 15px;
+    background: var(--c-panel); border: 1.5px solid var(--c-line); color: var(--c-ink);
+    font-family: inherit; display: flex; flex-direction: column; gap: 10px;
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  .pick:hover{ border-color: var(--c-accent); }
+  .pick:focus-visible{ outline: 2px solid var(--c-accent); outline-offset: 2px; }
+  .pick[aria-selected="true"]{ border-color: var(--c-accent); box-shadow: 0 0 0 1px var(--c-accent) inset; }
+  .pick-swatches{ display: flex; gap: 5px; }
+  .pick-dot{ width: 20px; height: 20px; border-radius: 7px; border: 1px solid rgba(0,0,0,.08); }
+  .pick-name{ font-weight: 600; font-size: 14px; }
+  .pick-mode{
+    font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--c-ink-faint);
+  }
+  .pick-desc{ font-size: 12px; color: var(--c-ink-soft); line-height: 1.4; }
+
+  /* ============ Stage / device frame ============ */
+  .stage-bar{ display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .stage-bar h2{ font-size: 15px; font-weight: 600; }
+  .stage-bar .stage-hint{ font-size: 12px; color: var(--c-ink-faint); font-family: var(--mono); }
+
+  .frame{
+    border-radius: 16px; border: 1px solid var(--c-line); overflow: hidden;
+    background: var(--c-panel);
+  }
+  .frame-top{
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 16px; border-bottom: 1px solid var(--c-line); background: var(--c-panel-2);
+    font-family: var(--mono); font-size: 11.5px; color: var(--c-ink-faint);
+  }
+  .frame-top .frame-theme-name{ color: var(--c-ink); font-weight: 600; font-family: var(--sans); font-size: 13px; }
+  .frame-top .frame-mode-pill{
+    padding: 3px 9px; border-radius: 100px; border: 1px solid var(--c-line); letter-spacing: .05em;
+  }
+
+  /* ============ THE DEVICE (previewed app) ============ */
+  .device{
+    display: flex; min-height: 560px;
+    background: var(--p-bg); color: var(--p-ink); font-family: var(--sans);
+    position: relative;
+  }
+  /* signature per-theme flourish surface (blueprint grid) lives on .device itself */
+  .device[data-preview="blueprint"]{
+    background-image:
+      repeating-linear-gradient(0deg, var(--p-grid) 0 1px, transparent 1px 28px),
+      repeating-linear-gradient(90deg, var(--p-grid) 0 1px, transparent 1px 28px);
+  }
+
+  .d-sidebar{
+    width: 208px; flex-shrink: 0; background: var(--p-surface); border-right: 1px solid var(--p-border);
+    display: flex; flex-direction: column;
+  }
+  .d-brand{ display: flex; align-items: center; gap: 9px; padding: 16px 14px; border-bottom: 1px solid var(--p-border); }
+  .d-brand-mark{ width: 26px; height: 26px; border-radius: 7px; background: var(--p-accent); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .d-brand-mark svg{ color: var(--p-accent-ink, #fff); }
+  .d-brand-name{ font-family: var(--display); font-weight: 600; font-size: 13.5px; letter-spacing: .01em; }
+  .d-brand-sub{ font-family: var(--mono); font-size: 9.5px; color: var(--p-ink-faint); margin-top: 1px; }
+
+  .d-nav{ padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; }
+  .d-nav-item{
+    display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 8px;
+    font-size: 12.5px; font-weight: 500; color: var(--p-ink-soft); position: relative;
+  }
+  .d-nav-item svg{ width: 15px; height: 15px; flex-shrink: 0; }
+  .d-nav-item.active{ background: var(--p-accent-soft); color: var(--p-ink); font-weight: 600; }
+  /* signature flourish: hazard edge on the active nav item, steel theme only */
+  .device[data-preview="steel"] .d-nav-item.active::before{
+    content: ''; position: absolute; left: 0; top: 3px; bottom: 3px; width: 3px; border-radius: 3px;
+    background: repeating-linear-gradient(-45deg, var(--p-accent) 0 4px, var(--p-ink) 4px 8px);
+  }
+  .device[data-preview]:not([data-preview="steel"]) .d-nav-item.active::before{
+    content: ''; position: absolute; left: 0; top: 3px; bottom: 3px; width: 3px; border-radius: 3px;
+    background: var(--p-accent);
+  }
+
+  .d-sites{ margin-top: 6px; padding: 0 8px; display: flex; flex-direction: column; gap: 1px; flex: 1; overflow: hidden; }
+  .d-sites-label{ font-family: var(--mono); font-size: 9.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--p-ink-faint); padding: 10px 10px 5px; }
+  .d-site-row{ display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 8px; font-size: 12px; color: var(--p-ink-soft); }
+  .d-site-row.active{ background: var(--p-surface-2); color: var(--p-ink); font-weight: 600; }
+  .d-site-dot{ width: 6px; height: 6px; border-radius: 50%; background: var(--p-good); flex-shrink: 0; }
+
+  .d-user{ margin: 10px; padding: 9px 10px; border-radius: 9px; background: var(--p-surface-2); display: flex; align-items: center; gap: 8px; }
+  .d-user-avatar{ width: 22px; height: 22px; border-radius: 50%; background: var(--p-accent2); flex-shrink: 0; }
+  .d-user-name{ font-size: 11px; font-weight: 600; }
+  .d-user-role{ font-size: 9.5px; color: var(--p-ink-faint); }
+
+  .d-main{ flex: 1; min-width: 0; padding: 20px 22px 26px; display: flex; flex-direction: column; gap: 18px; }
+  .d-pagehead{ display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .d-pagehead h3{ font-family: var(--display); font-size: 17px; font-weight: 600; }
+  .d-pagehead .d-sub{ font-size: 11.5px; color: var(--p-ink-faint); margin-top: 2px; }
+
+  .d-btn{
+    font-family: inherit; font-size: 12px; font-weight: 600; border-radius: 8px; padding: 8px 14px;
+    border: 1px solid transparent; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .d-btn-primary{ background: var(--p-accent); color: var(--p-accent-ink, #fff); }
+  .d-btn-ghost{ background: var(--p-surface); border-color: var(--p-border-strong); color: var(--p-ink); }
+
+  .d-stats{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .d-stat{ background: var(--p-surface); border: 1px solid var(--p-border); border-radius: 12px; padding: 13px 14px; position: relative; overflow: hidden; }
+  .device[data-preview="copper"] .d-stat::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:2px; background: var(--p-accent);
+  }
+  .d-stat-num{ font-family: var(--mono); font-size: 21px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .d-stat-label{ font-size: 10.5px; color: var(--p-ink-faint); margin-top: 3px; }
+
+  .d-cards{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .d-card{ background: var(--p-surface); border: 1px solid var(--p-border); border-radius: 12px; padding: 14px 15px; display: flex; flex-direction: column; gap: 9px; position: relative; overflow: hidden; }
+  .device[data-preview="copper"] .d-card::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:2px; background: var(--p-accent);
+  }
+  .d-card-head{ display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .d-card-name{ font-weight: 600; font-size: 13px; }
+  .d-card-loc{ font-size: 10.5px; color: var(--p-ink-faint); margin-top: 2px; }
+  .d-badge{ font-family: var(--mono); font-size: 9.5px; font-weight: 600; letter-spacing: .03em; padding: 3px 8px; border-radius: 100px; white-space: nowrap; }
+  .d-badge-good{ background: var(--p-good-soft); color: var(--p-good); }
+  .d-badge-warn{ background: var(--p-warn-soft); color: var(--p-warn); }
+  .d-track{ height: 5px; border-radius: 100px; background: var(--p-surface-2); overflow: hidden; }
+  .d-track-fill{ height: 100%; border-radius: 100px; background: var(--p-accent); }
+  .d-card-foot{ display: flex; align-items: center; justify-content: space-between; font-size: 10.5px; color: var(--p-ink-faint); font-family: var(--mono); }
+
+  .d-panel{ background: var(--p-surface); border: 1px solid var(--p-border); border-radius: 12px; overflow: hidden; }
+  .d-panel-head{ display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 15px; border-bottom: 1px solid var(--p-border); flex-wrap: wrap; }
+  .d-panel-head h4{ font-size: 12.5px; font-weight: 600; }
+  .d-table{ width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  .d-table th{ text-align: left; font-weight: 600; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; color: var(--p-ink-faint); background: var(--p-surface-2); padding: 8px 15px; }
+  .d-table td{ padding: 9px 15px; border-top: 1px solid var(--p-border); }
+  .d-table td.mono{ font-family: var(--mono); }
+
+  /* ============ Palette strip ============ */
+  .palettes{ position: relative; }
+  .pal{ display: none; flex-wrap: wrap; gap: 8px; }
+  .pal.show{ display: flex; }
+  .swatch{
+    display: flex; align-items: center; gap: 7px; padding: 6px 10px 6px 6px; border-radius: 9px;
+    background: var(--c-panel); border: 1px solid var(--c-line); font-family: var(--mono); font-size: 10.5px;
+  }
+  .swatch-chip{ width: 20px; height: 20px; border-radius: 6px; border: 1px solid rgba(0,0,0,.08); flex-shrink: 0; }
+  .swatch-label{ color: var(--c-ink-soft); }
+  .swatch-hex{ color: var(--c-ink-faint); }
+
+  .foot{ font-size: 12px; color: var(--c-ink-faint); line-height: 1.6; border-top: 1px solid var(--c-line); padding-top: 18px; }
+  .foot b{ color: var(--c-ink-soft); font-weight: 600; }
+
+  /* ============ Responsive ============ */
+  @media (max-width: 760px){
+    .d-cards{ grid-template-columns: 1fr 1fr; }
+    .d-stats{ grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 620px){
+    body{ padding-inline: 14px; }
+    .device{ flex-direction: column; min-height: 0; }
+    .d-sidebar{ width: 100%; flex-direction: row; align-items: center; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--p-border); }
+    .d-brand{ border-bottom: none; border-right: 1px solid var(--p-border); flex-shrink: 0; }
+    .d-nav{ flex-direction: row; padding: 8px; }
+    .d-nav-item span{ display: none; }
+    .d-sites, .d-user{ display: none; }
+    .d-main{ padding: 16px; }
+    .d-stats{ grid-template-columns: 1fr 1fr; }
+    .d-cards{ grid-template-columns: 1fr; }
+    .d-table{ display: block; overflow-x: auto; }
+  }
+  @media (max-width: 420px){
+    .d-stats{ grid-template-columns: 1fr; }
+  }
+</style>
+
+<!-- ============ Theme token blocks (the 5 candidate palettes) ============ -->
+<style>
+  [data-preview="midnight"]{
+    --p-bg:#0b0e17; --p-surface:#141828; --p-surface-2:#1a1e30; --p-border:#242a42; --p-border-strong:#3a4166;
+    --p-ink:#eceaf5; --p-ink-soft:#c1bfdb; --p-ink-faint:#82809f;
+    --p-accent:#6f7bff; --p-accent-hover:#8b93ff; --p-accent-soft:rgba(111,123,255,.18); --p-accent-ink:#ffffff;
+    --p-accent2:#22d3c5; --p-accent2-soft:rgba(34,211,197,.16);
+    --p-warn:#ffb400; --p-warn-soft:rgba(255,180,0,.16);
+    --p-danger:#ff5a78; --p-danger-soft:rgba(255,90,120,.16);
+    --p-good:#22d3c5; --p-good-soft:rgba(34,211,197,.16);
+  }
+  [data-preview="steel"]{
+    --p-bg:#15181c; --p-surface:#1d2126; --p-surface-2:#242830; --p-border:#2c313a; --p-border-strong:#454c58;
+    --p-ink:#eef0f2; --p-ink-soft:#b9bfc7; --p-ink-faint:#7c838d;
+    --p-accent:#ff7a29; --p-accent-hover:#ff9552; --p-accent-soft:rgba(255,122,41,.18); --p-accent-ink:#1a1107;
+    --p-accent2:#4f9bc9; --p-accent2-soft:rgba(79,155,201,.16);
+    --p-warn:#f2c14e; --p-warn-soft:rgba(242,193,78,.16);
+    --p-danger:#ef5b5b; --p-danger-soft:rgba(239,91,91,.16);
+    --p-good:#59c27d; --p-good-soft:rgba(89,194,125,.16);
+  }
+  [data-preview="concrete"]{
+    --p-bg:#f3f1ec; --p-surface:#ffffff; --p-surface-2:#ece8e0; --p-border:#ddd7ca; --p-border-strong:#c3bca9;
+    --p-ink:#25241f; --p-ink-soft:#5a564c; --p-ink-faint:#8b8677;
+    --p-accent:#2f6f4f; --p-accent-hover:#25593f; --p-accent-soft:rgba(47,111,79,.12); --p-accent-ink:#ffffff;
+    --p-accent2:#c1622f; --p-accent2-soft:rgba(193,98,47,.13);
+    --p-warn:#b8791a; --p-warn-soft:rgba(184,121,26,.13);
+    --p-danger:#c1402f; --p-danger-soft:rgba(193,64,47,.13);
+    --p-good:#2f6f4f; --p-good-soft:rgba(47,111,79,.12);
+  }
+  [data-preview="blueprint"]{
+    --p-bg:#f6f4ee; --p-surface:#fffdf8; --p-surface-2:#eaeff5; --p-border:#d7dde3; --p-border-strong:#aab7c3;
+    --p-ink:#1c2b3a; --p-ink-soft:#47586a; --p-ink-faint:#8493a1;
+    --p-accent:#1f5f91; --p-accent-hover:#194d76; --p-accent-soft:rgba(31,95,145,.11); --p-accent-ink:#ffffff;
+    --p-accent2:#b1502e; --p-accent2-soft:rgba(177,80,46,.11);
+    --p-warn:#b8791a; --p-warn-soft:rgba(184,121,26,.11);
+    --p-danger:#b1402e; --p-danger-soft:rgba(177,64,46,.11);
+    --p-good:#2f7d5c; --p-good-soft:rgba(47,125,92,.11);
+    --p-grid: rgba(31,95,145,.055);
+  }
+  [data-preview="copper"]{
+    --p-bg:#10151a; --p-surface:#181f24; --p-surface-2:#1f272d; --p-border:#28323a; --p-border-strong:#3d4a53;
+    --p-ink:#eef1ef; --p-ink-soft:#b6c0c2; --p-ink-faint:#7c8a8d;
+    --p-accent:#c97a4a; --p-accent-hover:#dd8f5c; --p-accent-soft:rgba(201,122,74,.18); --p-accent-ink:#170f09;
+    --p-accent2:#3f8f96; --p-accent2-soft:rgba(63,143,150,.18);
+    --p-warn:#e0b04a; --p-warn-soft:rgba(224,176,74,.16);
+    --p-danger:#e0684f; --p-danger-soft:rgba(224,104,79,.16);
+    --p-good:#3f8f96; --p-good-soft:rgba(63,143,150,.18);
+  }
+</style>
+
+<div class="wrap">
+
+  <div class="head">
+    <div class="head-mark">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/><path d="M9 12h6"/></svg>
+    </div>
+    <div>
+      <h1>Teme pentru Ing. Assistant</h1>
+      <p>Cinci direcții vizuale complete, aplicate pe un ecran real al aplicației (bară laterală, șantiere, tronsoane) — ca să vezi exact cum arată, nu doar culori izolate. Alege una și spune-mi ce ajustăm, sau combinăm elemente din mai multe.</p>
+    </div>
+  </div>
+
+  <div class="picker" role="tablist" aria-label="Alege o temă">
+    <button class="pick" data-theme-id="midnight" role="tab" aria-selected="true">
+      <div class="pick-swatches">
+        <div class="pick-dot" style="background:#0b0e17"></div>
+        <div class="pick-dot" style="background:#6f7bff"></div>
+        <div class="pick-dot" style="background:#22d3c5"></div>
+      </div>
+      <div><div class="pick-name">Miez de Noapte</div><div class="pick-mode">Dark</div></div>
+      <div class="pick-desc">Varianta actuală, rafinată — indigo/violet pe fond antracit-albastru.</div>
+    </button>
+    <button class="pick" data-theme-id="steel" role="tab" aria-selected="false">
+      <div class="pick-swatches">
+        <div class="pick-dot" style="background:#15181c"></div>
+        <div class="pick-dot" style="background:#ff7a29"></div>
+        <div class="pick-dot" style="background:#4f9bc9"></div>
+      </div>
+      <div><div class="pick-name">Oțel &amp; Șantier</div><div class="pick-mode">Dark</div></div>
+      <div class="pick-desc">Grafit industrial + portocaliu de siguranță, ca vestele de șantier.</div>
+    </button>
+    <button class="pick" data-theme-id="concrete" role="tab" aria-selected="false">
+      <div class="pick-swatches">
+        <div class="pick-dot" style="background:#f3f1ec;border-color:#ddd7ca"></div>
+        <div class="pick-dot" style="background:#2f6f4f"></div>
+        <div class="pick-dot" style="background:#c1622f"></div>
+      </div>
+      <div><div class="pick-name">Beton Deschis</div><div class="pick-mode">Light</div></div>
+      <div class="pick-desc">Gri cald de beton, curat pentru birou ziua — accent verde-pădure.</div>
+    </button>
+    <button class="pick" data-theme-id="blueprint" role="tab" aria-selected="false">
+      <div class="pick-swatches">
+        <div class="pick-dot" style="background:#f6f4ee;border-color:#d7dde3"></div>
+        <div class="pick-dot" style="background:#1f5f91"></div>
+        <div class="pick-dot" style="background:#b1502e"></div>
+      </div>
+      <div><div class="pick-name">Plan Tehnic</div><div class="pick-mode">Light</div></div>
+      <div class="pick-desc">Hârtie de calc, albastru de proiectant + grilă fină — aer de plan tehnic.</div>
+    </button>
+    <button class="pick" data-theme-id="copper" role="tab" aria-selected="false">
+      <div class="pick-swatches">
+        <div class="pick-dot" style="background:#10151a"></div>
+        <div class="pick-dot" style="background:#c97a4a"></div>
+        <div class="pick-dot" style="background:#3f8f96"></div>
+      </div>
+      <div><div class="pick-name">Ardezie &amp; Aramă</div><div class="pick-mode">Dark</div></div>
+      <div class="pick-desc">Ardezie adâncă + aramă caldă — aluzie la țevile de canalizare, ținută premium.</div>
+    </button>
+  </div>
+
+  <div>
+    <div class="stage-bar">
+      <h2>Previzualizare live</h2>
+      <span class="stage-hint" id="stageHint">Dashboard · Șantiere · apasă orice temă mai sus</span>
+    </div>
+    <div class="frame" style="margin-top:10px">
+      <div class="frame-top">
+        <span class="frame-theme-name" id="frameThemeName">Miez de Noapte</span>
+        <span class="frame-mode-pill" id="frameModePill">Dark</span>
+      </div>
+
+      <div class="device" data-preview="midnight" id="device">
+        <div class="d-sidebar">
+          <div class="d-brand">
+            <div class="d-brand-mark">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/><path d="M9 12h6"/></svg>
+            </div>
+            <div><div class="d-brand-name">Ing. Assistant</div><div class="d-brand-sub">build b61</div></div>
+          </div>
+          <div class="d-nav">
+            <div class="d-nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg><span>Dashboard</span></div>
+            <div class="d-nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 9h1M9 13h1M14 9h1M14 13h1"/></svg><span>Șantiere</span></div>
+            <div class="d-nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span>Pontaj</span></div>
+            <div class="d-nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span>Rapoarte</span></div>
+          </div>
+          <div class="d-sites">
+            <div class="d-sites-label">Șantiere</div>
+            <div class="d-site-row active"><span class="d-site-dot"></span>Stăuceni</div>
+            <div class="d-site-row"><span class="d-site-dot" style="background:var(--p-warn)"></span>Roman, Victoriei</div>
+            <div class="d-site-row"><span class="d-site-dot"></span>Botoșani Nord</div>
+          </div>
+          <div class="d-user">
+            <div class="d-user-avatar"></div>
+            <div><div class="d-user-name">S. Vițel</div><div class="d-user-role">Diriginte șantier</div></div>
+          </div>
+        </div>
+
+        <div class="d-main">
+          <div class="d-pagehead">
+            <div>
+              <h3>Stăuceni</h3>
+              <div class="d-sub">Modernizare și extindere rețea de alimentare cu apă și canalizare</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="d-btn d-btn-ghost">Adaugă tronson</button>
+              <button class="d-btn d-btn-primary">Generează PV</button>
+            </div>
+          </div>
+
+          <div class="d-stats">
+            <div class="d-stat"><div class="d-stat-num">3</div><div class="d-stat-label">Șantiere active</div></div>
+            <div class="d-stat"><div class="d-stat-num">18</div><div class="d-stat-label">Tronsoane în lucru</div></div>
+            <div class="d-stat"><div class="d-stat-num">47</div><div class="d-stat-label">PV-uri generate</div></div>
+            <div class="d-stat"><div class="d-stat-num">12</div><div class="d-stat-label">Muncitori pontați azi</div></div>
+          </div>
+
+          <div class="d-cards">
+            <div class="d-card">
+              <div class="d-card-head"><div><div class="d-card-name">Stăuceni</div><div class="d-card-loc">Botoșani</div></div><span class="d-badge d-badge-warn">În lucru</span></div>
+              <div class="d-track"><div class="d-track-fill" style="width:68%"></div></div>
+              <div class="d-card-foot"><span>18 tronsoane</span><span>68%</span></div>
+            </div>
+            <div class="d-card">
+              <div class="d-card-head"><div><div class="d-card-name">Roman</div><div class="d-card-loc">Neamț</div></div><span class="d-badge d-badge-good">Finalizat</span></div>
+              <div class="d-track"><div class="d-track-fill" style="width:100%"></div></div>
+              <div class="d-card-foot"><span>9 tronsoane</span><span>100%</span></div>
+            </div>
+            <div class="d-card">
+              <div class="d-card-head"><div><div class="d-card-name">Botoșani Nord</div><div class="d-card-loc">Botoșani</div></div><span class="d-badge d-badge-warn">În lucru</span></div>
+              <div class="d-track"><div class="d-track-fill" style="width:24%"></div></div>
+              <div class="d-card-foot"><span>6 tronsoane</span><span>24%</span></div>
+            </div>
+          </div>
+
+          <div class="d-panel">
+            <div class="d-panel-head"><h4>Tronsoane — apă (CD)</h4><span class="frame-mode-pill" style="font-family:var(--mono);font-size:10px">3 din 18</span></div>
+            <div style="overflow-x:auto">
+            <table class="d-table">
+              <thead><tr><th>Cod</th><th>Specificație</th><th>Lungime</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">CD5</td><td>PEHD-RC, PN 10, DN110</td><td class="mono">348 m</td><td><span class="d-badge d-badge-good">Verificat</span></td></tr>
+                <tr><td class="mono">CM2</td><td>PVC, SN8, DN250</td><td class="mono">497 m</td><td><span class="d-badge d-badge-warn">În lucru</span></td></tr>
+                <tr><td class="mono">CR1</td><td>PEHD-RC, PN 10, DN110</td><td class="mono">1729 m</td><td><span class="d-badge d-badge-warn">În lucru</span></td></tr>
+              </tbody>
+            </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="palettes">
+    <div class="stage-bar"><h2>Paleta de culori</h2></div>
+    <div style="margin-top:10px">
+      <div class="pal show" data-pal="midnight">
+        <div class="swatch"><div class="swatch-chip" style="background:#0b0e17"></div><span class="swatch-label">fundal</span><span class="swatch-hex">#0b0e17</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#141828"></div><span class="swatch-label">suprafață</span><span class="swatch-hex">#141828</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#6f7bff"></div><span class="swatch-label">accent</span><span class="swatch-hex">#6f7bff</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#22d3c5"></div><span class="swatch-label">accent 2</span><span class="swatch-hex">#22d3c5</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#eceaf5"></div><span class="swatch-label">text</span><span class="swatch-hex">#eceaf5</span></div>
+      </div>
+      <div class="pal" data-pal="steel">
+        <div class="swatch"><div class="swatch-chip" style="background:#15181c"></div><span class="swatch-label">fundal</span><span class="swatch-hex">#15181c</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#1d2126"></div><span class="swatch-label">suprafață</span><span class="swatch-hex">#1d2126</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#ff7a29"></div><span class="swatch-label">accent</span><span class="swatch-hex">#ff7a29</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#4f9bc9"></div><span class="swatch-label">accent 2</span><span class="swatch-hex">#4f9bc9</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#eef0f2"></div><span class="swatch-label">text</span><span class="swatch-hex">#eef0f2</span></div>
+      </div>
+      <div class="pal" data-pal="concrete">
+        <div class="swatch"><div class="swatch-chip" style="background:#f3f1ec;border-color:#ddd7ca"></div><span class="swatch-label">fundal</span><span class="swatch-hex">#f3f1ec</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#ffffff;border-color:#ddd7ca"></div><span class="swatch-label">suprafață</span><span class="swatch-hex">#ffffff</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#2f6f4f"></div><span class="swatch-label">accent</span><span class="swatch-hex">#2f6f4f</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#c1622f"></div><span class="swatch-label">accent 2</span><span class="swatch-hex">#c1622f</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#25241f"></div><span class="swatch-label">text</span><span class="swatch-hex">#25241f</span></div>
+      </div>
+      <div class="pal" data-pal="blueprint">
+        <div class="swatch"><div class="swatch-chip" style="background:#f6f4ee;border-color:#d7dde3"></div><span class="swatch-label">fundal</span><span class="swatch-hex">#f6f4ee</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#fffdf8;border-color:#d7dde3"></div><span class="swatch-label">suprafață</span><span class="swatch-hex">#fffdf8</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#1f5f91"></div><span class="swatch-label">accent</span><span class="swatch-hex">#1f5f91</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#b1502e"></div><span class="swatch-label">accent 2</span><span class="swatch-hex">#b1502e</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#1c2b3a"></div><span class="swatch-label">text</span><span class="swatch-hex">#1c2b3a</span></div>
+      </div>
+      <div class="pal" data-pal="copper">
+        <div class="swatch"><div class="swatch-chip" style="background:#10151a"></div><span class="swatch-label">fundal</span><span class="swatch-hex">#10151a</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#181f24"></div><span class="swatch-label">suprafață</span><span class="swatch-hex">#181f24</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#c97a4a"></div><span class="swatch-label">accent</span><span class="swatch-hex">#c97a4a</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#3f8f96"></div><span class="swatch-label">accent 2</span><span class="swatch-hex">#3f8f96</span></div>
+        <div class="swatch"><div class="swatch-chip" style="background:#eef1ef"></div><span class="swatch-label">text</span><span class="swatch-hex">#eef1ef</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>Cum aplicăm tema aleasă:</b> fiecare paletă de mai sus corespunde 1-la-1 cu variabilele CSS deja
+    folosite în <code>index.html</code> (<code>--bg, --surface, --navy, --amber, --green, --red</code> etc.) —
+    trecerea la altă temă înseamnă doar înlocuirea blocului <code>:root{'{'}...{'}'}</code>, fără nicio
+    modificare de structură. Culorile de stare (verde=finalizat, portocaliu=în lucru, roșu=urgent) rămân
+    consistente în toate cele 5 variante, ca să nu se schimbe înțelesul lor odată cu tema.
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var THEMES = {
+    midnight:  { name: 'Miez de Noapte',  mode: 'Dark'  },
+    steel:     { name: 'Oțel & Șantier',  mode: 'Dark'  },
+    concrete:  { name: 'Beton Deschis',   mode: 'Light' },
+    blueprint: { name: 'Plan Tehnic',     mode: 'Light' },
+    copper:    { name: 'Ardezie & Aramă', mode: 'Dark'  }
+  };
+
+  var device = document.getElementById('device');
+  var frameName = document.getElementById('frameThemeName');
+  var framePill = document.getElementById('frameModePill');
+  var picks = Array.prototype.slice.call(document.querySelectorAll('.pick'));
+  var pals = Array.prototype.slice.call(document.querySelectorAll('.pal'));
+
+  function setTheme(id){
+    var t = THEMES[id];
+    if (!t) return;
+    device.setAttribute('data-preview', id);
+    frameName.textContent = t.name;
+    framePill.textContent = t.mode;
+    picks.forEach(function(b){ b.setAttribute('aria-selected', String(b.getAttribute('data-theme-id') === id)); });
+    pals.forEach(function(p){ p.classList.toggle('show', p.getAttribute('data-pal') === id); });
+  }
+
+  picks.forEach(function(b){
+    b.addEventListener('click', function(){ setTheme(b.getAttribute('data-theme-id')); });
+  });
+
+  setTheme('midnight');
+})();
+</script>
