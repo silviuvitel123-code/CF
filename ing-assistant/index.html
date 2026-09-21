@@ -52,13 +52,34 @@
     --sans:'IBM Plex Sans', system-ui, sans-serif; --mono:'IBM Plex Mono', ui-monospace, monospace;
     --display:'Chakra Petch', var(--sans);
   }
+  /* "Muchie — Zi": the same flat, no-shadow, safety-orange identity, lit for
+     daytime work. The accent is burnt down from the dark theme's pure
+     #ff7a29 to #d9600f here specifically because it also doubles as TEXT
+     color (links, active tab, "Deschide") — the bright version fails AA
+     contrast on a light surface, the burnt one clears it. Switched manually
+     via the sidebar toggle (data-toggle-theme), never by prefers-color-scheme
+     — this app has no "follow system" mode, only an explicit user choice
+     persisted to localStorage, so there is deliberately no
+     @media(prefers-color-scheme) block here. */
+  :root[data-theme="light"]{
+    --bg:#f2f0eb; --surface:#ffffff; --surface-2:#eae7de;
+    --border:#ddd8cb; --border-strong:#c2bba8;
+    --ink:#211f1a; --ink-soft:#59544a; --ink-faint:#8c8574;
+    --navy:#d9600f; --navy-hover:#c1550c; --navy-soft:rgba(217,96,15,.12);
+    --amber:#a66a10; --amber-soft:rgba(166,106,16,.12); --amber-strong:#8f5a0d;
+    --green:#2f7d4f; --green-soft:rgba(47,125,79,.12);
+    --red:#c1402f; --red-soft:rgba(193,64,47,.12);
+    --gray-soft:rgba(0,0,0,.05);
+    --blue-soft:rgba(61,126,166,.16); --purple-soft:rgba(130,90,200,.14);
+  }
   * { box-sizing: border-box; }
   html, body { margin: 0; min-height: 100%; }
   /* Tells the browser its OWN chrome (native <select> popups, date pickers,
-     scrollbars, spell-check squiggles) should default to dark too — without
-     this, those bits of UI the page can't style directly stay light even
-     though every element below is explicitly dark. */
+     scrollbars, spell-check squiggles) which palette to default to — without
+     this, those bits of UI the page can't style directly stay on the wrong
+     one even though every element below switches correctly. */
   :root { color-scheme: dark; }
+  :root[data-theme="light"] { color-scheme: light; }
   /* Form controls don't inherit color/background from the page the way
      plain elements do — every browser's UA stylesheet gives them their own
      opaque default (usually white/black) unless told otherwise. Several
@@ -72,9 +93,9 @@
   input:disabled, select:disabled, textarea:disabled { opacity: .5; }
   body { font-family: var(--sans); color: var(--ink);
     background:
-      repeating-linear-gradient(0deg, rgba(255,150,90,.035) 0 1px, transparent 1px 46px),
-      repeating-linear-gradient(90deg, rgba(255,150,90,.035) 0 1px, transparent 1px 46px),
-      #101215;
+      repeating-linear-gradient(0deg, rgba(255,122,41,.035) 0 1px, transparent 1px 46px),
+      repeating-linear-gradient(90deg, rgba(255,122,41,.035) 0 1px, transparent 1px 46px),
+      var(--bg);
     background-attachment: fixed;
   }
   a { color: var(--navy); } a:hover { color: var(--navy-hover); }
@@ -132,6 +153,17 @@
   .user-name { font-size: 12.5px; font-weight: 600; color: var(--ink); line-height: 1.3; }
   .user-role { font-size: 11px; color: var(--ink-faint); }
 
+  .theme-switch-row { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 8px 12px; margin: 0 8px 4px; }
+  .theme-switch-label { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 500; color: var(--ink-soft); }
+  .theme-switch-label svg { color: var(--ink-faint); flex-shrink: 0; }
+  .theme-switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; padding: 0; cursor: pointer;
+    border: 1px solid var(--border-strong); border-radius: 100px; background: var(--surface-2); }
+  .theme-switch-knob { position: absolute; top: 1px; left: 1px; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--navy); color: var(--bg); display: flex; align-items: center; justify-content: center;
+    transition: transform .15s ease; }
+  :root[data-theme="light"] .theme-switch-knob { transform: translateX(18px); }
+
   /* main */
   .main { flex: 1 1 auto; padding: 26px 32px 40px; min-width: 0; }
   .main-inner { max-width: 1220px; }
@@ -164,7 +196,7 @@
     display: flex; flex-direction: column; cursor: pointer; position: relative;
     transition: border-color .12s ease, box-shadow .12s ease; }
   .card-del { position: absolute; top: 10px; right: 10px; z-index: 2; width: 28px; height: 28px; border-radius: 50%;
-    background: rgba(21,24,28,.85); display: flex; align-items: center; justify-content: center;
+    background: var(--surface-2); display: flex; align-items: center; justify-content: center;
     color: var(--ink-faint); cursor: pointer; }
   .card-del:hover { color: var(--red); background: var(--surface-2); }
   .dash-seeall { display: flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: var(--navy);
@@ -172,7 +204,7 @@
   .dash-seeall:hover { color: var(--navy-hover); }
   .card:hover { border-color: var(--navy); }
   .thumb { height: 108px; position: relative; background-image:
-      linear-gradient(rgba(21,24,28,.94), rgba(21,24,28,.94)),
+      linear-gradient(var(--surface-2), var(--surface-2)),
       linear-gradient(rgba(255,122,41,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,122,41,.1) 1px, transparent 1px);
     background-size: 100% 100%, 16px 16px, 16px 16px; display: flex; align-items: center; justify-content: center; }
   .thumb svg { color: var(--navy-hover); opacity: 0.7; }
@@ -236,7 +268,7 @@
   th.name-h { text-align: left; padding-left: 14px; background: var(--surface-2); }
   .daynum { font-family: var(--mono); font-size: 12.5px; }
   .daydow { font-size: 9.5px; color: var(--ink-faint); font-weight: 500; margin-top: 1px; }
-  th.weekend { background: #12162a; }
+  th.weekend { background: rgba(255,122,41,.08); }
   td.name { padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--border); min-width: 168px; }
   td.name b { display: block; font-size: 12.5px; font-weight: 600; }
   td.name span { display: block; font-size: 10.5px; color: var(--ink-faint); margin-top: 1px; }
@@ -581,7 +613,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b63-2026-09-21";
+  var BUILD = "b64-2026-09-21";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -590,6 +622,7 @@
 
   var state = {
     view: "dashboard", selectedSiteId: null, activeTab: "date-santier", globalSiteId: null, sidebarCollapsed: false,
+    theme: loadStoredTheme(),
     pontaj: {
       year: todayD.getFullYear(),
       month: todayD.getMonth() + 1,
@@ -624,6 +657,12 @@
     },
     sidebarNameEdit: { siteId: null, draft: "" }
   };
+
+  // Applied synchronously right after `state` exists (before the first
+  // render() call, which only happens once data loads) so the page never
+  // flashes dark-then-light or vice versa on a reload with a saved
+  // preference.
+  applyTheme(state.theme);
 
   // --- șantiere: persisted in Supabase, loaded via loadAllData() below ---
   var sites = [];
@@ -2133,7 +2172,9 @@
       docLines: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
       copy: '<rect x="9" y="9" width="11" height="11" rx="1.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
       undo: '<path d="M7 6 3 10l4 4"/><path d="M3 10h10.5a5.5 5.5 0 0 1 0 11H11"/>',
-      unmerge: '<rect x="3" y="4" width="8" height="16" rx="1"/><rect x="13" y="4" width="8" height="16" rx="1"/>'
+      unmerge: '<rect x="3" y="4" width="8" height="16" rx="1"/><rect x="13" y="4" width="8" height="16" rx="1"/>',
+      sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>',
+      moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>'
     };
     return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' + icons[name] + '</svg>';
   }
@@ -2189,6 +2230,12 @@
           '<div class="nav-item">' + icon("chart") + 'Rapoarte</div>' +
         '</div>' +
         '<div class="spacer"></div>' +
+        '<div class="theme-switch-row">' +
+          '<span class="theme-switch-label">' + icon(state.theme === "light" ? "sun" : "moon", 14) + 'Temă ' + (state.theme === "light" ? "deschisă" : "întunecată") + '</span>' +
+          '<button type="button" class="theme-switch" data-toggle-theme="1" role="switch" aria-checked="' + (state.theme === "light" ? "true" : "false") + '" title="Comută tema deschisă/întunecată">' +
+            '<span class="theme-switch-knob">' + icon(state.theme === "light" ? "sun" : "moon", 11) + '</span>' +
+          '</button>' +
+        '</div>' +
         '<div class="nav" style="padding-top:0"><div class="nav-item">' + icon("gear") + 'Setări</div></div>' +
         '<div class="user-box"><div class="avatar">IP</div><div><div class="user-name">Inginer Popescu</div><div class="user-role">Inginer șef șantier</div></div>' +
           '<span class="logout-link" data-logout="1" title="Ieși din cont"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>' +
@@ -3049,6 +3096,30 @@
     }
   }
 
+  // Theme is an explicit user choice (never prefers-color-scheme) persisted
+  // to localStorage — a private browser or blocked storage just falls back
+  // to dark every load rather than breaking, per the same
+  // read/write-wrapped-in-try/catch rule as every other localStorage use.
+  // The key is a literal in both functions (not a shared `var`, which would
+  // only be hoisted as undefined) because loadStoredTheme() runs from inside
+  // the state object literal, before this script has executed as far as any
+  // `var =` assignment below it.
+  function loadStoredTheme() {
+    try {
+      return localStorage.getItem("ing-assistant-theme") === "light" ? "light" : "dark";
+    } catch (e) { return "dark"; }
+  }
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", theme === "light" ? "#f2f0eb" : "#101215");
+  }
+  function toggleTheme() {
+    state.theme = state.theme === "light" ? "dark" : "light";
+    applyTheme(state.theme);
+    try { localStorage.setItem("ing-assistant-theme", state.theme); } catch (e) {}
+  }
+
   // Sidebar collapse/expand: width is measured before and after the render
   // (rather than relying on a CSS transition, which can't animate a full
   // innerHTML rebuild — the new sidebar node just appears already at its
@@ -3136,7 +3207,7 @@
       "[data-site-subtab],[data-progres-subtab],[data-save-doc-valoare],[data-remove-doc-file],[data-add-aviz],[data-remove-aviz]," +
       "[data-add-gendoc],[data-remove-gendoc]," +
       "[data-add-row],[data-add-group-row],[data-remove-row],[data-remove-col],[data-toggle-addcol],[data-cancel-addcol],[data-submit-addcol]," +
-      "[data-toggle-color],[data-pick-color],[data-toggle-sidebar]," +
+      "[data-toggle-color],[data-pick-color],[data-toggle-sidebar],[data-toggle-theme]," +
       "[data-toggle-collapse-group],[data-duplicate-row],[data-export-progres-csv],[data-print-progres]," +
       "[data-toggle-cell-formula],[data-formula-save],[data-formula-cancel],[data-formula-clear]," +
       "[data-merge-cells-confirm],[data-merge-cells-cancel],[data-unmerge-cell]," +
@@ -3226,6 +3297,7 @@
       else if (t.dataset.saveCompany) { saveCompanyFromInputs(); state.pontaj.editingCompany = false; }
       else if (t.dataset.logout) { doLogout(); return; }
       else if (t.dataset.toggleSidebar) { toggleSidebarCollapsed(); needsRender = false; }
+      else if (t.dataset.toggleTheme) { toggleTheme(); }
       else if (t.dataset.toggleSelectMode) {
         state.pontaj.selectMode = !state.pontaj.selectMode;
         state.pontaj.selectedCells = [];
