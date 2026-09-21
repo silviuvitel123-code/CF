@@ -1,0 +1,497 @@
+<title>Oțel & Șantier — variații</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  /* ============ Chrome tokens (the picker tool itself) ============ */
+  :root{
+    --c-bg:#f6f5f2; --c-panel:#ffffff; --c-panel-2:#f1efe9; --c-line:#e3e0d6;
+    --c-ink:#201f1c; --c-ink-soft:#5c5950; --c-ink-faint:#928d80;
+    --c-accent:#3a4a63; --c-accent-ink:#ffffff;
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, monospace;
+    --display:'Chakra Petch', var(--sans);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --c-bg:#0d0f12; --c-panel:#15181c; --c-panel-2:#1b1f24; --c-line:#272c32;
+      --c-ink:#ecebe7; --c-ink-soft:#a9a79f; --c-ink-faint:#6f6d66;
+      --c-accent:#e08a4f; --c-accent-ink:#0d0f12;
+    }
+  }
+  :root[data-theme="dark"]{
+    --c-bg:#0d0f12; --c-panel:#15181c; --c-panel-2:#1b1f24; --c-line:#272c32;
+    --c-ink:#ecebe7; --c-ink-soft:#a9a79f; --c-ink-faint:#6f6d66;
+    --c-accent:#e08a4f; --c-accent-ink:#0d0f12;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body{ background: var(--c-bg); color: var(--c-ink); font-family: var(--sans); padding-inline: 20px; padding-block: 28px 60px; }
+  h1,h2,h3{ font-family: var(--display); text-wrap: balance; margin: 0; }
+  p{ margin: 0; }
+  code{ font-family: var(--mono); background: var(--c-panel-2); padding: 1px 5px; border-radius: 4px; font-size: .93em; }
+  .wrap{ max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; }
+
+  .head{ display: flex; align-items: flex-start; gap: 16px; }
+  .head-mark{ width: 44px; height: 44px; border-radius: 11px; background: var(--c-accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .head-mark svg{ color: var(--c-accent-ink); }
+  .head h1{ font-size: 23px; font-weight: 600; letter-spacing: .01em; }
+  .head p{ color: var(--c-ink-soft); font-size: 14.5px; margin-top: 5px; max-width: 66ch; line-height: 1.55; }
+  .head .head-tag{ display: inline-block; margin-top: 9px; font-family: var(--mono); font-size: 11px; letter-spacing: .04em; color: var(--c-ink-faint); background: var(--c-panel-2); border: 1px solid var(--c-line); padding: 4px 9px; border-radius: 100px; }
+
+  /* ============ Picker ============ */
+  .picker{ display: grid; grid-template-columns: repeat(auto-fill, minmax(212px, 1fr)); gap: 10px; }
+  .pick{
+    text-align: left; cursor: pointer; border-radius: 13px; padding: 14px 15px;
+    background: var(--c-panel); border: 1.5px solid var(--c-line); color: var(--c-ink);
+    font-family: inherit; display: flex; flex-direction: column; gap: 10px;
+  }
+  .pick:hover{ border-color: var(--c-accent); }
+  .pick:focus-visible{ outline: 2px solid var(--c-accent); outline-offset: 2px; }
+  .pick[aria-selected="true"]{ border-color: var(--c-accent); box-shadow: 0 0 0 1px var(--c-accent) inset; }
+  .pick-top{ display: flex; align-items: center; gap: 8px; }
+  .pick-dot{ width: 18px; height: 18px; border-radius: 6px; border: 1px solid rgba(0,0,0,.15); flex-shrink: 0; }
+  .pick-name{ font-weight: 600; font-size: 14px; }
+  .pick-desc{ font-size: 11.5px; color: var(--c-ink-soft); line-height: 1.4; }
+  .axes{ display: flex; flex-direction: column; gap: 3px; margin-top: 2px; }
+  .axis-row{ display: grid; grid-template-columns: 60px 1fr; align-items: center; gap: 7px; }
+  .axis-label{ font-family: var(--mono); font-size: 9px; letter-spacing: .02em; color: var(--c-ink-faint); text-transform: uppercase; }
+  .axis-dots{ display: flex; gap: 3px; }
+  .axis-dot{ width: 7px; height: 7px; border-radius: 50%; background: var(--c-line); }
+  .axis-dot.on{ background: var(--c-accent); }
+
+  /* ============ Stage / device frame ============ */
+  .stage-bar{ display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .stage-bar h2{ font-size: 15px; font-weight: 600; }
+  .frame{ border-radius: 16px; border: 1px solid var(--c-line); overflow: hidden; background: var(--c-panel); }
+  .frame-top{ display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--c-line); background: var(--c-panel-2); font-family: var(--mono); font-size: 11.5px; color: var(--c-ink-faint); }
+  .frame-top .frame-theme-name{ color: var(--c-ink); font-weight: 600; font-family: var(--sans); font-size: 13px; }
+  .frame-top .frame-mode-pill{ padding: 3px 9px; border-radius: 100px; border: 1px solid var(--c-line); letter-spacing: .05em; }
+
+  /* ============ THE DEVICE ============ */
+  .device{ display: flex; min-height: 560px; background: var(--p-bg); color: var(--p-ink); font-family: var(--sans); transition: background .15s ease; }
+
+  .d-sidebar{ width: 208px; flex-shrink: 0; background: var(--p-surface); border-right: 1px solid var(--p-border); display: flex; flex-direction: column; }
+  .d-brand{ display: flex; align-items: center; gap: 9px; padding: var(--sp-brand, 16px 14px); border-bottom: 1px solid var(--p-border); }
+  .d-brand-mark{ width: 26px; height: 26px; border-radius: 7px; background: var(--p-accent); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow: var(--glow-sm); }
+  .d-brand-mark svg{ color: var(--p-accent-ink); }
+  .d-brand-name{ font-family: var(--display); font-weight: 600; font-size: 13.5px; letter-spacing: .01em; }
+  .d-brand-sub{ font-family: var(--mono); font-size: 9.5px; color: var(--p-ink-faint); margin-top: 1px; }
+
+  .d-nav{ padding: var(--sp-nav, 10px 8px); display: flex; flex-direction: column; gap: 1px; }
+  .d-nav-item{ display: flex; align-items: center; gap: 9px; padding: var(--sp-navitem, 8px 10px); border-radius: 8px; font-size: 12.5px; font-weight: 500; color: var(--p-ink-soft); position: relative; }
+  .d-nav-item svg{ width: 15px; height: 15px; flex-shrink: 0; }
+  .d-nav-item.active{ background: var(--p-accent-soft); color: var(--p-ink); font-weight: 600; }
+  .d-nav-item.active::before{ content: ''; position: absolute; left: 0; top: 3px; bottom: 3px; width: 3px; border-radius: 3px; background: var(--p-accent); box-shadow: var(--glow-xs); }
+
+  .d-sites{ margin-top: 6px; padding: 0 8px; display: flex; flex-direction: column; gap: 1px; flex: 1; overflow: hidden; }
+  .d-sites-label{ font-family: var(--mono); font-size: 9.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--p-ink-faint); padding: 10px 10px 5px; }
+  .d-site-row{ display: flex; align-items: center; gap: 8px; padding: var(--sp-siterow, 7px 10px); border-radius: 8px; font-size: 12px; color: var(--p-ink-soft); }
+  .d-site-row.active{ background: var(--p-surface-2); color: var(--p-ink); font-weight: 600; }
+  .d-site-dot{ width: 6px; height: 6px; border-radius: 50%; background: var(--p-good); flex-shrink: 0; }
+
+  .d-user{ margin: 10px; padding: 9px 10px; border-radius: 9px; background: var(--p-surface-2); display: flex; align-items: center; gap: 8px; }
+  .d-user-avatar{ width: 22px; height: 22px; border-radius: 50%; background: var(--p-accent2); flex-shrink: 0; }
+  .d-user-name{ font-size: 11px; font-weight: 600; }
+  .d-user-role{ font-size: 9.5px; color: var(--p-ink-faint); }
+
+  .d-main{ flex: 1; min-width: 0; padding: var(--sp-main, 20px 22px 26px); display: flex; flex-direction: column; gap: var(--sp-section-gap, 18px); }
+  .d-pagehead{ display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .d-pagehead h3{ font-family: var(--display); font-size: 17px; font-weight: 600; }
+  .d-pagehead .d-sub{ font-size: 11.5px; color: var(--p-ink-faint); margin-top: 2px; }
+
+  .d-btn{ font-family: inherit; font-size: 12px; font-weight: 600; border-radius: var(--radius-sm, 8px); padding: 8px 14px; border: 1px solid transparent; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: transform .1s ease, box-shadow .15s ease; }
+  .d-btn-primary{ background: var(--p-accent); color: var(--p-accent-ink); box-shadow: var(--shadow-btn); }
+  .d-btn-ghost{ background: var(--p-surface); border-color: var(--p-border-strong); color: var(--p-ink); }
+
+  .d-stats{ display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-gap, 10px); }
+  .d-stat{ background: var(--p-surface); border: 1px solid var(--p-border); border-radius: var(--radius-card, 12px); padding: var(--sp-card, 13px 14px); position: relative; overflow: hidden; box-shadow: var(--shadow-card); }
+  .d-stat-num{ font-family: var(--mono); font-size: var(--fs-stat, 21px); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .d-stat-label{ font-size: 10.5px; color: var(--p-ink-faint); margin-top: 3px; }
+
+  .d-cards{ display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-gap, 10px); }
+  .d-card{ background: var(--p-surface); border: 1px solid var(--p-border); border-radius: var(--radius-card, 12px); padding: var(--sp-card, 14px 15px); display: flex; flex-direction: column; gap: var(--sp-card-inner, 9px); position: relative; overflow: hidden; box-shadow: var(--shadow-card); transition: box-shadow .15s ease, border-color .15s ease; }
+  .d-card:hover{ border-color: var(--p-accent); box-shadow: var(--shadow-card-hover); }
+  .d-card-head{ display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .d-card-name{ font-weight: 600; font-size: 13px; }
+  .d-card-loc{ font-size: 10.5px; color: var(--p-ink-faint); margin-top: 2px; }
+  .d-badge{ font-family: var(--mono); font-size: 9.5px; font-weight: 600; letter-spacing: .03em; padding: 3px 8px; border-radius: 100px; white-space: nowrap; }
+  .d-badge-good{ background: var(--p-good-soft); color: var(--p-good); }
+  .d-badge-warn{ background: var(--p-warn-soft); color: var(--p-warn); }
+  .d-track{ height: 5px; border-radius: 100px; background: var(--p-surface-2); overflow: hidden; }
+  .d-track-fill{ height: 100%; border-radius: 100px; background: var(--p-accent); box-shadow: var(--glow-track); }
+  .d-card-foot{ display: flex; align-items: center; justify-content: space-between; font-size: 10.5px; color: var(--p-ink-faint); font-family: var(--mono); }
+
+  .d-panel{ background: var(--p-surface); border: 1px solid var(--p-border); border-radius: var(--radius-card, 12px); overflow: hidden; box-shadow: var(--shadow-card); }
+  .d-panel-head{ display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: var(--sp-panelhead, 12px 15px); border-bottom: 1px solid var(--p-border); flex-wrap: wrap; }
+  .d-panel-head h4{ font-size: 12.5px; font-weight: 600; }
+  .d-table{ width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  .d-table th{ text-align: left; font-weight: 600; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; color: var(--p-ink-faint); background: var(--p-surface-2); padding: var(--sp-th, 8px 15px); }
+  .d-table td{ padding: var(--sp-td, 9px 15px); border-top: 1px solid var(--p-border); }
+  .d-table td.mono{ font-family: var(--mono); }
+
+  /* ============ Palette / axis readout ============ */
+  .readout{ display: flex; flex-wrap: wrap; gap: 18px; }
+  .readout-col{ flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 8px; }
+  .readout-col h3{ font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--c-ink-faint); font-family: var(--mono); font-weight: 600; }
+  .swatch{ display: flex; align-items: center; gap: 7px; padding: 6px 10px 6px 6px; border-radius: 9px; background: var(--c-panel); border: 1px solid var(--c-line); font-family: var(--mono); font-size: 10.5px; }
+  .swatch-chip{ width: 20px; height: 20px; border-radius: 6px; border: 1px solid rgba(0,0,0,.12); flex-shrink: 0; }
+  .swatch-label{ color: var(--c-ink-soft); }
+  .swatch-hex{ color: var(--c-ink-faint); margin-left: auto; }
+  .pal{ display: none; flex-wrap: wrap; gap: 8px; align-content: flex-start; }
+  .pal.show{ display: flex; }
+  .axes-full{ display: none; flex-direction: column; gap: 10px; }
+  .axes-full.show{ display: flex; }
+  .axis-full-row{ display: grid; grid-template-columns: 90px 1fr auto; align-items: center; gap: 10px; }
+  .axis-full-label{ font-family: var(--mono); font-size: 10.5px; color: var(--c-ink-soft); }
+  .axis-full-track{ display: flex; gap: 4px; }
+  .axis-full-dot{ flex: 1; height: 8px; border-radius: 4px; background: var(--c-line); }
+  .axis-full-dot.on{ background: var(--c-accent); }
+  .axis-full-note{ font-family: var(--mono); font-size: 9.5px; color: var(--c-ink-faint); white-space: nowrap; }
+
+  .foot{ font-size: 12px; color: var(--c-ink-faint); line-height: 1.6; border-top: 1px solid var(--c-line); padding-top: 18px; }
+  .foot b{ color: var(--c-ink-soft); font-weight: 600; }
+
+  @media (max-width: 760px){ .d-cards, .d-stats{ grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 620px){
+    body{ padding-inline: 14px; }
+    .device{ flex-direction: column; min-height: 0; }
+    .d-sidebar{ width: 100%; flex-direction: row; align-items: center; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--p-border); }
+    .d-brand{ border-bottom: none; border-right: 1px solid var(--p-border); flex-shrink: 0; }
+    .d-nav{ flex-direction: row; padding: 8px; }
+    .d-nav-item span{ display: none; }
+    .d-sites, .d-user{ display: none; }
+    .d-main{ padding: 16px; }
+    .d-stats{ grid-template-columns: 1fr 1fr; }
+    .d-cards{ grid-template-columns: 1fr; }
+    .d-table{ display: block; overflow-x: auto; }
+    .axis-row{ grid-template-columns: 50px 1fr; }
+  }
+  @media (max-width: 420px){ .d-stats{ grid-template-columns: 1fr; } }
+</style>
+
+<!-- ============ 5 variations of Oțel & Șantier ============ -->
+<style>
+  [data-preview="muchie"]{
+    --p-bg:#101215; --p-surface:#17191d; --p-surface-2:#1d2024; --p-border:#262a2f; --p-border-strong:#3a3f46;
+    --p-ink:#eef0f2; --p-ink-soft:#b3b9bf; --p-ink-faint:#767b81;
+    --p-accent:#ff7a29; --p-accent-hover:#ff9552; --p-accent-soft:rgba(255,122,41,.16); --p-accent-ink:#1a1107;
+    --p-accent2:#4f9bc9; --p-accent2-soft:rgba(79,155,201,.14);
+    --p-warn:#f2c14e; --p-warn-soft:rgba(242,193,78,.14);
+    --p-danger:#ef5b5b; --p-danger-soft:rgba(239,91,91,.14);
+    --p-good:#59c27d; --p-good-soft:rgba(89,194,125,.14);
+    --shadow-card:none; --shadow-card-hover:none; --shadow-btn:none; --glow-sm:none; --glow-xs:none; --glow-track:none;
+    --radius-card:8px; --radius-sm:6px;
+    --sp-card:9px 11px; --sp-card-inner:6px; --sp-gap:8px; --sp-main:14px 16px 18px; --sp-section-gap:12px;
+    --sp-brand:11px 12px; --sp-nav:7px 6px; --sp-navitem:6px 9px; --sp-siterow:5px 9px; --sp-panelhead:9px 12px;
+    --sp-th:6px 12px; --sp-td:6px 12px; --fs-stat:18px;
+  }
+  [data-preview="standard"]{
+    --p-bg:#15181c; --p-surface:#1d2126; --p-surface-2:#242830; --p-border:#2c313a; --p-border-strong:#454c58;
+    --p-ink:#eef0f2; --p-ink-soft:#b9bfc7; --p-ink-faint:#7c838d;
+    --p-accent:#ff7a29; --p-accent-hover:#ff9552; --p-accent-soft:rgba(255,122,41,.18); --p-accent-ink:#1a1107;
+    --p-accent2:#4f9bc9; --p-accent2-soft:rgba(79,155,201,.16);
+    --p-warn:#f2c14e; --p-warn-soft:rgba(242,193,78,.16);
+    --p-danger:#ef5b5b; --p-danger-soft:rgba(239,91,91,.16);
+    --p-good:#59c27d; --p-good-soft:rgba(89,194,125,.16);
+    --shadow-card:none; --shadow-card-hover:0 10px 30px -14px rgba(255,122,41,.4); --shadow-btn:0 6px 18px -6px rgba(255,122,41,.5);
+    --glow-sm:0 0 16px rgba(255,122,41,.35); --glow-xs:none; --glow-track:none;
+    --radius-card:12px; --radius-sm:8px;
+    --sp-card:13px 14px; --sp-card-inner:9px; --sp-gap:10px; --sp-main:20px 22px 26px; --sp-section-gap:18px;
+    --sp-brand:16px 14px; --sp-nav:10px 8px; --sp-navitem:8px 10px; --sp-siterow:7px 10px; --sp-panelhead:12px 15px;
+    --sp-th:8px 15px; --sp-td:9px 15px; --fs-stat:21px;
+  }
+  [data-preview="incandescent"]{
+    --p-bg:#0e1013; --p-surface:#171a1e; --p-surface-2:#1e2226; --p-border:#282d33; --p-border-strong:#454c54;
+    --p-ink:#f1f2ef; --p-ink-soft:#bcc2c5; --p-ink-faint:#80868b;
+    --p-accent:#ff6a1a; --p-accent-hover:#ff8a42; --p-accent-soft:rgba(255,106,26,.22); --p-accent-ink:#180d05;
+    --p-accent2:#59a8d6; --p-accent2-soft:rgba(89,168,214,.18);
+    --p-warn:#f2c14e; --p-warn-soft:rgba(242,193,78,.18);
+    --p-danger:#f05a52; --p-danger-soft:rgba(240,90,82,.18);
+    --p-good:#54c987; --p-good-soft:rgba(84,201,135,.18);
+    --shadow-card:0 14px 34px -18px rgba(0,0,0,.55); --shadow-card-hover:0 24px 50px -18px rgba(255,106,26,.4); --shadow-btn:0 10px 26px -8px rgba(255,106,26,.6);
+    --glow-sm:0 0 22px rgba(255,106,26,.5); --glow-xs:0 0 10px rgba(255,106,26,.55); --glow-track:0 0 8px rgba(255,106,26,.6);
+    --radius-card:14px; --radius-sm:9px;
+    --sp-card:16px 17px; --sp-card-inner:11px; --sp-gap:12px; --sp-main:24px 26px 30px; --sp-section-gap:22px;
+    --sp-brand:18px 16px; --sp-nav:12px 9px; --sp-navitem:9px 11px; --sp-siterow:8px 11px; --sp-panelhead:14px 17px;
+    --sp-th:9px 17px; --sp-td:11px 17px; --fs-stat:23px;
+  }
+  [data-preview="oxidat"]{
+    --p-bg:#1c2023; --p-surface:#252a2e; --p-surface-2:#2c3236; --p-border:#363d43; --p-border-strong:#4d565d;
+    --p-ink:#eceeec; --p-ink-soft:#b7bcbc; --p-ink-faint:#868c8c;
+    --p-accent:#d9793f; --p-accent-hover:#e8925c; --p-accent-soft:rgba(217,121,63,.16); --p-accent-ink:#180f08;
+    --p-accent2:#5c92a8; --p-accent2-soft:rgba(92,146,168,.14);
+    --p-warn:#dcb15a; --p-warn-soft:rgba(220,177,90,.14);
+    --p-danger:#cf6a5e; --p-danger-soft:rgba(207,106,94,.14);
+    --p-good:#6cae7e; --p-good-soft:rgba(108,174,126,.14);
+    --shadow-card:none; --shadow-card-hover:0 6px 18px -10px rgba(0,0,0,.3); --shadow-btn:0 4px 12px -4px rgba(217,121,63,.3);
+    --glow-sm:0 0 10px rgba(217,121,63,.22); --glow-xs:none; --glow-track:none;
+    --radius-card:13px; --radius-sm:9px;
+    --sp-card:18px 19px; --sp-card-inner:12px; --sp-gap:13px; --sp-main:26px 28px 32px; --sp-section-gap:24px;
+    --sp-brand:19px 17px; --sp-nav:13px 10px; --sp-navitem:10px 12px; --sp-siterow:9px 12px; --sp-panelhead:15px 18px;
+    --sp-th:10px 18px; --sp-td:12px 18px; --fs-stat:21px;
+  }
+  [data-preview="precizie"]{
+    --p-bg:#131619; --p-surface:#191d21; --p-surface-2:#1f242a; --p-border:#262b31; --p-border-strong:#3c434b;
+    --p-ink:#eef0f2; --p-ink-soft:#b3bac0; --p-ink-faint:#767e85;
+    --p-accent:#ff7a29; --p-accent-hover:#ff9552; --p-accent-soft:rgba(255,122,41,.16); --p-accent-ink:#1a1107;
+    --p-accent2:#4f9bc9; --p-accent2-soft:rgba(79,155,201,.14);
+    --p-warn:#f2c14e; --p-warn-soft:rgba(242,193,78,.14);
+    --p-danger:#ef5b5b; --p-danger-soft:rgba(239,91,91,.14);
+    --p-good:#59c27d; --p-good-soft:rgba(89,194,125,.14);
+    --shadow-card:none; --shadow-card-hover:none; --shadow-btn:none; --glow-sm:none; --glow-xs:none; --glow-track:none;
+    --radius-card:7px; --radius-sm:5px;
+    --sp-card:7px 9px; --sp-card-inner:5px; --sp-gap:6px; --sp-main:11px 13px 14px; --sp-section-gap:9px;
+    --sp-brand:9px 10px; --sp-nav:6px 5px; --sp-navitem:5px 8px; --sp-siterow:4px 8px; --sp-panelhead:7px 10px;
+    --sp-th:5px 10px; --sp-td:5px 10px; --fs-stat:16px;
+  }
+</style>
+
+<div class="wrap">
+
+  <div class="head">
+    <div class="head-mark">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/><path d="M9 12h6"/></svg>
+    </div>
+    <div>
+      <h1>Oțel & Șantier — 5 variații</h1>
+      <p>Ai ales direcția — acum reglăm cadranele ei: cât de adâncă e umbra, cât de întunecat e fundalul, cât de viu e portocaliul, cât de dens e ecranul. Fiecare opțiune de mai jos e o combinație reală, nu doar un cursor mutat.</p>
+      <span class="head-tag">bazat pe tema live din aplicație</span>
+    </div>
+  </div>
+
+  <div class="picker" role="tablist" aria-label="Alege o variație">
+    <button class="pick" data-theme-id="muchie" role="tab" aria-selected="false">
+      <div class="pick-top"><div class="pick-dot" style="background:#101215"></div><div class="pick-name">Muchie</div></div>
+      <div class="pick-desc">Fără umbre — doar contur curat. Cea mai compactă și mai rapidă la ochi.</div>
+      <div class="axes" data-axes="1,4,4,4"></div>
+    </button>
+    <button class="pick" data-theme-id="standard" role="tab" aria-selected="true">
+      <div class="pick-top"><div class="pick-dot" style="background:#15181c"></div><div class="pick-name">Standard</div></div>
+      <div class="pick-desc">Ce rulează acum în aplicație — reperul față de care se compară restul.</div>
+      <div class="axes" data-axes="3,3,4,3"></div>
+    </button>
+    <button class="pick" data-theme-id="incandescent" role="tab" aria-selected="false">
+      <div class="pick-top"><div class="pick-dot" style="background:#0e1013"></div><div class="pick-name">Incandescent</div></div>
+      <div class="pick-desc">Fundal cel mai închis, glow puternic pe portocaliu — ca metalul topit. Impact maxim.</div>
+      <div class="axes" data-axes="5,5,5,2"></div>
+    </button>
+    <button class="pick" data-theme-id="oxidat" role="tab" aria-selected="false">
+      <div class="pick-top"><div class="pick-dot" style="background:#1c2023"></div><div class="pick-name">Oxidat</div></div>
+      <div class="pick-desc">Portocaliu ars, fundal mai deschis, spațiat — calm, pentru ore lungi la birou.</div>
+      <div class="axes" data-axes="2,2,1,1"></div>
+    </button>
+    <button class="pick" data-theme-id="precizie" role="tab" aria-selected="false">
+      <div class="pick-top"><div class="pick-dot" style="background:#131619"></div><div class="pick-name">Precizie</div></div>
+      <div class="pick-desc">Optimizat pentru densitate — rânduri și carduri stranse, cât mai multe date vizibile.</div>
+      <div class="axes" data-axes="1,3,4,5"></div>
+    </button>
+  </div>
+
+  <div>
+    <div class="stage-bar">
+      <h2>Previzualizare live</h2>
+    </div>
+    <div class="frame" style="margin-top:10px">
+      <div class="frame-top">
+        <span class="frame-theme-name" id="frameThemeName">Standard</span>
+        <span class="frame-mode-pill" id="frameModePill">Dark</span>
+      </div>
+
+      <div class="device" data-preview="standard" id="device">
+        <div class="d-sidebar">
+          <div class="d-brand">
+            <div class="d-brand-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/><path d="M9 12h6"/></svg></div>
+            <div><div class="d-brand-name">Ing. Assistant</div><div class="d-brand-sub">build b62</div></div>
+          </div>
+          <div class="d-nav">
+            <div class="d-nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg><span>Dashboard</span></div>
+            <div class="d-nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 9h1M9 13h1M14 9h1M14 13h1"/></svg><span>Șantiere</span></div>
+            <div class="d-nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span>Pontaj</span></div>
+            <div class="d-nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span>Rapoarte</span></div>
+          </div>
+          <div class="d-sites">
+            <div class="d-sites-label">Șantiere</div>
+            <div class="d-site-row active"><span class="d-site-dot"></span>Stăuceni</div>
+            <div class="d-site-row"><span class="d-site-dot" style="background:var(--p-warn)"></span>Roman, Victoriei</div>
+            <div class="d-site-row"><span class="d-site-dot"></span>Botoșani Nord</div>
+          </div>
+          <div class="d-user"><div class="d-user-avatar"></div><div><div class="d-user-name">S. Vițel</div><div class="d-user-role">Diriginte șantier</div></div></div>
+        </div>
+
+        <div class="d-main">
+          <div class="d-pagehead">
+            <div><h3>Stăuceni</h3><div class="d-sub">Modernizare și extindere rețea de alimentare cu apă și canalizare</div></div>
+            <div style="display:flex;gap:8px">
+              <button class="d-btn d-btn-ghost">Adaugă tronson</button>
+              <button class="d-btn d-btn-primary">Generează PV</button>
+            </div>
+          </div>
+
+          <div class="d-stats">
+            <div class="d-stat"><div class="d-stat-num">3</div><div class="d-stat-label">Șantiere active</div></div>
+            <div class="d-stat"><div class="d-stat-num">18</div><div class="d-stat-label">Tronsoane în lucru</div></div>
+            <div class="d-stat"><div class="d-stat-num">47</div><div class="d-stat-label">PV-uri generate</div></div>
+            <div class="d-stat"><div class="d-stat-num">12</div><div class="d-stat-label">Muncitori pontați azi</div></div>
+          </div>
+
+          <div class="d-cards">
+            <div class="d-card">
+              <div class="d-card-head"><div><div class="d-card-name">Stăuceni</div><div class="d-card-loc">Botoșani</div></div><span class="d-badge d-badge-warn">În lucru</span></div>
+              <div class="d-track"><div class="d-track-fill" style="width:68%"></div></div>
+              <div class="d-card-foot"><span>18 tronsoane</span><span>68%</span></div>
+            </div>
+            <div class="d-card">
+              <div class="d-card-head"><div><div class="d-card-name">Roman</div><div class="d-card-loc">Neamț</div></div><span class="d-badge d-badge-good">Finalizat</span></div>
+              <div class="d-track"><div class="d-track-fill" style="width:100%"></div></div>
+              <div class="d-card-foot"><span>9 tronsoane</span><span>100%</span></div>
+            </div>
+            <div class="d-card">
+              <div class="d-card-head"><div><div class="d-card-name">Botoșani Nord</div><div class="d-card-loc">Botoșani</div></div><span class="d-badge d-badge-warn">În lucru</span></div>
+              <div class="d-track"><div class="d-track-fill" style="width:24%"></div></div>
+              <div class="d-card-foot"><span>6 tronsoane</span><span>24%</span></div>
+            </div>
+          </div>
+
+          <div class="d-panel">
+            <div class="d-panel-head"><h4>Tronsoane — apă (CD)</h4><span class="frame-mode-pill" style="font-family:var(--mono);font-size:10px">3 din 18</span></div>
+            <div style="overflow-x:auto">
+            <table class="d-table">
+              <thead><tr><th>Cod</th><th>Specificație</th><th>Lungime</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">CD5</td><td>PEHD-RC, PN 10, DN110</td><td class="mono">348 m</td><td><span class="d-badge d-badge-good">Verificat</span></td></tr>
+                <tr><td class="mono">CM2</td><td>PVC, SN8, DN250</td><td class="mono">497 m</td><td><span class="d-badge d-badge-warn">În lucru</span></td></tr>
+                <tr><td class="mono">CR1</td><td>PEHD-RC, PN 10, DN110</td><td class="mono">1729 m</td><td><span class="d-badge d-badge-warn">În lucru</span></td></tr>
+              </tbody>
+            </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="stage-bar"><h2>Ce s-a schimbat exact</h2></div>
+    <div class="readout" style="margin-top:10px">
+      <div class="readout-col">
+        <h3>Cele 4 cadrane</h3>
+        <div class="axes-full show" data-axesfull="standard">
+          <div class="axis-full-row"><span class="axis-full-label">Umbre</span><div class="axis-full-track"></div><span class="axis-full-note"></span></div>
+          <div class="axis-full-row"><span class="axis-full-label">Contrast</span><div class="axis-full-track"></div><span class="axis-full-note"></span></div>
+          <div class="axis-full-row"><span class="axis-full-label">Saturație</span><div class="axis-full-track"></div><span class="axis-full-note"></span></div>
+          <div class="axis-full-row"><span class="axis-full-label">Densitate</span><div class="axis-full-track"></div><span class="axis-full-note"></span></div>
+        </div>
+      </div>
+      <div class="readout-col">
+        <h3>Paleta</h3>
+        <div class="pal" data-pal="muchie"></div>
+        <div class="pal show" data-pal="standard"></div>
+        <div class="pal" data-pal="incandescent"></div>
+        <div class="pal" data-pal="oxidat"></div>
+        <div class="pal" data-pal="precizie"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>Cum aplicăm varianta aleasă:</b> fiecare din cele 5 e doar o rescriere a acelorași variabile deja
+    folosite în <code>index.html</code> (<code>--bg, --surface, --navy</code>, plus umbrele de pe
+    <code>.card, .btn-primary, .brand-mark</code>) — nicio schimbare de structură, deci trecerea e imediată
+    odată aleasă. Poți și combina: ex. paleta de la <b>Incandescent</b> cu densitatea de la <b>Precizie</b>.
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var AXIS_NAMES = ['Umbre', 'Contrast', 'Saturație', 'Densitate'];
+  var AXIS_SCALE_NOTE = {
+    0: ['fără umbră', 'discretă', 'moderată', 'pronunțată', 'dramatică'],
+    1: ['grafit deschis', 'mediu-deschis', 'mediu', 'mediu-închis', 'aproape negru'],
+    2: ['ars / mut', 'domol', 'moderat', 'viu', 'foarte viu'],
+    3: ['foarte spațios', 'spațios', 'echilibrat', 'compact', 'foarte compact']
+  };
+  var THEMES = {
+    muchie:       { name: 'Muchie',       mode: 'Dark', axes: [1,4,4,4] },
+    standard:     { name: 'Standard',     mode: 'Dark', axes: [3,3,4,3] },
+    incandescent: { name: 'Incandescent', mode: 'Dark', axes: [5,5,5,2] },
+    oxidat:       { name: 'Oxidat',       mode: 'Dark', axes: [2,2,1,1] },
+    precizie:     { name: 'Precizie',     mode: 'Dark', axes: [1,3,4,5] }
+  };
+  var PALETTES = {
+    muchie:       [['fundal','#101215'],['suprafață','#17191d'],['accent','#ff7a29'],['accent 2','#4f9bc9'],['text','#eef0f2']],
+    standard:     [['fundal','#15181c'],['suprafață','#1d2126'],['accent','#ff7a29'],['accent 2','#4f9bc9'],['text','#eef0f2']],
+    incandescent: [['fundal','#0e1013'],['suprafață','#171a1e'],['accent','#ff6a1a'],['accent 2','#59a8d6'],['text','#f1f2ef']],
+    oxidat:       [['fundal','#1c2023'],['suprafață','#252a2e'],['accent','#d9793f'],['accent 2','#5c92a8'],['text','#eceeec']],
+    precizie:     [['fundal','#131619'],['suprafață','#191d21'],['accent','#ff7a29'],['accent 2','#4f9bc9'],['text','#eef0f2']]
+  };
+
+  var device = document.getElementById('device');
+  var frameName = document.getElementById('frameThemeName');
+  var framePill = document.getElementById('frameModePill');
+  var picks = Array.prototype.slice.call(document.querySelectorAll('.pick'));
+
+  // build the mini 4-row dot meter inside each picker card
+  picks.forEach(function(b){
+    var holder = b.querySelector('.axes');
+    var vals = holder.getAttribute('data-axes').split(',').map(Number);
+    AXIS_NAMES.forEach(function(name, i){
+      var row = document.createElement('div');
+      row.className = 'axis-row';
+      var label = document.createElement('span');
+      label.className = 'axis-label';
+      label.textContent = name;
+      var dots = document.createElement('span');
+      dots.className = 'axis-dots';
+      for (var d = 1; d <= 5; d++){
+        var dot = document.createElement('span');
+        dot.className = 'axis-dot' + (d <= vals[i] ? ' on' : '');
+        dots.appendChild(dot);
+      }
+      row.appendChild(label); row.appendChild(dots);
+      holder.appendChild(row);
+    });
+  });
+
+  // build palette swatch lists once
+  Object.keys(PALETTES).forEach(function(id){
+    var holder = document.querySelector('.pal[data-pal="' + id + '"]');
+    PALETTES[id].forEach(function(pair){
+      var sw = document.createElement('div');
+      sw.className = 'swatch';
+      sw.innerHTML = '<div class="swatch-chip" style="background:' + pair[1] + '"></div>' +
+        '<span class="swatch-label">' + pair[0] + '</span><span class="swatch-hex">' + pair[1] + '</span>';
+      holder.appendChild(sw);
+    });
+  });
+
+  function setTheme(id){
+    var t = THEMES[id];
+    if (!t) return;
+    device.setAttribute('data-preview', id);
+    frameName.textContent = t.name;
+    framePill.textContent = t.mode;
+    picks.forEach(function(b){ b.setAttribute('aria-selected', String(b.getAttribute('data-theme-id') === id)); });
+    document.querySelectorAll('.pal').forEach(function(p){ p.classList.toggle('show', p.getAttribute('data-pal') === id); });
+
+    var full = document.querySelector('.axes-full');
+    full.setAttribute('data-axesfull', id);
+    var rows = full.querySelectorAll('.axis-full-row');
+    rows.forEach(function(row, i){
+      var track = row.querySelector('.axis-full-track');
+      track.innerHTML = '';
+      for (var d = 1; d <= 5; d++){
+        var dot = document.createElement('div');
+        dot.className = 'axis-full-dot' + (d <= t.axes[i] ? ' on' : '');
+        track.appendChild(dot);
+      }
+      row.querySelector('.axis-full-note').textContent = AXIS_SCALE_NOTE[i][t.axes[i]-1];
+    });
+  }
+
+  picks.forEach(function(b){ b.addEventListener('click', function(){ setTheme(b.getAttribute('data-theme-id')); }); });
+
+  setTheme('standard');
+})();
+</script>
