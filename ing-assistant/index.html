@@ -613,7 +613,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b65-2026-09-22";
+  var BUILD = "b66-2026-09-22";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -1294,19 +1294,53 @@
   // {câmp}; docxtemplater completează acele tag-uri și produce un .docx nou,
   // descărcat direct (vezi comentariul din <head> despre pizzip/docxtemplater).
   var TRONSON_TEMPLATE_URLS = { cd: "/templates/pv-cd.docx", cm: "/templates/pv-cm.docx", cr: "/templates/pv-cr.docx" };
-  function generatePvForTronson(site, tronsonId) {
-    var t = tronsoane.filter(function (x) { return x.id === tronsonId; })[0];
-    if (!t) return;
-    var pv = pvDateForSite(site);
-    if (!pv) { flashSyncError("Completează mai întâi Date șantier → Date generale ale proiectului → Date pentru procese-verbale."); return; }
+
+  // Un mesaj de eroare "cunoscut" (șablon lipsă, librărie neîncărcată) e sigur
+  // de arătat direct utilizatorului; orice altă eroare (rețea, XML stricat în
+  // .docx) rămâne generică, ca să nu scurgem detalii tehnice fără rost.
+  function pvUserError(msg) { var e = new Error(msg); e.isPvUserError = true; return e; }
+
+  // Câmpurile goale nu blochează generarea (utilizatorul poate vrea un draft
+  // de PV cu găuri de completat manual în Word) — doar avertizează, cu lista
+  // exactă a ce lipsește, înainte de a genera. profilLongitudinal e marcat
+  // explicit opțional în TRONSON_FIELDS, deci nu intră în verificare.
+  function missingPvDateLabels(pv) {
+    return PV_FIELDS.filter(function (f) { return !pv[f[0]]; }).map(function (f) { return f[1]; });
+  }
+  function missingTronsonLabels(t) {
+    return TRONSON_FIELDS.filter(function (f) { return f[0] !== "profilLongitudinal" && !t[f[0]]; }).map(function (f) { return f[1]; });
+  }
+  function confirmPvWarning(items) {
+    return window.confirm(
+      "Următoarele câmpuri nu sunt completate:\n\n" + items.join("\n") +
+      "\n\nProcesul verbal va fi generat cu aceste câmpuri goale. Continui?"
+    );
+  }
+
+  function pvFileBaseName(t) { return (t.cod || t.categorie).toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, ""); }
+  function siteSlugFor(site) { return (site.numeScurt || site.nume || "santier").toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, ""); }
+  function downloadBlob(blob, filename) {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }
+
+  // Randează un singur .docx pentru un tronson și întoarce conținutul lui ca
+  // ArrayBuffer (nu blob — atât generatePvForTronson cât și
+  // generateAllPvsForSite au nevoie de acest pas, primul ca să-l descarce
+  // direct, al doilea ca să-l adauge într-o arhivă .zip cu toate PV-urile).
+  function buildPvArrayBuffer(pv, t) {
     var templateUrl = TRONSON_TEMPLATE_URLS[t.categorie];
-    if (!templateUrl) { flashSyncError("Nu există încă șablon pentru această categorie."); return; }
+    if (!templateUrl) return Promise.reject(pvUserError("Nu există încă șablon pentru această categorie."));
     var DocxCtor = window.docxtemplater || window.Docxtemplater;
     if (typeof PizZip === "undefined" || !DocxCtor) {
-      flashSyncError("Generatorul de procese-verbale nu s-a încărcat (verifică conexiunea la internet) — reîncearcă.");
-      return;
+      return Promise.reject(pvUserError("Generatorul de procese-verbale nu s-a încărcat (verifică conexiunea la internet) — reîncearcă."));
     }
-    fetch(templateUrl).then(function (res) {
+    return fetch(templateUrl).then(function (res) {
       if (!res.ok) throw new Error("nu am putut încărca șablonul (" + res.status + ")");
       return res.arrayBuffer();
     }).then(function (buf) {
@@ -1323,19 +1357,61 @@
         reper_start: t.reperStart, reper_end: t.reperEnd, lungime: t.lungime,
         planse: t.planse, profil_longitudinal: t.profilLongitudinal
       });
-      var blob = doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
-      var codSlug = (t.cod || t.categorie).toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
-      var siteSlug = (site.numeScurt || site.nume || "santier").toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
-      var a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "PV-" + codSlug + "-" + siteSlug + ".docx";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
+      return doc.getZip().generate({ type: "arraybuffer", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+    });
+  }
+
+  function generatePvForTronson(site, tronsonId) {
+    var t = tronsoane.filter(function (x) { return x.id === tronsonId; })[0];
+    if (!t) return;
+    var pv = pvDateForSite(site);
+    if (!pv) { flashSyncError("Completează mai întâi Date șantier → Date generale ale proiectului → Date pentru procese-verbale."); return; }
+    var missing = missingPvDateLabels(pv).concat(missingTronsonLabels(t));
+    if (missing.length && !confirmPvWarning(missing)) return;
+    buildPvArrayBuffer(pv, t).then(function (buf) {
+      var blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+      downloadBlob(blob, "PV-" + pvFileBaseName(t) + "-" + siteSlugFor(site) + ".docx");
     }).catch(function (err) {
       console.error(err);
-      flashSyncError("Nu am putut genera procesul verbal.");
+      flashSyncError(err.isPvUserError ? err.message : "Nu am putut genera procesul verbal.");
+    });
+  }
+
+  // Generează, într-o singură arhivă .zip, câte un .docx pentru FIECARE
+  // tronson al șantierului (toate categoriile) — utilizatorul nu mai trebuie
+  // să dea click pe "Generează PV" pe rândul fiecărui tronson în parte.
+  function generateAllPvsForSite(site) {
+    var pv = pvDateForSite(site);
+    if (!pv) { flashSyncError("Completează mai întâi Date șantier → Date generale ale proiectului → Date pentru procese-verbale."); return; }
+    var all = tronsoane.filter(function (t) { return t.santierId === site.id; })
+      .sort(function (a, b) { return a.ordine - b.ordine; });
+    if (!all.length) { flashSyncError("Adaugă cel puțin un tronson înainte de a genera procesele-verbale."); return; }
+
+    var missing = missingPvDateLabels(pv);
+    all.forEach(function (t) {
+      var tMissing = missingTronsonLabels(t);
+      if (tMissing.length) missing.push((t.cod || t.categorie.toUpperCase()) + ": " + tMissing.join(", "));
+    });
+    if (missing.length && !confirmPvWarning(missing)) return;
+
+    Promise.all(all.map(function (t) {
+      return buildPvArrayBuffer(pv, t).then(function (buf) {
+        return { ok: true, name: "PV-" + pvFileBaseName(t) + ".docx", buf: buf };
+      }).catch(function (err) {
+        return { ok: false, cod: t.cod || t.categorie.toUpperCase(), err: err };
+      });
+    })).then(function (results) {
+      var ok = results.filter(function (r) { return r.ok; });
+      var failed = results.filter(function (r) { return !r.ok; });
+      if (!ok.length) { flashSyncError("Nu am putut genera niciun proces verbal."); return; }
+      var zip = new PizZip();
+      ok.forEach(function (r) { zip.file(r.name, r.buf); });
+      var blob = zip.generate({ type: "blob", mimeType: "application/zip", compression: "DEFLATE" });
+      downloadBlob(blob, "PV-uri-" + siteSlugFor(site) + ".zip");
+      if (failed.length) {
+        failed.forEach(function (r) { console.error(r.cod, r.err); });
+        flashSyncError("Generate " + ok.length + " din " + results.length + " — au eșuat: " + failed.map(function (r) { return r.cod; }).join(", "));
+      }
     });
   }
 
@@ -2936,8 +3012,11 @@
     '</div>';
   }
   function tronsoanePanelHTML(site) {
-    return TRONSON_CATEGORII.map(function (cat) { return tronsonCategoryTableHTML(site, cat); }).join("") +
-      '<div class="helper">Completează câmpurile fiecărui tronson, apoi apasă „Generează PV” — se descarcă un fișier Word complet, cu antetul, subsolul și structura șablonului tău, doar cu datele acestui tronson completate automat.</div>';
+    var hasTronsoane = tronsoane.some(function (t) { return t.santierId === site.id; });
+    var bulkBtn = '<button class="btn btn-ghost btn-sm" style="margin-bottom:14px" data-generate-all-pv="' + site.id + '"' + (hasTronsoane ? "" : " disabled") + '>' + icon("doc", 13) + 'Generează toate PV-urile (.zip)</button>';
+    return bulkBtn +
+      TRONSON_CATEGORII.map(function (cat) { return tronsonCategoryTableHTML(site, cat); }).join("") +
+      '<div class="helper">Completează câmpurile fiecărui tronson, apoi apasă „Generează PV” — se descarcă un fișier Word complet, cu antetul, subsolul și structura șablonului tău, doar cu datele acestui tronson completate automat. „Generează toate PV-urile” face același lucru pentru toate tronsoanele șantierului deodată, într-o arhivă .zip.</div>';
   }
 
   function docsPanelHTML(site) {
@@ -3213,7 +3292,7 @@
       "[data-merge-cells-confirm],[data-merge-cells-cancel],[data-unmerge-cell]," +
       "[data-undo-progres]," +
       "[data-edit-pv-date],[data-save-pv-date],[data-cancel-pv-date]," +
-      "[data-add-tronson],[data-remove-tronson],[data-generate-pv]"
+      "[data-add-tronson],[data-remove-tronson],[data-generate-pv],[data-generate-all-pv]"
     );
 
     // Only re-render when something actually changes. A blanket render() on every
@@ -3482,6 +3561,11 @@
       else if (t.dataset.generatePv) {
         var gpvSite = findSite(state.selectedSiteId);
         if (gpvSite) generatePvForTronson(gpvSite, t.dataset.generatePv);
+        needsRender = false;
+      }
+      else if (t.dataset.generateAllPv) {
+        var gapvSite = findSite(t.dataset.generateAllPv);
+        if (gapvSite) generateAllPvsForSite(gapvSite);
         needsRender = false;
       }
     }
