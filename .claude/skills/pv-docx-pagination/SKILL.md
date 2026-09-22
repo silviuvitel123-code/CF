@@ -50,17 +50,38 @@ dată randat. Nu le redescoperi; aplică-le de la început.
 
 ## Cele 7 reguli
 
+0. **Pentru un șablon nou, construit de la zero (nu cd/cm/cr) — pune
+   `pageBreakBefore` pe FIECARE titlu de PV, fără excepție, inclusiv al
+   doilea PV al documentului.** Nu te baza pe "curge natural, dacă mai
+   încape" pentru un șablon nou. Motivul e un bug real, costisitor, găsit
+   abia în Word real: la pv-el/rz/sp/im.docx, verificarea empirică cu
+   LibreOffice a arătat paginare corectă (fiecare PV pe propria pagină), dar
+   randat în Microsoft Word real, mai multe PV-uri scurte s-au înghesuit pe
+   aceeași pagină — LibreOffice și Word NU sunt de acord întotdeauna unde se
+   rupe conținut scurt aflat aproape de limita paginii (diferă la nivel de
+   metrici de font/hinting). Utilizatorul vede documentele în Word/tipărite,
+   nu în LibreOffice — deci verificarea empirică "las titlul să curgă, apoi
+   testez" NU e suficientă pentru un șablon nou; un break EXPLICIT e
+   singurul lucru pe care Word și LibreOffice îl interpretează identic.
+   Regula #2 de mai jos (curgere naturală) rămâne valabilă DOAR pentru
+   cd/cm/cr — acelea au fost calibrate de un om direct în Word real, nu de
+   Claude, și verificate cu ani de utilizare reală. Pentru orice șablon nou
+   scris de Claude, sări regula #2 și pune break pe fiecare titlu (exceptând
+   primul PV al documentului, care nu are nevoie — e deja pe pagina 1).
+
 1. **`pageBreakBefore` nu se pune pe titlu.** Se pune pe primul paragraf
    IMEDIAT după ultimul conținut real al PV-ului anterior (fără gol de
    paragrafe goale între ele). Un gol de paragrafe goale înainte de titlu
    înseamnă că oricare din ele poate sări singur pe pagina lui — asta creează
    o pagină goală, chiar dacă titlul următor pare corect legat de break.
 
-2. **Nu fiecare titlu are nevoie de `pageBreakBefore`.** Dacă PV-ul anterior
-   se termină cu loc de rezervă pe pagină, lasă titlul următor să curgă
-   natural pe același spațiu — altfel irosești pagini fără motiv. Nu poți ști
-   dinainte care titluri au nevoie de break forțat și care nu: testează
-   empiric cu randare reală (vezi mai jos), nu prin deducție din XML.
+2. **[Doar pentru cd/cm/cr, șabloane originale] Nu fiecare titlu are nevoie
+   de `pageBreakBefore`.** Dacă PV-ul anterior se termină cu loc de rezervă
+   pe pagină, lasă titlul următor să curgă natural pe același spațiu —
+   altfel irosești pagini fără motiv. Nu poți ști dinainte care titluri au
+   nevoie de break forțat și care nu: testează empiric cu randare reală
+   (vezi mai jos), nu prin deducție din XML. **NU aplica această regulă la
+   un șablon nou construit de la zero** — vezi regula #0 de mai sus.
 
 3. **`keepNext` peste tot blocul de semnături** (fiecare rând nume + linie de
    semnat), ca blocul să nu se rupă niciodată la mijloc între o pagină și
@@ -126,8 +147,23 @@ că astea depind de textul exact al fiecărui șablon.
 
 **Nu te opri la "0 pagini goale".** Verifică și: (a) niciun rând de semnătură
 rupt pe 2 linii, (b) niciun titlu care se termină o pagină fără restul lui,
-(c) N PV-uri → N pagini (aproximativ — poate diferi cu 1-2 dacă vreun PV e
-genuin prea lung pentru o pagină, dar nu ar trebui să difere mult).
+(c) N PV-uri → N pagini EXACT pentru un șablon nou (nu "aproximativ" — vezi
+regula #0; o diferență e semnul că un PV s-a înghesuit cu altul pe aceeași
+pagină sau s-a rupt pe 2, exact bug-ul găsit la pv-el/rz/sp/im.docx).
+
+Pentru un șablon nou, verificarea de mai sus (fără pagini goale) NU e
+suficientă — folosește și `scripts/check_one_pv_per_page.py`, care verifică
+EXPLICIT că fiecare PV își începe propria pagină, în ordine, dat un șir de
+markere (un fragment scurt și unic din titlul fiecărui PV):
+
+```bash
+python3 <path-catre-acest-skill>/scripts/check_one_pv_per_page.py fisier.pdf \
+  "titlu PV 1" "titlu PV 2" "titlu PV 3" ...
+```
+
+Un simplu "N pagini pentru N PV-uri" poate trece din întâmplare chiar dacă
+două PV-uri s-au înghesuit pe o pagină și altul s-a rupt în două — acest
+script elimină acea ambiguitate verificând poziția exactă a fiecărui titlu.
 
 Pentru un test end-to-end real (nu doar șablonul izolat), rulează testul
 Playwright canonic al acestui repo, care generează un PV real din aplicație
@@ -138,8 +174,11 @@ node <scratchpad>/test_pv_real_docx.js
 ```
 
 Orice modificare de șablon trebuie re-testată cu acesta, plus suita completă
-de regresie (11 teste — vezi `CLAUDE.md` din rădăcina repo-ului pentru lista
-completă) înainte de commit.
+de regresie (vezi `CLAUDE.md` din rădăcina repo-ului pentru lista completă,
+azi 17 teste) înainte de commit. Pentru un șablon NOU, scrie un test
+`test_pv_real_<categorie>.js` propriu (după modelul celor existente pentru
+el/rz/sp/im), care include OBLIGATORIU verificarea cu
+`check_one_pv_per_page.py`, nu doar `scan_pdf_pages.py` — vezi regula #0.
 
 ## Date reale de producție (șantierul Stăuceni)
 
