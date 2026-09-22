@@ -116,6 +116,32 @@ dată randat. Nu le redescoperi; aplică-le de la început.
    tot poate produce o pagină goală sau un titlu orfan — asta se vede DOAR
    randat. Vezi secțiunea următoare.
 
+8. **R.T.E. apare în FIECARE bloc de semnături, alături de Constructor, la
+   orice șablon nou — chiar dacă tabelul PCCVI sursă (sau alt document
+   furnizat de utilizator) nu îl listează explicit ca semnatar pentru unele
+   rânduri.** La pv-el/rz/sp/im.docx am omis inițial R.T.E. pe baza notației
+   B/E/P din tabelul PCCVI (care nu menționa RTE), dar utilizatorul a cerut
+   explicit să apară peste tot unde apare Constructorul — tabelul PCCVI e
+   sursa de conținut al PV-urilor, nu neapărat lista completă de semnatari
+   așteptați de utilizator. Nu presupune că un semnatar lipsă dintr-un tabel
+   sursă înseamnă că nu trebuie inclus — dacă nu e clar, întreabă, dar
+   implicit tratează R.T.E. ca obligatoriu (e mereu prezent în cd/cm/cr).
+
+9. **Dacă adaugi paragrafe goale suplimentare ca să împingi blocul de
+   semnături mai spre finalul paginii (spațiu vizual, nu conținut) —
+   verifică ÎNTOTDEAUNA cantitatea aleasă cu date REALE substituite prin
+   docxtemplater, nu doar cu textul brut `{placeholder}` nesubstituit.**
+   Bug real găsit aici: un spacer calibrat să încapă cu placeholder-ele
+   brute (scurte, ex. `{obiectiv}` = 10 caractere) a provocat exact bug-ul
+   de "PV rupt pe 2 pagini" cu date reale, pentru că unele câmpuri reale
+   (ex. `obiectiv` = un titlu de proiect lung, de-o propoziție întreagă) sunt
+   mult mai lungi decât propriul placeholder și, combinate cu spacer-ul
+   generos, au împins semnătura pe o pagină nouă, aproape goală. Lungimea
+   textului placeholder NU e un proxy de încredere pentru lungimea datelor
+   reale — testează întotdeauna cu `render_real.js`-stil (docxtemplater
+   real + date de producție, vezi mai jos) ca verificare FINALĂ, nu doar cu
+   șablonul cu placeholder-e goale.
+
 ## Cum verifici (LibreOffice + PyMuPDF)
 
 `soffice --headless --convert-to pdf` funcționează în acest sandbox, dar are
