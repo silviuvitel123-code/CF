@@ -613,7 +613,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b69-2026-09-22";
+  var BUILD = "b70-2026-09-22";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -1224,8 +1224,8 @@
   // Tronsoane: liste simple per categorie (cd/cm/cr acum; camine/spau/
   // imprejmuiri/electrice se adaugă ulterior în aceeași listă, doar cu o
   // nouă categorie + un nou șablon .docx în TRONSON_TEMPLATE_URLS).
-  var TRONSON_CATEGORII = ["cd", "cm", "cr", "el", "rz", "sp"];
-  var TRONSON_CATEGORIE_LABEL = { cd: "Conductă apă (CD)", cm: "Conductă canalizare (CM)", cr: "Conductă refulare (CR)", el: "Instalații electrice", rz: "Rezervoare", sp: "Stații de pompare" };
+  var TRONSON_CATEGORII = ["cd", "cm", "cr", "el", "rz", "sp", "im"];
+  var TRONSON_CATEGORIE_LABEL = { cd: "Conductă apă (CD)", cm: "Conductă canalizare (CM)", cr: "Conductă refulare (CR)", el: "Instalații electrice", rz: "Rezervoare", sp: "Stații de pompare", im: "Împrejmuire" };
   var TRONSON_FIELDS = [
     ["cod", "Cod tronson", "ex: CD5"],
     ["specificatieConducta", "Specificație conductă", "ex: PEHD PN10, De 110 mm"],
@@ -1293,7 +1293,7 @@
   // documentului Word furnizat, cu textul variabil înlocuit de tag-uri
   // {câmp}; docxtemplater completează acele tag-uri și produce un .docx nou,
   // descărcat direct (vezi comentariul din <head> despre pizzip/docxtemplater).
-  var TRONSON_TEMPLATE_URLS = { cd: "/templates/pv-cd.docx", cm: "/templates/pv-cm.docx", cr: "/templates/pv-cr.docx", el: "/templates/pv-el.docx", rz: "/templates/pv-rz.docx", sp: "/templates/pv-sp.docx" };
+  var TRONSON_TEMPLATE_URLS = { cd: "/templates/pv-cd.docx", cm: "/templates/pv-cm.docx", cr: "/templates/pv-cr.docx", el: "/templates/pv-el.docx", rz: "/templates/pv-rz.docx", sp: "/templates/pv-sp.docx", im: "/templates/pv-im.docx" };
 
   // Un mesaj de eroare "cunoscut" (șablon lipsă, librărie neîncărcată) e sigur
   // de arătat direct utilizatorului; orice altă eroare (rețea, XML stricat în
