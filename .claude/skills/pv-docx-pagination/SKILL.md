@@ -47,6 +47,51 @@ dată randat. Nu le redescoperi; aplică-le de la început.
   categoriile existente cd/cm/cr). Un tronson nou pe un șantier existent, sau
   un șantier nou, funcționează automat — șabloanele sunt per-categorie, nu
   per-șantier/tronson, deci nu ai nevoie să modifici nimic pentru date noi.
+- **Categoriile a căror "obiect" nu e un segment liniar de conductă (rezervor,
+  stație de pompare, împrejmuire, cămin de vane, ...) pot avea propria listă
+  REDUSĂ de câmpuri de tronson**, diferită de cele 7 câmpuri generice
+  (`cod, specificatie_conducta, reper_start, reper_end, lungime, planse,
+  profil_longitudinal`) — vezi `TRONSON_FIELDS_RZ` din `index.html` (doar 3
+  câmpuri pentru rezervor: material / tip / volum, cerute explicit de
+  utilizator, "cod tronson" complet eliminat din UI). Nu adăuga coloane noi
+  în Supabase pentru asta — refolosește coloanele generice existente sub
+  etichete UI noi (`tronsonFieldsFor(categorie)` alege lista corectă), ca să
+  nu fie nevoie de nicio migrare de schemă. Când lipsește "cod" (fiindcă
+  acea categorie nu-l mai are), `pvFileBaseName()` trebuie să cadă pe alt
+  câmp identificator (ex. volum), altfel toate PV-urile aceleiași categorii
+  de pe un șantier se descarcă sub același nume generic și se suprascriu.
+
+## Când utilizatorul trimite un .docx deja editat de el ca șablon nou
+
+Dacă utilizatorul spune "ia-l exact cum e" / "respectă poziționarea cum am
+făcut-o eu" despre un .docx pe care l-a generat din aplicație și apoi l-a
+editat manual în Word (text mai bogat, rânduri de semnătură schimbate,
+etc.) — NU regenera șablonul din scriptul tău Python. Riști să reintroduci
+exact diferențele de paginare Word-vs-LibreOffice pe care abia le-ai
+depanat. În schimb:
+
+1. Extrage textul curat (paragraf cu paragraf, via `ElementTree`) din
+   `.docx`-ul trimis și compară-l cu ce ai generat tu înainte, ca să
+   identifici EXACT ce valori sunt hardcodate (numele reale, denumirea de
+   proiect, cifrele) care trebuie să redevină `{placeholder}`.
+2. Verifică, pentru fiecare valoare țintă, că apare într-un SINGUR run XML
+   (caută-o direct în `word/document.xml` brut) — de regulă așa e, pentru că
+   provine dintr-o randare docxtemplater anterioară, unde placeholder-ul a
+   fost un singur run. Excepție reală întâlnită: Word își desparte un run în
+   mai multe (cu `<w:proofErr>` de spell-check) dacă utilizatorul a editat
+   text ÎN JURUL acelei valori — verifică explicit înainte să presupui că
+   un simplu `str.replace()` pe tot fișierul e sigur; dacă găsești un run
+   spart, reconstruiește manual acel fragment ca un singur run curat înainte
+   de restul înlocuirilor.
+3. Fă înlocuirile ca substituție de text brut pe `word/document.xml` (nu
+   reconstrui paragrafele din XML nou) — asta garantează 0 schimbări de
+   structură/paginare față de ce a aprobat utilizatorul. Verifică cu
+   `docx` skill's `validate.py` că numărul de paragrafe rămâne IDENTIC
+   (nu doar "aproape la fel").
+4. Verifică din nou tot (randare LibreOffice + date reale prin
+   docxtemplater + `check_one_pv_per_page.py`) — chiar dacă structura n-a
+   fost atinsă, placeholder-ele noi trebuie confirmate că se completează
+   corect și că paginarea (calibrată de utilizator) tot iese exact.
 
 ## Cele 7 reguli
 
