@@ -613,7 +613,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b72-2026-09-22";
+  var BUILD = "b73-2026-09-23";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -1235,6 +1235,17 @@
     ["planse", "Planșe", "ex: 2, PB5, PB6"],
     ["profilLongitudinal", "Profil longitudinal", "ex: PL5 (opțional)"]
   ];
+  // Rezervoarele nu sunt segmente de conductă — nu au cod/reper/lungime/
+  // planșe/profil longitudinal în sensul acelor câmpuri. Refolosește doar 3
+  // din coloanele DB existente (specificatie_conducta/reper_start/lungime),
+  // sub etichete noi, fără nicio schimbare de schemă — restul coloanelor
+  // rămân pur și simplu needitate pentru tronsoanele de categorie "rz".
+  var TRONSON_FIELDS_RZ = [
+    ["specificatieConducta", "Rezervor", "ex: metalic, polietilenă, PAFSIN"],
+    ["reperStart", "Tip", "ex: suprateran / subteran"],
+    ["lungime", "Volum (mc)", "ex: 400"]
+  ];
+  function tronsonFieldsFor(categorie) { return categorie === "rz" ? TRONSON_FIELDS_RZ : TRONSON_FIELDS; }
   var TRONSON_DB_FIELD = { cod: "cod", specificatieConducta: "specificatie_conducta", reperStart: "reper_start", reperEnd: "reper_end", lungime: "lungime", planse: "planse", profilLongitudinal: "profil_longitudinal" };
   function tronsonFromRow(r) {
     return {
@@ -1308,7 +1319,7 @@
     return PV_FIELDS.filter(function (f) { return !pv[f[0]]; }).map(function (f) { return f[1]; });
   }
   function missingTronsonLabels(t) {
-    return TRONSON_FIELDS.filter(function (f) { return f[0] !== "profilLongitudinal" && !t[f[0]]; }).map(function (f) { return f[1]; });
+    return tronsonFieldsFor(t.categorie).filter(function (f) { return f[0] !== "profilLongitudinal" && !t[f[0]]; }).map(function (f) { return f[1]; });
   }
   function confirmPvWarning(items) {
     return window.confirm(
@@ -1317,7 +1328,14 @@
     );
   }
 
-  function pvFileBaseName(t) { return (t.cod || t.categorie).toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, ""); }
+  function pvFileBaseName(t) {
+    // "cod" nu există la categoriile fără câmp de cod (ex. rz — vezi
+    // TRONSON_FIELDS_RZ) — cade pe volum, apoi specificație, ca fișierele
+    // mai multor rezervoare de pe același șantier să nu se suprascrie sub
+    // același nume generic "rz".
+    var base = t.cod || t.lungime || t.specificatieConducta || t.categorie;
+    return base.toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
+  }
   function siteSlugFor(site) { return (site.numeScurt || site.nume || "santier").toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, ""); }
   function downloadBlob(blob, filename) {
     var a = document.createElement("a");
@@ -2992,9 +3010,10 @@
   // șantier → Date generale ale proiectului → Date pentru procese-verbale.
   function tronsonCategoryTableHTML(site, categorie) {
     var rows = tronsoaneForSite(site, categorie);
-    var headHtml = TRONSON_FIELDS.map(function (f) { return '<th><div class="progrid-th-inner">' + esc(f[1]) + '</div></th>'; }).join("") + '<th></th>';
+    var fields = tronsonFieldsFor(categorie);
+    var headHtml = fields.map(function (f) { return '<th><div class="progrid-th-inner">' + esc(f[1]) + '</div></th>'; }).join("") + '<th></th>';
     var bodyHtml = rows.map(function (row) {
-      var cellsHtml = TRONSON_FIELDS.map(function (f) {
+      var cellsHtml = fields.map(function (f) {
         return '<td class="progrid-cell"><input class="tronson-input" data-tronson-field="' + row.id + '|' + f[0] + '" placeholder="' + esc(f[2]) + '" value="' + esc(row[f[0]]) + '"></td>';
       }).join("");
       return '<tr data-tronson-row="' + row.id + '">' + cellsHtml +
@@ -3004,7 +3023,7 @@
         '</span></td>' +
       '</tr>';
     }).join("");
-    var emptyHtml = rows.length === 0 ? '<tr><td colspan="' + (TRONSON_FIELDS.length + 1) + '" class="doclist-empty progrid-empty-cell">Niciun tronson adăugat încă.</td></tr>' : "";
+    var emptyHtml = rows.length === 0 ? '<tr><td colspan="' + (fields.length + 1) + '" class="doclist-empty progrid-empty-cell">Niciun tronson adăugat încă.</td></tr>' : "";
     return '<div class="panel" style="margin-bottom:16px">' +
       '<div class="panel-title">' + esc(TRONSON_CATEGORIE_LABEL[categorie] || categorie) + '</div>' +
       '<div class="progrid-wrap" style="margin-top:10px"><table class="progrid" style="table-layout:auto"><thead><tr>' + headHtml + '</tr></thead><tbody>' + bodyHtml + emptyHtml + '</tbody></table></div>' +
