@@ -516,8 +516,9 @@
   .modal-close:hover { color: var(--ink); }
   .modal-field { margin-bottom: 12px; }
   .modal-field label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-soft); margin-bottom: 5px; }
-  .modal-field input { width: 100%; border: 1px solid var(--border-strong); border-radius: 3px; padding: 9px 12px;
+  .modal-field input, .modal-field textarea { width: 100%; border: 1px solid var(--border-strong); border-radius: 3px; padding: 9px 12px;
     font-size: 13px; font-family: var(--sans); box-sizing: border-box; }
+  .modal-field textarea { resize: vertical; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
   .site-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
   .site-field-grid .modal-field:first-child { grid-column: 1 / -1; }
@@ -554,6 +555,22 @@
   .docrow-label-input { field-sizing: content; flex: 0 1 auto; min-width: 140px; max-width: 340px;
     font-size: 12.5px; font-weight: 600; font-family: var(--sans); border: 1px solid var(--navy); border-radius: 3px; padding: 4px 6px; }
   .doclist-empty { font-size: 12.5px; color: var(--ink-faint); padding: 6px 0; }
+
+  /* Jurnal zilnic */
+  .jurnal-entry { margin-bottom: 14px; }
+  .jurnal-entry-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .jurnal-entry-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .jurnal-meta { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+  .jurnal-field { padding: 8px 0; border-top: 1px solid var(--border); }
+  .jurnal-field-label { font-size: 12px; font-weight: 600; color: var(--ink-soft); margin-bottom: 3px; }
+  .jurnal-field-val { font-size: 13px; color: var(--ink); white-space: pre-wrap; }
+  .jurnal-empty { font-size: 12.5px; color: var(--ink-faint); padding: 6px 0; }
+  .jurnal-photos { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; align-items: center; }
+  .jurnal-photo-chip { position: relative; width: 84px; height: 84px; border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+  .jurnal-photo-chip img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .jurnal-photo-chip .doc-file-del { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,.55); color: #fff;
+    border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+  .jurnal-photo-chip .doc-file-del:hover { background: var(--red); color: #fff; }
 
   /* print sheet — hidden on screen, shown only via window.print() */
   #print-sheet { display: none; }
@@ -613,16 +630,26 @@
 (function () {
   "use strict";
 
-  var BUILD = "b73-2026-09-23";
+  var BUILD = "b74-2026-09-25";
   var todayD = new Date();
 
   function emptySiteDraft() {
     return { nume: "", adresa: "", numarProiect: "", proiectant: "", constructor: "", contract: "", perioadaExecutie: "", dataExpirareContract: "", garantie: "", ordinIncepere: "" };
   }
 
+  function emptyJurnalDraft() {
+    return {
+      data: "", conditii_meteo: "", temperatura: "", numar_muncitori: "", echipa_prezenta: "",
+      lucrari_executate: "", materiale_primite: "", utilaje: "", vizitatori: "", incidente: "",
+      observatii: "", autor: ""
+    };
+  }
+
   var state = {
     view: "dashboard", selectedSiteId: null, activeTab: "date-santier", globalSiteId: null, sidebarCollapsed: false,
     theme: loadStoredTheme(),
+    jurnalSiteId: null,
+    jurnalForm: { addOpen: false, draft: emptyJurnalDraft(), editingId: null, photoUploading: {} },
     pontaj: {
       year: todayD.getFullYear(),
       month: todayD.getMonth() + 1,
@@ -666,6 +693,10 @@
 
   // --- șantiere: persisted in Supabase, loaded via loadAllData() below ---
   var sites = [];
+  // --- jurnal zilnic: un rând per (șantier, zi) — strict separat pe șantier
+  // prin santier_id, la fel ca documentele de proiect; niciodată global. ---
+  var jurnalEntries = [];
+  var jurnalPoze = [];
 
   function statusBadgeCls(status) { return status === "Finalizat" ? "badge-final" : "badge-activ"; }
   function statusDotCls(status) { return status === "Finalizat" ? "dot-final" : "dot-activ"; }
@@ -733,6 +764,162 @@
     });
   }
 
+  // --- Jurnal zilnic: un rând pe zi, per șantier (santier_id), complet
+  // separat între șantiere — la fel ca santier_documente. Pozele sunt un
+  // tabel copil (santier_jurnal_poze), reutilizând bucket-ul public
+  // santier-documente sub un prefix "jurnal/" separat, ca să nu mai fie
+  // nevoie de un bucket + politici RLS noi.
+  var JURNAL_FIELDS = [
+    ["data", "Data", "date", "", true],
+    ["conditii_meteo", "Condiții meteo", "text", "ex: însorit, vânt slab", false],
+    ["temperatura", "Temperatură", "text", "ex: 18°C", false],
+    ["numar_muncitori", "Nr. muncitori prezenți", "text", "ex: 8", false],
+    ["autor", "Completat de", "text", "numele celui care scrie jurnalul", false],
+    ["echipa_prezenta", "Echipă prezentă (nume / roluri / firme)", "textarea", "", false],
+    ["lucrari_executate", "Lucrări executate azi", "textarea", "", false],
+    ["materiale_primite", "Materiale primite", "textarea", "", false],
+    ["utilaje", "Utilaje pe șantier", "textarea", "", false],
+    ["vizitatori", "Vizitatori (diriginte, beneficiar, inspecție etc.)", "textarea", "", false],
+    ["incidente", "Incidente / observații SSM", "textarea", "", false],
+    ["observatii", "Observații generale", "textarea", "", false]
+  ];
+  function jurnalFromRow(r) {
+    return {
+      id: r.id, santierId: r.santier_id, data: r.data || "",
+      conditii_meteo: r.conditii_meteo || "", temperatura: r.temperatura || "",
+      numar_muncitori: r.numar_muncitori || "", echipa_prezenta: r.echipa_prezenta || "",
+      lucrari_executate: r.lucrari_executate || "", materiale_primite: r.materiale_primite || "",
+      utilaje: r.utilaje || "", vizitatori: r.vizitatori || "", incidente: r.incidente || "",
+      observatii: r.observatii || "", autor: r.autor || ""
+    };
+  }
+  function jurnalPozaFromRow(p) {
+    return { id: p.id, jurnalId: p.jurnal_id, fisierPath: p.fisier_path, fisierNume: p.fisier_nume, fisierMarime: p.fisier_marime || null };
+  }
+  function jurnalEntriesForSite(siteId) {
+    return jurnalEntries.filter(function (j) { return j.santierId === siteId; })
+      .sort(function (a, b) { return a.data < b.data ? 1 : a.data > b.data ? -1 : 0; });
+  }
+  function jurnalPozeForEntry(jurnalId) {
+    return jurnalPoze.filter(function (p) { return p.jurnalId === jurnalId; });
+  }
+  function findJurnalEntry(id) { for (var i = 0; i < jurnalEntries.length; i++) if (jurnalEntries[i].id === id) return jurnalEntries[i]; return null; }
+  function todayISO() {
+    var d = new Date();
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+  function formatJurnalDate(dateStr) {
+    if (!dateStr) return "";
+    var p = dateStr.split("-");
+    return parseInt(p[2], 10) + " " + MONTHS_RO[parseInt(p[1], 10) - 1].toLowerCase() + " " + p[0];
+  }
+  function openJurnalAdd() {
+    var draft = emptyJurnalDraft();
+    draft.data = todayISO();
+    state.jurnalForm = { addOpen: true, draft: draft, editingId: null, photoUploading: {} };
+  }
+  function openJurnalEdit(entry) {
+    var draft = emptyJurnalDraft();
+    Object.keys(draft).forEach(function (k) { draft[k] = entry[k] || ""; });
+    state.jurnalForm = { addOpen: true, draft: draft, editingId: entry.id, photoUploading: {} };
+  }
+  function closeJurnalForm() {
+    state.jurnalForm = { addOpen: false, draft: emptyJurnalDraft(), editingId: null, photoUploading: {} };
+  }
+  function jurnalPayloadFromDraft(siteId, draft) {
+    return {
+      santier_id: siteId, data: draft.data,
+      conditii_meteo: draft.conditii_meteo || "", temperatura: draft.temperatura || "",
+      numar_muncitori: draft.numar_muncitori || "", echipa_prezenta: draft.echipa_prezenta || "",
+      lucrari_executate: draft.lucrari_executate || "", materiale_primite: draft.materiale_primite || "",
+      utilaje: draft.utilaje || "", vizitatori: draft.vizitatori || "", incidente: draft.incidente || "",
+      observatii: draft.observatii || "", autor: draft.autor || ""
+    };
+  }
+  function saveJurnalEntryFromInput(siteId) {
+    var draft = state.jurnalForm.draft;
+    if (!draft.data) { flashSyncError("Alege data jurnalului."); return; }
+    var payload = jurnalPayloadFromDraft(siteId, draft);
+    var editingId = state.jurnalForm.editingId;
+    if (editingId) {
+      var existing = findJurnalEntry(editingId);
+      if (existing) Object.assign(existing, jurnalFromRow(Object.assign({ id: editingId, santier_id: siteId }, payload)));
+      closeJurnalForm();
+      render();
+      sb.from("santier_jurnal").update(payload).eq("id", editingId).then(function (res) {
+        if (res.error) { flashSyncError("Nu am putut salva jurnalul."); console.error(res.error); render(); }
+      });
+    } else {
+      var tempId = "tmp-" + Date.now();
+      jurnalEntries.unshift(jurnalFromRow(Object.assign({ id: tempId }, payload)));
+      closeJurnalForm();
+      render();
+      sb.from("santier_jurnal").insert(payload).select().single().then(function (res) {
+        if (res.error) {
+          jurnalEntries = jurnalEntries.filter(function (j) { return j.id !== tempId; });
+          var msg = res.error.code === "23505"
+            ? "Există deja o zi de jurnal înregistrată la această dată — editeaz-o din listă în loc să adaugi una nouă."
+            : "Nu am putut salva jurnalul.";
+          flashSyncError(msg); console.error(res.error); render(); return;
+        }
+        var live = jurnalEntries.filter(function (j) { return j.id === tempId; })[0];
+        if (live) live.id = res.data.id;
+        render();
+      });
+    }
+  }
+  function removeJurnalEntry(id) {
+    var entry = findJurnalEntry(id);
+    if (!entry) return;
+    if (!confirmDelete("Ștergi ziua de jurnal din " + formatJurnalDate(entry.data) + "? Această acțiune nu poate fi anulată.")) return;
+    var photos = jurnalPozeForEntry(id);
+    jurnalEntries = jurnalEntries.filter(function (j) { return j.id !== id; });
+    jurnalPoze = jurnalPoze.filter(function (p) { return p.jurnalId !== id; });
+    render();
+    if (String(id).indexOf("tmp-") === 0) return;
+    photos.forEach(function (p) { if (p.fisierPath) sb.storage.from(DOC_BUCKET).remove([p.fisierPath]); });
+    sb.from("santier_jurnal").delete().eq("id", id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut șterge ziua de jurnal."); console.error(res.error); }
+    });
+  }
+  function uploadJurnalPhoto(entry, file) {
+    state.jurnalForm.photoUploading[entry.id] = true;
+    render();
+    var path = "jurnal/" + entry.santierId + "/" + entry.id + "/" + Date.now() + "-" + sanitizeFilename(file.name);
+    sb.storage.from(DOC_BUCKET).upload(path, file).then(function (upRes) {
+      if (upRes.error) {
+        delete state.jurnalForm.photoUploading[entry.id];
+        flashSyncError("Nu am putut încărca poza — încearcă din nou.");
+        console.error(upRes.error);
+        render();
+        return;
+      }
+      sb.from("santier_jurnal_poze").insert({ jurnal_id: entry.id, fisier_path: path, fisier_nume: file.name, fisier_marime: file.size })
+        .select().single().then(function (res) {
+          delete state.jurnalForm.photoUploading[entry.id];
+          if (res.error) {
+            flashSyncError("Poza s-a încărcat dar nu am putut salva referința — încearcă din nou.");
+            console.error(res.error);
+            render();
+            return;
+          }
+          jurnalPoze.push(jurnalPozaFromRow(res.data));
+          render();
+        });
+    });
+  }
+  function removeJurnalPhoto(photoId) {
+    var photo = jurnalPoze.filter(function (p) { return p.id === photoId; })[0];
+    if (!photo) return;
+    if (!confirmDelete("Ștergi poza? Această acțiune nu poate fi anulată.")) return;
+    jurnalPoze = jurnalPoze.filter(function (p) { return p !== photo; });
+    render();
+    sb.storage.from(DOC_BUCKET).remove([photo.fisierPath]);
+    sb.from("santier_jurnal_poze").delete().eq("id", photo.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut șterge poza."); console.error(res.error); }
+    });
+  }
+
   // --- pontaj: persisted in Supabase (workers, daily statuses, company header) ---
   var SUPABASE_URL = "https://rwxsvsqoohepcfbawfng.supabase.co";
   var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3eHN2c3Fvb2hlcGNmYmF3Zm5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0NTM4NjksImV4cCI6MjEwNTAyOTg2OX0.kQDsm-LvaKf9iNg9g8fdzdpaHBznK94-_S3jfukKyCs";
@@ -776,9 +963,11 @@
       sb.from("santier_progres_coloane").select("*"),
       sb.from("santier_progres_randuri").select("*"),
       sb.from("santier_pv_date").select("*"),
-      sb.from("santier_tronsoane").select("*").order("ordine")
+      sb.from("santier_tronsoane").select("*").order("ordine"),
+      sb.from("santier_jurnal").select("*").order("data", { ascending: false }),
+      sb.from("santier_jurnal_poze").select("*").order("created_at")
     ]).then(function (results) {
-      var mRes = results[0], eRes = results[1], cRes = results[2], sRes = results[3], dRes = results[4], pcRes = results[5], prRes = results[6], pvRes = results[7], trRes = results[8];
+      var mRes = results[0], eRes = results[1], cRes = results[2], sRes = results[3], dRes = results[4], pcRes = results[5], prRes = results[6], pvRes = results[7], trRes = results[8], jRes = results[9], jpRes = results[10];
       workers = (mRes.data || []).map(function (w) {
         return { id: w.id, name: w.nume, functie: w.functie || "", salariu: w.salariu, metodaPlata: w.metoda_plata || "CARD", telefon: w.telefon || "" };
       });
@@ -791,6 +980,8 @@
       progresRanduri = (prRes.data || []).map(progresRandFromRow);
       pvDateList = (pvRes.data || []).map(pvDateFromRow);
       tronsoane = (trRes.data || []).map(tronsonFromRow);
+      jurnalEntries = (jRes.data || []).map(jurnalFromRow);
+      jurnalPoze = (jpRes.data || []).map(jurnalPozaFromRow);
     }).catch(function (err) {
       flashSyncError("Nu am putut încărca datele din Supabase.");
       console.error(err);
@@ -2320,6 +2511,7 @@
           '<div class="nav-item' + (state.view === "dashboard" ? " active" : "") + '" data-go="dashboard">' + icon("home") + 'Dashboard</div>' +
           '<div class="nav-item' + ((state.view === "sites" || state.view === "detail") ? " active" : "") + '" data-go="sites">' + icon("building") + 'Șantiere</div>' +
           '<div class="sites">' + sitesHtml + '</div>' +
+          '<div class="nav-item' + ((state.view === "jurnal" || state.view === "jurnal-detail") ? " active" : "") + '" style="margin-top:10px" data-go="jurnal">' + icon("docLines") + 'Jurnal zilnic</div>' +
           '<div class="nav-item' + (state.view === "pontaj-global" ? " active" : "") + '" style="margin-top:10px" data-go="pontaj-global">' + icon("clock") + 'Pontaj</div>' +
           '<div class="nav-item">' + icon("chart") + 'Rapoarte</div>' +
         '</div>' +
@@ -2563,6 +2755,117 @@
       '<div class="panel-title" style="margin:22px 0 12px">Șantiere recente</div>' +
       '<div class="grid">' + sitesSection + '</div>' +
       seeAll;
+  }
+
+  // Jurnal zilnic: site picker — mirrors sitesHTML's card grid, but each
+  // card opens that site's own separate journal instead of the site detail.
+  function jurnalSitesHTML() {
+    var cards = sites.map(function (s) {
+      var count = jurnalEntriesForSite(s.id).length;
+      return '' +
+        '<div class="card" data-open-jurnal-site="' + s.id + '">' +
+          '<div class="thumb">' + icon("docLines", 26) + '</div>' +
+          '<div class="card-body">' +
+            '<div class="card-title">' + esc(s.nume) + '</div>' +
+            '<div class="card-addr">' + icon("pin", 13) + (s.adresa ? esc(s.adresa) : "Adresă neconfigurată încă") + '</div>' +
+            '<span class="badge ' + statusBadgeCls(s.status) + '">' + count + (count === 1 ? " zi înregistrată" : " zile înregistrate") + '</span>' +
+            '<div class="card-foot" style="justify-content:flex-end"><div class="card-open">Deschide jurnalul ' + icon("chevronRight", 13) + '</div></div>' +
+          '</div>' +
+        '</div>';
+    }).join("");
+    var empty = sites.length === 0
+      ? '<div class="card card-new" data-go="sites">' + icon("plus", 26) + '<div class="card-new-label">Adaugă întâi un șantier</div></div>'
+      : "";
+    return '' +
+      '<div class="topbar"><div><div class="h1">Jurnal zilnic</div><div class="h1-sub">Alege șantierul — jurnalul fiecărui șantier este complet separat de celelalte</div></div></div>' +
+      '<div class="grid">' + cards + empty + '</div>';
+  }
+
+  function jurnalFormHTML(site) {
+    if (!state.jurnalForm.addOpen) return "";
+    var draft = state.jurnalForm.draft;
+    var isEdit = !!state.jurnalForm.editingId;
+    var fields = JURNAL_FIELDS.map(function (f) {
+      var key = f[0], label = f[1], type = f[2], ph = f[3], required = f[4];
+      var inputId = "jurnal-field-" + key;
+      var control = type === "date"
+        ? '<input type="date" id="' + inputId + '" data-jurnal-field="' + key + '" value="' + esc(draft[key] || "") + '">'
+        : type === "textarea"
+          ? '<textarea id="' + inputId + '" data-jurnal-field="' + key + '" rows="2" placeholder="' + esc(ph) + '">' + esc(draft[key] || "") + '</textarea>'
+          : '<input id="' + inputId + '" data-jurnal-field="' + key + '" placeholder="' + esc(ph) + '" value="' + esc(draft[key] || "") + '">';
+      return '<div class="modal-field"' + (type === "textarea" ? ' style="grid-column:1 / -1"' : '') + '><label for="' + inputId + '">' + esc(label) + (required ? ' *' : '') + '</label>' + control + '</div>';
+    }).join("");
+    return '' +
+      '<div class="panel" style="margin-bottom:16px">' +
+        '<div class="panel-title">' + (isEdit ? "Editează ziua de jurnal" : "Zi nouă de jurnal") + '</div>' +
+        '<div class="panel-sub">' + esc(site.nume) + '</div>' +
+        '<div class="site-field-grid">' + fields + '</div>' +
+        '<div class="modal-actions" style="justify-content:flex-start;margin-top:16px">' +
+          '<button class="btn btn-primary btn-sm" data-save-jurnal="' + site.id + '">Salvează</button>' +
+          '<button class="btn btn-ghost btn-sm" data-cancel-jurnal="1">Anulează</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function jurnalEntryCardHTML(entry) {
+    var photos = jurnalPozeForEntry(entry.id);
+    var photoChips = photos.map(function (p) {
+      var url = sb.storage.from(DOC_BUCKET).getPublicUrl(p.fisierPath).data.publicUrl;
+      return '<div class="jurnal-photo-chip">' +
+        '<a href="' + esc(url) + '" target="_blank" rel="noopener" draggable="false"><img src="' + esc(url) + '" alt="' + esc(p.fisierNume) + '"></a>' +
+        '<span class="doc-file-del" data-remove-jurnal-photo="' + p.id + '" title="Șterge poza">' + icon("trash", 12) + '</span>' +
+      '</div>';
+    }).join("");
+    var isTmp = String(entry.id).indexOf("tmp-") === 0;
+    var uploading = state.jurnalForm.photoUploading[entry.id];
+    var addPhotoBtn = isTmp ? "" :
+      '<label class="btn btn-ghost btn-sm doc-upload-label" for="jurnal-photo-input-' + entry.id + '">' + icon("plus", 13) + 'Adaugă poză' +
+        '<input type="file" id="jurnal-photo-input-' + entry.id + '" data-jurnal-photo-input="' + entry.id + '" accept="image/*" style="display:none"></label>';
+
+    var metaBits = [];
+    if (entry.conditii_meteo) metaBits.push(esc(entry.conditii_meteo));
+    if (entry.temperatura) metaBits.push(esc(entry.temperatura));
+    if (entry.numar_muncitori) metaBits.push(esc(entry.numar_muncitori) + " muncitori");
+    if (entry.autor) metaBits.push("completat de " + esc(entry.autor));
+    var metaLine = metaBits.length ? '<div class="jurnal-meta">' + metaBits.join(" · ") + '</div>' : "";
+
+    var skip = { data: 1, conditii_meteo: 1, temperatura: 1, numar_muncitori: 1, autor: 1 };
+    var fieldRows = JURNAL_FIELDS.filter(function (f) { return !skip[f[0]] && entry[f[0]]; })
+      .map(function (f) {
+        return '<div class="jurnal-field"><div class="jurnal-field-label">' + esc(f[1]) + '</div><div class="jurnal-field-val">' + esc(entry[f[0]]) + '</div></div>';
+      }).join("");
+
+    return '' +
+      '<div class="panel jurnal-entry">' +
+        '<div class="jurnal-entry-head">' +
+          '<div><div class="panel-title">' + esc(formatJurnalDate(entry.data)) + '</div>' + metaLine + '</div>' +
+          '<div class="jurnal-entry-actions">' +
+            '<span class="btn btn-ghost btn-sm" data-edit-jurnal="' + entry.id + '">' + icon("pencil", 13) + 'Editează</span>' +
+            '<span class="btn btn-ghost btn-sm" data-delete-jurnal="' + entry.id + '">' + icon("trash", 13) + 'Șterge</span>' +
+          '</div>' +
+        '</div>' +
+        fieldRows +
+        '<div class="jurnal-photos">' + photoChips + (uploading ? '<span class="doc-uploading">Se încarcă…</span>' : addPhotoBtn) + '</div>' +
+      '</div>';
+  }
+
+  function jurnalDetailHTML() {
+    var site = findSite(state.jurnalSiteId);
+    if (!site) {
+      return '<div class="topbar"><div><div class="h1">Jurnal zilnic</div></div></div>' +
+        '<button class="btn btn-primary" data-go="jurnal">Înapoi la jurnal</button></div>';
+    }
+    var list = jurnalEntriesForSite(site.id);
+    var listHtml = list.length
+      ? list.map(jurnalEntryCardHTML).join("")
+      : '<div class="jurnal-empty">Niciun jurnal înregistrat încă pentru acest șantier.</div>';
+    return '' +
+      '<div class="crumb"><span class="crumb-link" data-go="jurnal">Jurnal zilnic</span> / <b>' + esc(site.nume) + '</b></div>' +
+      '<div class="topbar"><div><div class="h1">' + esc(site.nume) + '</div><div class="h1-sub">Jurnalul acestui șantier — separat complet de celelalte șantiere</div></div>' +
+        (state.jurnalForm.addOpen ? "" : '<button class="btn btn-primary" data-open-add-jurnal="' + site.id + '">' + icon("plus", 15) + 'Adaugă zi</button>') +
+      '</div>' +
+      jurnalFormHTML(site) +
+      listHtml;
   }
 
   function bulkBarHTML() {
@@ -3176,8 +3479,10 @@
     else if (state.view === "sites") main = sitesHTML();
     else if (state.view === "detail") main = detailHTML();
     else if (state.view === "pontaj-global") main = pontajGlobalHTML();
+    else if (state.view === "jurnal") main = jurnalSitesHTML();
+    else if (state.view === "jurnal-detail") main = jurnalDetailHTML();
 
-    var navKey = state.view + "|" + state.activeTab + "|" + state.siteForm.subTab + "|" + state.siteForm.progresSubTab + "|" + state.selectedSiteId;
+    var navKey = state.view + "|" + state.activeTab + "|" + state.siteForm.subTab + "|" + state.siteForm.progresSubTab + "|" + state.selectedSiteId + "|" + state.jurnalSiteId;
     var navChanged = navKey !== lastNavKey;
     lastNavKey = navKey;
 
@@ -3311,7 +3616,9 @@
       "[data-merge-cells-confirm],[data-merge-cells-cancel],[data-unmerge-cell]," +
       "[data-undo-progres]," +
       "[data-edit-pv-date],[data-save-pv-date],[data-cancel-pv-date]," +
-      "[data-add-tronson],[data-remove-tronson],[data-generate-pv],[data-generate-all-pv]"
+      "[data-add-tronson],[data-remove-tronson],[data-generate-pv],[data-generate-all-pv]," +
+      "[data-open-jurnal-site],[data-open-add-jurnal],[data-save-jurnal],[data-cancel-jurnal]," +
+      "[data-edit-jurnal],[data-delete-jurnal],[data-remove-jurnal-photo]"
     );
 
     // Only re-render when something actually changes. A blanket render() on every
@@ -3337,7 +3644,10 @@
     var isNav = false;
     if (t) {
       needsRender = true;
-      if (t.dataset.go) { state.view = t.dataset.go; isNav = true; }
+      if (t.dataset.go) {
+        state.view = t.dataset.go; isNav = true;
+        if (t.dataset.go === "jurnal") { state.jurnalSiteId = null; closeJurnalForm(); }
+      }
       else if (t.dataset.openSite) {
         if (e.target.dataset.sidebarNameInput) {
           needsRender = false; // clicking inside the active rename input just places the cursor
@@ -3587,6 +3897,19 @@
         if (gapvSite) generateAllPvsForSite(gapvSite);
         needsRender = false;
       }
+      else if (t.dataset.openJurnalSite) {
+        state.view = "jurnal-detail"; state.jurnalSiteId = t.dataset.openJurnalSite;
+        closeJurnalForm(); isNav = true;
+      }
+      else if (t.dataset.openAddJurnal) { openJurnalAdd(); }
+      else if (t.dataset.saveJurnal) { saveJurnalEntryFromInput(t.dataset.saveJurnal); }
+      else if (t.dataset.cancelJurnal) { closeJurnalForm(); }
+      else if (t.dataset.editJurnal) {
+        var ejEntry = findJurnalEntry(t.dataset.editJurnal);
+        if (ejEntry) openJurnalEdit(ejEntry);
+      }
+      else if (t.dataset.deleteJurnal) { removeJurnalEntry(t.dataset.deleteJurnal); }
+      else if (t.dataset.removeJurnalPhoto) { removeJurnalPhoto(t.dataset.removeJurnalPhoto); }
     }
 
     if (needsRender) {
@@ -3620,6 +3943,7 @@
       var tfRow = tronsoane.filter(function (t) { return t.id === tfParts[0]; })[0];
       if (tfRow) tfRow[tfParts[1]] = e.target.value;
     }
+    else if (e.target.dataset.jurnalField) { state.jurnalForm.draft[e.target.dataset.jurnalField] = e.target.value; }
   });
   // focusout (not blur — blur doesn't bubble, so it can't be handled via
   // delegation on #app) persists a tronson field once the user moves on,
@@ -3645,6 +3969,11 @@
       var dfSite = findSite(dfParts[0]);
       var file = e.target.files && e.target.files[0];
       if (dfSite && file) uploadDocFile(dfSite, dfParts[1], file);
+    }
+    else if (e.target.dataset.jurnalPhotoInput) {
+      var jpEntry = findJurnalEntry(e.target.dataset.jurnalPhotoInput);
+      var jpFile = e.target.files && e.target.files[0];
+      if (jpEntry && jpFile) uploadJurnalPhoto(jpEntry, jpFile);
     }
   });
 
