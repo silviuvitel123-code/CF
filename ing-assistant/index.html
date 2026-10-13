@@ -389,6 +389,9 @@
   .progrid td.progrid-cell-editable:hover { background: var(--surface-2); }
   .progrid td.progrid-cell-computed { color: var(--ink-soft); font-style: italic; }
   .progrid .progrid-grip { text-align: center; width: 22px; padding: 8px 6px; color: var(--ink-faint); }
+  .tronson-nr-th, .tronson-nr-cell { text-align: center; width: 56px; }
+  .tronson-nr-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px;
+    padding: 0 6px; border-radius: 11px; background: var(--navy-soft); color: var(--navy-hover); font-size: 12px; font-weight: 700; }
   /* Manual (mousedown/mousemove/mouseup) row/column reordering — see the
      comment above endManualProgDrag() for why this replaced native HTML5
      drag-and-drop. Suppress text selection and show a consistent "grabbing"
@@ -630,7 +633,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b74-2026-09-25";
+  var BUILD = "b75-2026-10-13";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -1450,10 +1453,23 @@
     return tronsoane.filter(function (t) { return t.santierId === site.id && t.categorie === categorie; })
       .sort(function (a, b) { return a.ordine - b.ordine; });
   }
+  // `ordine` e un sir UNIC pe tot santierul (nu per categorie) — asta e
+  // numerotarea PV-urilor: pozitia unui tronson in acest sir global, nu
+  // locul lui in lista propriei categorii. Utilizatorul il poate rearanja
+  // liber, inclusiv intercaland categorii diferite.
+  function tronsoaneOrderedForSite(site) {
+    return tronsoane.filter(function (t) { return t.santierId === site.id; })
+      .sort(function (a, b) { return a.ordine - b.ordine; });
+  }
+  function numarPvMapForSite(site) {
+    var map = {};
+    tronsoaneOrderedForSite(site).forEach(function (t, i) { map[t.id] = i + 1; });
+    return map;
+  }
   function addTronson(site, categorie) {
     var tempId = "tmp-" + Date.now();
-    var existing = tronsoaneForSite(site, categorie);
-    var ordine = existing.length ? Math.max.apply(null, existing.map(function (t) { return t.ordine; })) + 1 : 0;
+    var allSite = tronsoaneOrderedForSite(site);
+    var ordine = allSite.length ? Math.max.apply(null, allSite.map(function (t) { return t.ordine; })) + 1 : 0;
     tronsoane.push({ id: tempId, santierId: site.id, categorie: categorie, cod: "", specificatieConducta: "", reperStart: "", reperEnd: "", lungime: "", planse: "", profilLongitudinal: "", ordine: ordine });
     render();
     sb.from("santier_tronsoane").insert({ santier_id: site.id, categorie: categorie, ordine: ordine }).select().single().then(function (res) {
@@ -1466,6 +1482,34 @@
       live.id = res.data.id;
       render();
     });
+  }
+  // Rearanjare prin drag: ca la randuri/coloane din Progres Santier, aceeasi
+  // metoda manuala mousedown/mousemove/mouseup (nu HTML5 drag nativ — vezi
+  // comentariul de la manualRowDrag despre pagina care se poate bloca).
+  // Drop target-ul se cauta global pe pagina ([data-tronson-row]), nu doar
+  // in tabelul categoriei curente, ca utilizatorul sa poata intercala orice
+  // categorie cu orice alta (ex: CD5, CM2, CD6, EL1...).
+  function reorderTronsoane(site, draggedId, targetId, before) {
+    if (draggedId === targetId) return;
+    var ids = tronsoaneOrderedForSite(site).map(function (t) { return t.id; });
+    var fromIdx = ids.indexOf(draggedId);
+    if (fromIdx === -1) return;
+    ids.splice(fromIdx, 1);
+    var toIdx = ids.indexOf(targetId);
+    if (toIdx === -1) return;
+    if (!before) toIdx += 1;
+    ids.splice(toIdx, 0, draggedId);
+    ids.forEach(function (id, i) {
+      var t = tronsoane.filter(function (x) { return x.id === id; })[0];
+      if (t) t.ordine = i;
+    });
+    render();
+    Promise.all(ids.map(function (id, i) { return sb.from("santier_tronsoane").update({ ordine: i }).eq("id", id); }))
+      .then(function (results) {
+        if (results.some(function (r) { return r.error; })) {
+          flashSyncError("Nu am putut salva ordinea tronsoanelor."); console.error(results); render();
+        }
+      });
   }
   function removeTronson(id) {
     var t = tronsoane.filter(function (x) { return x.id === id; })[0];
@@ -1519,13 +1563,17 @@
     );
   }
 
-  function pvFileBaseName(t) {
+  function pvFileBaseName(t, numarPv) {
     // "cod" nu există la categoriile fără câmp de cod (ex. rz — vezi
     // TRONSON_FIELDS_RZ) — cade pe volum, apoi specificație, ca fișierele
     // mai multor rezervoare de pe același șantier să nu se suprascrie sub
     // același nume generic "rz".
     var base = t.cod || t.lungime || t.specificatieConducta || t.categorie;
-    return base.toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
+    var slug = base.toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
+    // Prefixul cu numărul PV-ului (din ordinea globală a tronsoanelor) face
+    // ca fișierele dintr-un "Generează toate PV-urile" să se vadă sortate
+    // exact în ordinea stabilită de utilizator, nu alfabetic pe cod.
+    return numarPv ? pad2(numarPv) + "-" + slug : slug;
   }
   function siteSlugFor(site) { return (site.numeScurt || site.nume || "santier").toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, ""); }
   function downloadBlob(blob, filename) {
@@ -1542,7 +1590,7 @@
   // ArrayBuffer (nu blob — atât generatePvForTronson cât și
   // generateAllPvsForSite au nevoie de acest pas, primul ca să-l descarce
   // direct, al doilea ca să-l adauge într-o arhivă .zip cu toate PV-urile).
-  function buildPvArrayBuffer(pv, t) {
+  function buildPvArrayBuffer(pv, t, numarPv) {
     var templateUrl = TRONSON_TEMPLATE_URLS[t.categorie];
     if (!templateUrl) return Promise.reject(pvUserError("Nu există încă șablon pentru această categorie."));
     var DocxCtor = window.docxtemplater || window.Docxtemplater;
@@ -1564,7 +1612,13 @@
         constructor_reprezentant: pv.constructorReprezentant,
         tronson_cod: t.cod, specificatie_conducta: t.specificatieConducta,
         reper_start: t.reperStart, reper_end: t.reperEnd, lungime: t.lungime,
-        planse: t.planse, profil_longitudinal: t.profilLongitudinal
+        planse: t.planse, profil_longitudinal: t.profilLongitudinal,
+        // numar_pv: poziția tronsonului în ordinea globală stabilită de
+        // utilizator (vezi reorderTronsoane) — șabloanele .docx actuale nu au
+        // încă un {numar_pv} propriu-zis, deci docxtemplater îl ignoră fără
+        // efect; rămâne pregătit pentru generatorul nou (PDF, cu poziții
+        // garantate) fără să mai fie nevoie de o altă rundă de editare Word.
+        numar_pv: numarPv || ""
       });
       return doc.getZip().generate({ type: "arraybuffer", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
     });
@@ -1577,9 +1631,10 @@
     if (!pv) { flashSyncError("Completează mai întâi Date șantier → Date generale ale proiectului → Date pentru procese-verbale."); return; }
     var missing = missingPvDateLabels(pv).concat(missingTronsonLabels(t));
     if (missing.length && !confirmPvWarning(missing)) return;
-    buildPvArrayBuffer(pv, t).then(function (buf) {
+    var numarPv = numarPvMapForSite(site)[t.id];
+    buildPvArrayBuffer(pv, t, numarPv).then(function (buf) {
       var blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
-      downloadBlob(blob, "PV-" + pvFileBaseName(t) + "-" + siteSlugFor(site) + ".docx");
+      downloadBlob(blob, "PV-" + pvFileBaseName(t, numarPv) + "-" + siteSlugFor(site) + ".docx");
     }).catch(function (err) {
       console.error(err);
       flashSyncError(err.isPvUserError ? err.message : "Nu am putut genera procesul verbal.");
@@ -1589,11 +1644,12 @@
   // Generează, într-o singură arhivă .zip, câte un .docx pentru FIECARE
   // tronson al șantierului (toate categoriile) — utilizatorul nu mai trebuie
   // să dea click pe "Generează PV" pe rândul fiecărui tronson în parte.
+  // Ordinea (și deci numărul PV) vine din tronsoaneOrderedForSite — același
+  // șir global pe care îl rearanjează utilizatorul prin drag.
   function generateAllPvsForSite(site) {
     var pv = pvDateForSite(site);
     if (!pv) { flashSyncError("Completează mai întâi Date șantier → Date generale ale proiectului → Date pentru procese-verbale."); return; }
-    var all = tronsoane.filter(function (t) { return t.santierId === site.id; })
-      .sort(function (a, b) { return a.ordine - b.ordine; });
+    var all = tronsoaneOrderedForSite(site);
     if (!all.length) { flashSyncError("Adaugă cel puțin un tronson înainte de a genera procesele-verbale."); return; }
 
     var missing = missingPvDateLabels(pv);
@@ -1603,9 +1659,10 @@
     });
     if (missing.length && !confirmPvWarning(missing)) return;
 
-    Promise.all(all.map(function (t) {
-      return buildPvArrayBuffer(pv, t).then(function (buf) {
-        return { ok: true, name: "PV-" + pvFileBaseName(t) + ".docx", buf: buf };
+    Promise.all(all.map(function (t, i) {
+      var numarPv = i + 1;
+      return buildPvArrayBuffer(pv, t, numarPv).then(function (buf) {
+        return { ok: true, name: "PV-" + pvFileBaseName(t, numarPv) + ".docx", buf: buf };
       }).catch(function (err) {
         return { ok: false, cod: t.cod || t.categorie.toUpperCase(), err: err };
       });
@@ -3311,22 +3368,26 @@
   // editabil inline; "Generează PV" produce un .docx nou din șablonul
   // categoriei, completat cu datele acestui tronson + cele de la Date
   // șantier → Date generale ale proiectului → Date pentru procese-verbale.
-  function tronsonCategoryTableHTML(site, categorie) {
+  function tronsonCategoryTableHTML(site, categorie, numarPvMap) {
     var rows = tronsoaneForSite(site, categorie);
     var fields = tronsonFieldsFor(categorie);
-    var headHtml = fields.map(function (f) { return '<th><div class="progrid-th-inner">' + esc(f[1]) + '</div></th>'; }).join("") + '<th></th>';
+    var headHtml = '<th class="progrid-grip"></th><th class="tronson-nr-th">Nr. PV</th>' +
+      fields.map(function (f) { return '<th><div class="progrid-th-inner">' + esc(f[1]) + '</div></th>'; }).join("") + '<th></th>';
     var bodyHtml = rows.map(function (row) {
       var cellsHtml = fields.map(function (f) {
         return '<td class="progrid-cell"><input class="tronson-input" data-tronson-field="' + row.id + '|' + f[0] + '" placeholder="' + esc(f[2]) + '" value="' + esc(row[f[0]]) + '"></td>';
       }).join("");
-      return '<tr data-tronson-row="' + row.id + '">' + cellsHtml +
+      return '<tr data-tronson-row="' + row.id + '">' +
+        '<td class="progrid-grip progrid-sticky-1"><span class="progrid-row-grip-handle" data-tronson-grip-handle="' + row.id + '" style="cursor:grab;display:inline-flex" title="Trage pentru a rearanja ordinea / numerotarea PV">' + icon("grip", 13) + '</span></td>' +
+        '<td class="tronson-nr-cell"><span class="tronson-nr-badge" title="Numărul PV-ului, dat de poziția tronsonului în ordinea stabilită">' + (numarPvMap[row.id] || "—") + '</span></td>' +
+        cellsHtml +
         '<td class="progrid-del-cell"><span style="display:flex;align-items:center;gap:8px;justify-content:center;white-space:nowrap">' +
           '<span class="btn btn-ghost btn-sm" data-generate-pv="' + row.id + '">' + icon("doc", 13) + 'Generează PV</span>' +
           '<span class="progrid-del" data-remove-tronson="' + row.id + '" title="Șterge tronsonul">' + icon("trash", 13) + '</span>' +
         '</span></td>' +
       '</tr>';
     }).join("");
-    var emptyHtml = rows.length === 0 ? '<tr><td colspan="' + (fields.length + 1) + '" class="doclist-empty progrid-empty-cell">Niciun tronson adăugat încă.</td></tr>' : "";
+    var emptyHtml = rows.length === 0 ? '<tr><td colspan="' + (fields.length + 3) + '" class="doclist-empty progrid-empty-cell">Niciun tronson adăugat încă.</td></tr>' : "";
     return '<div class="panel" style="margin-bottom:16px">' +
       '<div class="panel-title">' + esc(TRONSON_CATEGORIE_LABEL[categorie] || categorie) + '</div>' +
       '<div class="progrid-wrap" style="margin-top:10px"><table class="progrid" style="table-layout:auto"><thead><tr>' + headHtml + '</tr></thead><tbody>' + bodyHtml + emptyHtml + '</tbody></table></div>' +
@@ -3336,8 +3397,10 @@
   function tronsoanePanelHTML(site) {
     var hasTronsoane = tronsoane.some(function (t) { return t.santierId === site.id; });
     var bulkBtn = '<button class="btn btn-ghost btn-sm" style="margin-bottom:14px" data-generate-all-pv="' + site.id + '"' + (hasTronsoane ? "" : " disabled") + '>' + icon("doc", 13) + 'Generează toate PV-urile (.zip)</button>';
+    var numarPvMap = numarPvMapForSite(site);
     return bulkBtn +
-      TRONSON_CATEGORII.map(function (cat) { return tronsonCategoryTableHTML(site, cat); }).join("") +
+      (hasTronsoane ? '<div class="helper" style="margin-bottom:14px">Trage de mânerul (' + icon("grip", 11) + ') de lângă orice tronson, din orice categorie, ca să stabilești ordinea — numărul PV-ului (coloana „Nr. PV”) se recalculează automat după ordinea stabilită.</div>' : "") +
+      TRONSON_CATEGORII.map(function (cat) { return tronsonCategoryTableHTML(site, cat, numarPvMap); }).join("") +
       '<div class="helper">Completează câmpurile fiecărui tronson, apoi apasă „Generează PV” — se descarcă un fișier Word complet, cu antetul, subsolul și structura șablonului tău, doar cu datele acestui tronson completate automat. „Generează toate PV-urile” face același lucru pentru toate tronsoanele șantierului deodată, într-o arhivă .zip.</div>';
   }
 
@@ -4142,6 +4205,13 @@
   // fires when the mouse button is released.
   var manualRowDrag = { id: null };
   var manualColDrag = { id: null };
+  // Tronson reordering uses this same manual mousedown/mousemove/mouseup
+  // machinery (never native HTML5 drag — see the comment above about the
+  // page getting stuck). Its drop target is searched across the WHOLE page
+  // ([data-tronson-row]), not scoped to one table, so a tronson can be
+  // dropped next to a tronson of a different category — the user's
+  // numerotare globală requires mixing cd/cm/cr/etc freely in one order.
+  var manualTronsonDrag = { id: null };
   var manualDragRAF = null;
   var manualDragPending = null;
   function scheduleManualDragUpdate(x, y) {
@@ -4176,6 +4246,18 @@
           th.classList.toggle("drag-over-left", beforeCol);
           th.classList.toggle("drag-over-right", !beforeCol);
         }
+      } else if (manualTronsonDrag.id) {
+        var overEl3 = document.elementFromPoint(p.x, p.y);
+        var tronsonTr = overEl3 && overEl3.closest("[data-tronson-row]");
+        document.querySelectorAll("[data-tronson-row].drag-over-top, [data-tronson-row].drag-over-bottom").forEach(function (r) {
+          if (r !== tronsonTr) r.classList.remove("drag-over-top", "drag-over-bottom");
+        });
+        if (tronsonTr && tronsonTr.dataset.tronsonRow !== manualTronsonDrag.id) {
+          var rect3 = tronsonTr.getBoundingClientRect();
+          var before3 = (p.y - rect3.top) < rect3.height / 2;
+          tronsonTr.classList.toggle("drag-over-top", before3);
+          tronsonTr.classList.toggle("drag-over-bottom", !before3);
+        }
       }
     });
   }
@@ -4200,9 +4282,19 @@
       document.body.classList.add("progrid-manual-drag");
       return;
     }
+    var tronsonGrip = e.target.closest("[data-tronson-grip-handle]");
+    if (tronsonGrip) {
+      e.preventDefault();
+      manualTronsonDrag.id = tronsonGrip.dataset.tronsonGripHandle;
+      progresDragActive = true;
+      var tronsonTr = tronsonGrip.closest("[data-tronson-row]");
+      if (tronsonTr) tronsonTr.classList.add("dragging");
+      document.body.classList.add("progrid-manual-drag");
+      return;
+    }
   });
   document.addEventListener("mousemove", function (e) {
-    if (!manualRowDrag.id && !manualColDrag.id) return;
+    if (!manualRowDrag.id && !manualColDrag.id && !manualTronsonDrag.id) return;
     // If the button was released while the cursor was outside the browser
     // viewport (e.g. dragged off the edge of the window), no mouseup event
     // is ever delivered to this page. The next mousemove that re-enters the
@@ -4215,6 +4307,7 @@
   function endManualProgDrag() {
     manualRowDrag.id = null;
     manualColDrag.id = null;
+    manualTronsonDrag.id = null;
     progresDragActive = false;
     if (manualDragRAF) { cancelAnimationFrame(manualDragRAF); manualDragRAF = null; }
     manualDragPending = null;
@@ -4225,21 +4318,26 @@
     if (renderQueuedDuringDrag) { renderQueuedDuringDrag = false; render(); }
   }
   document.addEventListener("mouseup", function (e) {
-    if (!manualRowDrag.id && !manualColDrag.id) return;
-    var isRow = !!manualRowDrag.id;
-    var draggedId = isRow ? manualRowDrag.id : manualColDrag.id;
+    if (!manualRowDrag.id && !manualColDrag.id && !manualTronsonDrag.id) return;
+    var kind = manualRowDrag.id ? "row" : manualColDrag.id ? "col" : "tronson";
+    var draggedId = kind === "row" ? manualRowDrag.id : kind === "col" ? manualColDrag.id : manualTronsonDrag.id;
+    var targetSelector = kind === "row" ? "[data-progrow-id]" : kind === "col" ? "[data-progcol-id]" : "[data-tronson-row]";
     var overEl = document.elementFromPoint(e.clientX, e.clientY);
-    var targetEl = overEl && overEl.closest(isRow ? "[data-progrow-id]" : "[data-progcol-id]");
-    var targetId = targetEl ? (isRow ? targetEl.dataset.progrowId : targetEl.dataset.progcolId) : null;
+    var targetEl = overEl && overEl.closest(targetSelector);
+    var targetId = targetEl ? (kind === "row" ? targetEl.dataset.progrowId : kind === "col" ? targetEl.dataset.progcolId : targetEl.dataset.tronsonRow) : null;
     var before = true;
     if (targetEl) {
       var rect = targetEl.getBoundingClientRect();
-      before = isRow ? ((e.clientY - rect.top) < rect.height / 2) : ((e.clientX - rect.left) < rect.width / 2);
+      before = kind === "col" ? ((e.clientX - rect.left) < rect.width / 2) : ((e.clientY - rect.top) < rect.height / 2);
     }
     endManualProgDrag();
     if (targetId && targetId !== draggedId) {
       var site = findSite(state.selectedSiteId);
-      if (site) { if (isRow) reorderRows(site, draggedId, targetId, before); else reorderColumns(site, draggedId, targetId, before); }
+      if (site) {
+        if (kind === "row") reorderRows(site, draggedId, targetId, before);
+        else if (kind === "col") reorderColumns(site, draggedId, targetId, before);
+        else reorderTronsoane(site, draggedId, targetId, before);
+      }
     }
   });
 
