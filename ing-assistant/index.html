@@ -389,9 +389,9 @@
   .progrid td.progrid-cell-editable:hover { background: var(--surface-2); }
   .progrid td.progrid-cell-computed { color: var(--ink-soft); font-style: italic; }
   .progrid .progrid-grip { text-align: center; width: 22px; padding: 8px 6px; color: var(--ink-faint); }
-  .tronson-nr-th, .tronson-nr-cell { text-align: center; width: 56px; }
+  .tronson-nr-th, .tronson-nr-cell { text-align: center; width: 76px; }
   .tronson-nr-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px;
-    padding: 0 6px; border-radius: 11px; background: var(--navy-soft); color: var(--navy-hover); font-size: 12px; font-weight: 700; }
+    padding: 0 7px; border-radius: 11px; background: var(--navy-soft); color: var(--navy-hover); font-size: 12px; font-weight: 700; white-space: nowrap; }
   /* Manual (mousedown/mousemove/mouseup) row/column reordering — see the
      comment above endManualProgDrag() for why this replaced native HTML5
      drag-and-drop. Suppress text selection and show a consistent "grabbing"
@@ -633,7 +633,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b76-2026-10-13";
+  var BUILD = "b77-2026-10-13";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -1419,6 +1419,11 @@
   // imprejmuiri/electrice se adaugă ulterior în aceeași listă, doar cu o
   // nouă categorie + un nou șablon .docx în TRONSON_TEMPLATE_URLS).
   var TRONSON_CATEGORII = ["cd", "cm", "cr", "el", "rz", "sp", "im"];
+  // Câte procese-verbale distincte generează șablonul fiecărei categorii
+  // pentru UN tronson (vezi cele 7 șabloane .docx — fiecare are un {numar_pv_N}
+  // propriu pe fiecare PV, N = 1..count). Trebuie să rămână sincron cu
+  // numărul real de PV-uri din fiecare șablon (vezi pv-docx-pagination skill).
+  var TRONSON_PV_COUNT = { cd: 12, cm: 12, cr: 12, el: 7, rz: 8, sp: 8, im: 6 };
   var TRONSON_CATEGORIE_LABEL = { cd: "Conductă apă (CD)", cm: "Conductă canalizare (CM)", cr: "Conductă refulare (CR)", el: "Instalații electrice", rz: "Rezervoare", sp: "Stații de pompare", im: "Împrejmuire" };
   var TRONSON_FIELDS = [
     ["cod", "Cod tronson", "ex: CD5"],
@@ -1461,9 +1466,18 @@
     return tronsoane.filter(function (t) { return t.santierId === site.id; })
       .sort(function (a, b) { return a.ordine - b.ordine; });
   }
-  function numarPvMapForSite(site) {
+  // Numărul PV-ului NU e poziția tronsonului în listă — fiecare tronson
+  // produce MAI MULTE PV-uri (12/8/7/6, după categorie), fiecare cu propriul
+  // număr, care continuă de unde a rămas tronsonul anterior. Ex: primul
+  // tronson (7 PV-uri) -> 1..7, al doilea tronson -> 8..(8+count-1), etc.
+  function pvRangeMapForSite(site) {
     var map = {};
-    tronsoaneOrderedForSite(site).forEach(function (t, i) { map[t.id] = i + 1; });
+    var next = 1;
+    tronsoaneOrderedForSite(site).forEach(function (t) {
+      var count = TRONSON_PV_COUNT[t.categorie] || 1;
+      map[t.id] = { start: next, end: next + count - 1, count: count };
+      next += count;
+    });
     return map;
   }
   function addTronson(site, categorie) {
@@ -1563,17 +1577,18 @@
     );
   }
 
-  function pvFileBaseName(t, numarPv) {
+  function pad3(n) { n = String(n); return n.length >= 3 ? n : ("000" + n).slice(-3); }
+  function pvFileBaseName(t, pvStart) {
     // "cod" nu există la categoriile fără câmp de cod (ex. rz — vezi
     // TRONSON_FIELDS_RZ) — cade pe volum, apoi specificație, ca fișierele
     // mai multor rezervoare de pe același șantier să nu se suprascrie sub
     // același nume generic "rz".
     var base = t.cod || t.lungime || t.specificatieConducta || t.categorie;
     var slug = base.toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
-    // Prefixul cu numărul PV-ului (din ordinea globală a tronsoanelor) face
-    // ca fișierele dintr-un "Generează toate PV-urile" să se vadă sortate
-    // exact în ordinea stabilită de utilizator, nu alfabetic pe cod.
-    return numarPv ? pad2(numarPv) + "-" + slug : slug;
+    // Prefixul e numărul PRIMULUI PV al acestui tronson (vezi pvRangeMapForSite)
+    // — face ca fișierele dintr-un "Generează toate PV-urile" să se vadă
+    // sortate exact în ordinea stabilită de utilizator, nu alfabetic pe cod.
+    return pvStart ? pad3(pvStart) + "-" + slug : slug;
   }
   function siteSlugFor(site) { return (site.numeScurt || site.nume || "santier").toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, ""); }
   function downloadBlob(blob, filename) {
@@ -1590,7 +1605,7 @@
   // ArrayBuffer (nu blob — atât generatePvForTronson cât și
   // generateAllPvsForSite au nevoie de acest pas, primul ca să-l descarce
   // direct, al doilea ca să-l adauge într-o arhivă .zip cu toate PV-urile).
-  function buildPvArrayBuffer(pv, t, numarPv) {
+  function buildPvArrayBuffer(pv, t, pvStart) {
     var templateUrl = TRONSON_TEMPLATE_URLS[t.categorie];
     if (!templateUrl) return Promise.reject(pvUserError("Nu există încă șablon pentru această categorie."));
     var DocxCtor = window.docxtemplater || window.Docxtemplater;
@@ -1603,7 +1618,15 @@
     }).then(function (buf) {
       var zip = new PizZip(buf);
       var doc = new DocxCtor(zip, { paragraphLoop: true, linebreaks: true });
-      doc.render({
+      // Fiecare șablon are MAI MULTE PV-uri (12/8/7/6, după categorie), fiecare
+      // cu propriul tag {numar_pv_N} (N = poziția PV-ului ÎN ȘABLON, nu a
+      // tronsonului) — un singur {numar_pv} repetat ar pune ACELAȘI număr pe
+      // toate PV-urile tronsonului, ceea ce e greșit: fiecare PV trebuie să
+      // continue numărătoarea de unde a rămas PV-ul anterior.
+      var count = TRONSON_PV_COUNT[t.categorie] || 1;
+      var numarPvFields = {};
+      for (var i = 0; i < count; i++) numarPvFields["numar_pv_" + (i + 1)] = pvStart ? (pvStart + i) : "";
+      doc.render(Object.assign({
         locatie: pv.locatie, obiectiv: pv.obiectiv,
         autorizatie_nr: pv.autorizatieNr, autorizatie_data: pv.autorizatieData,
         proiect_nr: pv.proiectNr, proiectant_companie: pv.proiectantCompanie, proiectant_reprezentant: pv.proiectantReprezentant,
@@ -1612,14 +1635,8 @@
         constructor_reprezentant: pv.constructorReprezentant,
         tronson_cod: t.cod, specificatie_conducta: t.specificatieConducta,
         reper_start: t.reperStart, reper_end: t.reperEnd, lungime: t.lungime,
-        planse: t.planse, profil_longitudinal: t.profilLongitudinal,
-        // numar_pv: poziția tronsonului în ordinea globală stabilită de
-        // utilizator (vezi reorderTronsoane) — șabloanele .docx actuale nu au
-        // încă un {numar_pv} propriu-zis, deci docxtemplater îl ignoră fără
-        // efect; rămâne pregătit pentru generatorul nou (PDF, cu poziții
-        // garantate) fără să mai fie nevoie de o altă rundă de editare Word.
-        numar_pv: numarPv || ""
-      });
+        planse: t.planse, profil_longitudinal: t.profilLongitudinal
+      }, numarPvFields));
       return doc.getZip().generate({ type: "arraybuffer", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
     });
   }
@@ -1631,10 +1648,10 @@
     if (!pv) { flashSyncError("Completează mai întâi Date șantier → Date generale ale proiectului → Date pentru procese-verbale."); return; }
     var missing = missingPvDateLabels(pv).concat(missingTronsonLabels(t));
     if (missing.length && !confirmPvWarning(missing)) return;
-    var numarPv = numarPvMapForSite(site)[t.id];
-    buildPvArrayBuffer(pv, t, numarPv).then(function (buf) {
+    var pvStart = pvRangeMapForSite(site)[t.id].start;
+    buildPvArrayBuffer(pv, t, pvStart).then(function (buf) {
       var blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
-      downloadBlob(blob, "PV-" + pvFileBaseName(t, numarPv) + "-" + siteSlugFor(site) + ".docx");
+      downloadBlob(blob, "PV-" + pvFileBaseName(t, pvStart) + "-" + siteSlugFor(site) + ".docx");
     }).catch(function (err) {
       console.error(err);
       flashSyncError(err.isPvUserError ? err.message : "Nu am putut genera procesul verbal.");
@@ -1644,7 +1661,7 @@
   // Generează, într-o singură arhivă .zip, câte un .docx pentru FIECARE
   // tronson al șantierului (toate categoriile) — utilizatorul nu mai trebuie
   // să dea click pe "Generează PV" pe rândul fiecărui tronson în parte.
-  // Ordinea (și deci numărul PV) vine din tronsoaneOrderedForSite — același
+  // Ordinea (și deci numerele PV) vine din tronsoaneOrderedForSite — același
   // șir global pe care îl rearanjează utilizatorul prin drag.
   function generateAllPvsForSite(site) {
     var pv = pvDateForSite(site);
@@ -1659,10 +1676,11 @@
     });
     if (missing.length && !confirmPvWarning(missing)) return;
 
-    Promise.all(all.map(function (t, i) {
-      var numarPv = i + 1;
-      return buildPvArrayBuffer(pv, t, numarPv).then(function (buf) {
-        return { ok: true, name: "PV-" + pvFileBaseName(t, numarPv) + ".docx", buf: buf };
+    var rangeMap = pvRangeMapForSite(site);
+    Promise.all(all.map(function (t) {
+      var pvStart = rangeMap[t.id].start;
+      return buildPvArrayBuffer(pv, t, pvStart).then(function (buf) {
+        return { ok: true, name: "PV-" + pvFileBaseName(t, pvStart) + ".docx", buf: buf };
       }).catch(function (err) {
         return { ok: false, cod: t.cod || t.categorie.toUpperCase(), err: err };
       });
@@ -3368,18 +3386,20 @@
   // editabil inline; "Generează PV" produce un .docx nou din șablonul
   // categoriei, completat cu datele acestui tronson + cele de la Date
   // șantier → Date generale ale proiectului → Date pentru procese-verbale.
-  function tronsonCategoryTableHTML(site, categorie, numarPvMap) {
+  function tronsonCategoryTableHTML(site, categorie, pvRangeMap) {
     var rows = tronsoaneForSite(site, categorie);
     var fields = tronsonFieldsFor(categorie);
     var headHtml = '<th class="progrid-grip"></th><th class="tronson-nr-th">Nr. PV</th>' +
       fields.map(function (f) { return '<th><div class="progrid-th-inner">' + esc(f[1]) + '</div></th>'; }).join("") + '<th></th>';
     var bodyHtml = rows.map(function (row) {
+      var range = pvRangeMap[row.id];
+      var nrLabel = range ? (range.count > 1 ? (range.start + "–" + range.end) : String(range.start)) : "—";
       var cellsHtml = fields.map(function (f) {
         return '<td class="progrid-cell"><input class="tronson-input" data-tronson-field="' + row.id + '|' + f[0] + '" placeholder="' + esc(f[2]) + '" value="' + esc(row[f[0]]) + '"></td>';
       }).join("");
       return '<tr data-tronson-row="' + row.id + '">' +
         '<td class="progrid-grip progrid-sticky-1"><span class="progrid-row-grip-handle" data-tronson-grip-handle="' + row.id + '" style="cursor:grab;display:inline-flex" title="Trage pentru a rearanja ordinea / numerotarea PV">' + icon("grip", 13) + '</span></td>' +
-        '<td class="tronson-nr-cell"><span class="tronson-nr-badge" title="Numărul PV-ului, dat de poziția tronsonului în ordinea stabilită">' + (numarPvMap[row.id] || "—") + '</span></td>' +
+        '<td class="tronson-nr-cell"><span class="tronson-nr-badge" title="Numerele PV-urilor acestui tronson, continuând de la tronsonul anterior">' + esc(nrLabel) + '</span></td>' +
         cellsHtml +
         '<td class="progrid-del-cell"><span style="display:flex;align-items:center;gap:8px;justify-content:center;white-space:nowrap">' +
           '<span class="btn btn-ghost btn-sm" data-generate-pv="' + row.id + '">' + icon("doc", 13) + 'Generează PV</span>' +
@@ -3397,10 +3417,10 @@
   function tronsoanePanelHTML(site) {
     var hasTronsoane = tronsoane.some(function (t) { return t.santierId === site.id; });
     var bulkBtn = '<button class="btn btn-ghost btn-sm" style="margin-bottom:14px" data-generate-all-pv="' + site.id + '"' + (hasTronsoane ? "" : " disabled") + '>' + icon("doc", 13) + 'Generează toate PV-urile (.zip)</button>';
-    var numarPvMap = numarPvMapForSite(site);
+    var pvRangeMap = pvRangeMapForSite(site);
     return bulkBtn +
-      (hasTronsoane ? '<div class="helper" style="margin-bottom:14px">Trage de mânerul (' + icon("grip", 11) + ') de lângă orice tronson, din orice categorie, ca să stabilești ordinea — numărul PV-ului (coloana „Nr. PV”) se recalculează automat după ordinea stabilită.</div>' : "") +
-      TRONSON_CATEGORII.map(function (cat) { return tronsonCategoryTableHTML(site, cat, numarPvMap); }).join("") +
+      (hasTronsoane ? '<div class="helper" style="margin-bottom:14px">Trage de mânerul (' + icon("grip", 11) + ') de lângă orice tronson, din orice categorie, ca să stabilești ordinea — coloana „Nr. PV” arată numerele PV-urilor acelui tronson (un tronson produce mai multe PV-uri), recalculate automat, continuând de la tronsonul anterior.</div>' : "") +
+      TRONSON_CATEGORII.map(function (cat) { return tronsonCategoryTableHTML(site, cat, pvRangeMap); }).join("") +
       '<div class="helper">Completează câmpurile fiecărui tronson, apoi apasă „Generează PV” — se descarcă un fișier Word complet, cu antetul, subsolul și structura șablonului tău, doar cu datele acestui tronson completate automat. „Generează toate PV-urile” face același lucru pentru toate tronsoanele șantierului deodată, într-o arhivă .zip.</div>';
   }
 
