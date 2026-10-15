@@ -7,13 +7,17 @@ munca și să nu se repete aceleași bug-uri.
 
 ## Arhitectura
 
-- Șabloanele sunt fișiere `.docx` reale în `ing-assistant/templates/pv-{cd,cm,cr}.docx`.
-- Generarea se face client-side, în browser, cu `docxtemplater` + `pizzip`
-  (librării reale, încărcate din CDN — vezi `<script>` tags din `index.html`),
-  NU server-side și NU prin conversie PDF/imagine. Rezultatul livrat
-  utilizatorului este întotdeauna `.docx` autentic.
+- Șabloanele sunt fișiere `.docx` reale în `ing-assistant/templates/pv-{cd,cm,cr,el,rz,sp,im}.docx`.
+- Generarea implicită se face client-side, în browser, cu `docxtemplater` +
+  `pizzip` (librării reale, încărcate din CDN — vezi `<script>` tags din
+  `index.html`), NU server-side și NU prin conversie PDF/imagine. Fișierul
+  livrat utilizatorului pe acest flux e întotdeauna `.docx` autentic.
 - Placeholder-ele din șablon sunt de forma `{nume_camp}` și sunt înlocuite
   direct în `word/document.xml` din interiorul arhivei .docx.
+- Există și un AL DOILEA flux, opțional, care generează direct `.pdf` (butonul
+  „PDF” de lângă „Generează PV”) — vezi secțiunea „Generare PV ca PDF” mai
+  jos. Cele două fluxuri sunt complet independente; niciuna din regulile de
+  mai jos despre `.docx`/pagination nu se aplică fluxului PDF, și invers.
 
 ## Sursele de date (Supabase)
 
@@ -132,6 +136,66 @@ aplică-le de la început, nu le redescoperi:
   test_progres_subtabs.js, test_multiselect.js, test_persistence.js,
   test_cell_merge.js, test_motion_transitions.js, test_pwa_install.js,
   test_pwa_real_server.js, test_pv_generation.js, test_pv_real_docx.js`.
+
+## Generare PV ca PDF (flux secundar, opțional)
+
+Pe lângă fluxul `.docx` de mai sus (rămas neschimbat, e implicit), aplicația
+mai are un buton „PDF” (per tronson) și „Generează toate PV-urile (PDF, .zip)”
+(per șantier) care generează același conținut direct ca `.pdf`, cu un motor
+de layout complet separat, scris de la zero (nu conversie Word→PDF). Motivul:
+utilizatorul a cerut un rezultat cu layout controlat integral de cod, fără
+ambiguitățile de flow ale Word-ului care au cauzat majoritatea bug-urilor de
+paginare de mai sus.
+
+- **Librării**: `pdf-lib` + `@pdf-lib/fontkit`, încărcate din CDN (aceeași
+  convenție ca docxtemplater/pizzip, `<script defer>` în `<head>`).
+- **Font**: Liberation Sans (Regular/Bold/Italic/BoldItalic, licență SIL OFL,
+  e fontul de substituție pentru Arial al LibreOffice pe Linux) — auto-găzduit
+  în `ing-assistant/pv-pdf-assets/*.ttf`, necesar pentru diacriticele
+  românești ă/â/î/ș/ț (ș/ț sunt forma cu virgulă dedesubt, U+0219/U+021B — NU
+  există în WinAnsiEncoding/fonturile standard-14 ale pdf-lib, trebuie font
+  TTF înglobat prin fontkit).
+- **Logo**: `ing-assistant/pv-pdf-assets/logo.png` (extras din
+  `word/media/image1.png` al unui șablon .docx existent).
+- **Conținutul fiecărui PV**: `ing-assistant/pv-pdf-content/{cd,cm,cr,el,rz,sp,im}.json`
+  — extras AUTOMAT din șabloanele `.docx` reale (nu scris de mână) cu
+  `ing-assistant/pv-pdf-content/extract.py` (commis în repo — dacă un șablon
+  `.docx` se modifică, regenerează cu
+  `python3 extract.py ../templates/pv-<cat>.docx <cat>.json` pentru fiecare
+  categorie). Logica: parsează `word/document.xml`, ancorează fiecare PV pe
+  linia lui „meta” care conține `{numar_pv_N}`, urcă pe blocul de titlu
+  centrat dinaintea ei, apoi clasifică fiecare paragraf din corp ca
+  `text`/`bullet`/`sig4col` (blocul cu 4 coloane „faze determinante”).
+- **Motorul de randare**: funcțiile `renderPvPdfPages`/`buildPvPdfBytes` din
+  `index.html` (lângă `buildPvArrayBuffer`). Fiecare PV al unui tronson iese
+  pe PROPRIA pagină PDF nouă (nu curge Word-style) — elimină ambiguitatea de
+  flow complet. Constantele de poziționare (margini, mărimi font, înălțimi de
+  linie, poziția blocului de semnături, coloanele „faze determinante”) au
+  fost MĂSURATE pixel-precis dintr-o randare reală Word→LibreOffice→PDF
+  (PyMuPDF, nu ghicite) — nu le modifica fără să re-măsori la fel.
+  Constantele cheie: `MARGIN_L=MARGIN_R=72.1pt`, `BODY_SIZE=11pt`,
+  `LINE_H=12.65pt`, `SIG4_COL_X=[2.5,122.5,242.5,362.5]` (relativ la
+  MARGIN_L — tab-stop-urile twips 50/2450/4850/7250 din regula 6 de mai sus,
+  convertite DIRECT /20, fără ajustare după `ind left`), `SIG4_SIZE=9pt`,
+  `SIG4_ROW_H=18.5pt`, `SIG_ROW_H=45.3pt`, `BASELINE_OFFSET=9.9pt` (pdf-lib
+  `drawText` dă baseline-ul, PyMuPDF `bbox[1]` dă vârful glifului — trebuie
+  reconciliate).
+- **Bug real, rezolvat**: la PV-urile „faze determinante” (7 din 65: 2×cd,
+  2×cm, 2×cr, 1×el), paragraful de corp „reprezentat de Ing.
+  {constructor_reprezentant}” (NU un rând de semnătură) avea un `<w:tab/>`
+  final în șablonul original, ceea ce-l făcea să fie prins fals de
+  euristica de detectare a rândurilor de semnătură simple (`sigRows`) —
+  rezultat: suprapunere de text cu blocul de semnături pe 4 coloane. Fix:
+  euristica cere acum `:` urmat de `Ing\.`/`ing\.` (rândurile reale de
+  semnătură sunt gen „Diriginte șantier:      Ing. {nume}”), nu doar
+  prezența cuvântului „Ing.” oriunde în text.
+- **Testare**: fără script de test commis (scratchpad-only, per convenția
+  proiectului) — dar verificat exhaustiv: toate cele 65 PV-uri din cele 7
+  categorii (număr pagini = număr PV-uri, 0 pagini goale), numerotare globală
+  verificată prin tot fluxul (buton → dispatcher → `buildPvPdfBytes` →
+  `{numar_pv_N}` → `.zip`), și un test de integrare real pe `index.html`
+  nemodificat (Supabase + CDN-uri interceptate spre bundle-uri locale reale,
+  click efectiv pe butoane, descărcare reală verificată byte-cu-byte).
 
 ## Workflow de deploy
 
