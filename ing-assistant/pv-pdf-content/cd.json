@@ -292,15 +292,6 @@
       "t": "Se autorizează începerea lucrărilor de săpătură pe tronsonul trasat."
      }
     ]
-   },
-   {
-    "type": "text",
-    "segs": [
-     {
-      "t": "PROCES VERBAL PENTRU VERIFICAREA CALITĂȚII",
-      "b": 1
-     }
-    ]
    }
   ],
   "sigHeader": true,
@@ -312,6 +303,7 @@
  },
  {
   "titleLines": [
+   "PROCES VERBAL PENTRU VERIFICAREA CALITĂȚII",
    "LUCRĂRILOR CE DEVIN ASCUNSE"
   ],
   "meta": "Nr. {numar_pv_3}      Data .................",
