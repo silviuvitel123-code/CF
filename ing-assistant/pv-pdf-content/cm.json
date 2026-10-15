@@ -251,15 +251,6 @@
       "t": "Se confirmă corectitudinea trasării în plan și profil a rețelei de canalizare, motiv pentru care se aprobă trecerea la execuția lucrărilor de săpătură."
      }
     ]
-   },
-   {
-    "type": "text",
-    "segs": [
-     {
-      "t": "PROCES VERBAL PENTRU VERIFICAREA CALITĂȚII",
-      "b": 1
-     }
-    ]
    }
   ],
   "sigHeader": true,
@@ -271,6 +262,7 @@
  },
  {
   "titleLines": [
+   "PROCES VERBAL PENTRU VERIFICAREA CALITĂȚII",
    "LUCRĂRILOR CE DEVIN ASCUNSE"
   ],
   "meta": "Nr. {numar_pv_3}       Data  ",

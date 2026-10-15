@@ -3,15 +3,23 @@
 """
 Extrage structura completa a unui sablon pv-*.docx in JSON. Ancora de
 segmentare: fiecare PV are EXACT o linie "meta" (Nr./Data) cu {numar_pv_N}.
-Gaseste liniile meta (fara ambiguitate), urca pe blocul de titlu (toate
-liniile centrate consecutive dinaintea liniei meta -- de obicei bold, dar
-unele sabloane au si o linie centrata nebold intre titlu si Nr., ex.
-"Incheiat astazi"). Orice alt paragraf bold+centrat din corp (ex.
-"SE AUTORIZEAZA CONTINUAREA EXECUTARII LUCRARILOR") ramane continut normal,
-nu devine titlu nou. Blocul special de semnaturi pe 4 coloane (DIRIGINTE
-SANTIER / PROIECTANT / CONSTRUCTOR / R.T.E., folosit la PV-urile de "faze
-determinante") e detectat si descompus pe coloane folosind pozitiile reale
-de tab stop din pPr.
+Gaseste liniile meta (fara ambiguitate), urca pe blocul de titlu: orice linie
+CENTRATA SAU INTEGRAL BOLD, consecutiva (fara alt continut intre), dinaintea
+liniei meta. De ce "sau bold" si nu doar centrat: in pv-cd.docx (si pv-cm,
+pv-cr), prima aparitie a titlului "PROCES VERBAL PENTRU VERIFICAREA
+CALITATII / LUCRARILOR CE DEVIN ASCUNSE" are a doua linie centrata dar PRIMA
+linie NU are jc=center explicit in XML (are doar indentare, probabil o
+inconsistenta veche de editare manuala) -- insa e tot bold, la fel ca restul
+titlurilor, deci criteriul "bold" o prinde corect fara sa depinda de un
+atribut XML care lipseste doar la acel unic paragraf. Unele sabloane mai au
+si o linie centrata nebold intre titlu si Nr., ex. "Incheiat astazi" (prinsa
+de criteriul "centrat"). Orice alt paragraf bold+centrat din corpul unui PV
+(ex. "SE AUTORIZEAZA CONTINUAREA EXECUTARII LUCRARILOR") ramane continut
+normal, nu devine titlu nou, pentru ca bucla urca DOAR inapoi de la linia
+meta, nu scaneaza tot documentul. Blocul special de semnaturi pe 4 coloane
+(DIRIGINTE SANTIER / PROIECTANT / CONSTRUCTOR / R.T.E., folosit la PV-urile
+de "faze determinante") e detectat si descompus pe coloane folosind
+pozitiile reale de tab stop din pPr.
 """
 import zipfile, json, sys, os, re
 from xml.etree import ElementTree as ET
@@ -88,7 +96,7 @@ def extract_pvs(docx_path):
         j = mi - 1
         while j >= 0 and infos[j]["text"].strip() == "":
             j -= 1
-        while j >= 0 and infos[j]["jc"] == "center" and infos[j]["text"].strip() != "" and "{numar_pv_" not in infos[j]["text"]:
+        while j >= 0 and (infos[j]["jc"] == "center" or infos[j]["all_bold"]) and infos[j]["text"].strip() != "" and "{numar_pv_" not in infos[j]["text"]:
             start = j
             j -= 1
             while j >= 0 and infos[j]["text"].strip() == "":
