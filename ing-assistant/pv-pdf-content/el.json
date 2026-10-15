@@ -1,0 +1,874 @@
+[
+ {
+  "titleLines": [
+   "PROCES VERBAL DE PREDARE – PRIMIRE",
+   "AMPLASAMENT"
+  ],
+  "meta": "Nr. {numar_pv_1}      Data .................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Delimitare amplasament predat (obiectiv, adresă, etc.):"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Instalație electrică interioară {specificatie_conducta}, obiectivul {tronson_cod}, la „{obiectiv}”, comuna {locatie}."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Au stat la bază următoarele documente:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Autorizația de construire nr. {autorizatie_nr} din {autorizatie_data} emisă de Consiliul Primăriei Comunei {locatie};"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Proiectul nr. {proiect_nr}, întocmit de {proiectant_companie}, planșele {planse}, Cf. C56-02, Caiet Instalatii I-Instalatii electrice interioare."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Beneficiarul, prin dirigintele de șantier "
+     },
+     {
+      "t": "ing. ",
+      "b": 1
+     },
+     {
+      "t": "{diriginte_nume}",
+      "b": 1
+     },
+     {
+      "t": ", "
+     },
+     {
+      "t": "predă amplasamentul obiectivului "
+     },
+     {
+      "t": "„",
+      "b": 1,
+      "i": 1
+     },
+     {
+      "t": "{obiectiv}",
+      "b": 1,
+      "i": 1
+     },
+     {
+      "t": "”",
+      "b": 1,
+      "i": 1
+     },
+     {
+      "t": " către constructorul S.C. CORNELL’S FLOOR S.R.L. Botoșani, reprezentat de "
+     },
+     {
+      "t": "ing. {constructor_reprezentant}",
+      "b": 1
+     },
+     {
+      "t": ", care preia amplasamentul pentru executarea lucrărilor de instalații electrice interioare, în condițiile stabilite de autorizația de construire și de proiectul mai sus amintit."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Amplasamentul predat corespunde cu planurile de instalații electrice din proiectul nr. {proiect_nr}."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Constructorul a verificat vizual accesul la punctele de racordare și traseele prevăzute pentru instalația electrică."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se poate trece la executarea lucrărilor de instalații electrice interioare."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES-VERBAL DE TRASARE",
+   "A INSTALAȚIEI ELECTRICE"
+  ],
+  "meta": "Nr. {numar_pv_2}      Data .................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "          Trasarea a fost executata pe baza planselor {planse}, Cf. C56-02, Caiet Instalatii I-Instalatii electrice interioare."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "          Elementul de reper și verificarea este: (tablou electric, doze de derivație, trasee tuburi/cabluri, etc.)"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Instalație electrică interioară {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "S-a făcut trasarea traseelor de cabluri și a pozițiilor tablourilor/dozelor conform proiectului tehnic nr. {proiect_nr}."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "S-a identificat intersecția cu alte instalații/rețele din amplasament."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Reperele de trasare au fost materializate și protejate corespunzător pentru evitarea deplasării acestora pe parcursul execuției."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Din punct de vedere tehnic, abaterile constatate la trasare se încadrează în toleranțele admise de proiect."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se autorizează începerea lucrărilor de montaj a instalației electrice."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES VERBAL DE RECEPȚIE CALITATIVĂ",
+   "A MATERIALELOR ȘI ECHIPAMENTELOR ELECTRICE"
+  ],
+  "meta": "Nr. {numar_pv_3}      Data .................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Faza din lucrare supusă verificării:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Recepția calitativă a materialelor și echipamentelor electrice la primirea pe șantier, Cf. C56-02, Caiet Instalatii I-Instalatii electrice interioare;"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Elementele de identificare:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Instalație electrică interioară {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Verificările s-au făcut pe baza proiectului nr. {proiect_nr};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "S-au verificat caracteristicile tehnice și calitatea materialelor și echipamentelor electrice ce urmează a fi puse în operă, acestea fiind conforme cu documentația tehnică."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Materialele și echipamentele sunt însoțite de certificate de calitate/conformitate și au fost depozitate corespunzător pe șantier."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Nu au fost constatate deteriorări mecanice sau defecte vizibile ale materialelor și echipamentelor electrice."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se poate trece la următoarea fază de execuție."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES VERBAL PENTRU VERIFICAREA CALITĂȚII",
+   "LUCRĂRILOR CE DEVIN ASCUNSE"
+  ],
+  "meta": "Nr. {numar_pv_4}      Data .................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Faza din lucrare supusă verificării:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Montarea tuburilor de protecție și pozarea cablurilor electrice ce devin ascunse, Cf. C56-02, Caiet Instalatii I-Instalatii electrice interioare;"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Elementul de identificare:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Instalație electrică interioară {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Verificările s-au făcut pe baza proiectului tehnic nr. {proiect_nr}, elaborat de {proiectant_companie}, conform planșelor {planse};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Tuburile de protecție și cablurile electrice au fost montate conform traseelor din proiectul tehnic nr. {proiect_nr}."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Îmbinările și derivațiile au fost executate corect, fără deteriorarea izolației conductoarelor."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Nu au fost identificate neconformități care să impună remedieri înainte de acoperirea/închiderea traseelor."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se poate trece la următoarea fază de execuție."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}",
+   "Proiectant.:              Ing. {proiectant_reprezentant}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES-VERBAL DE RECEPȚIE CALITATIVĂ",
+   "A FUNCȚIONALITĂȚII INSTALAȚIEI ELECTRICE"
+  ],
+  "meta": "Nr. {numar_pv_5}      Data .................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Faza din lucrare supusă verificării:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Verificarea lucrărilor executate și a funcționalității instalației electrice interioare, Cf. C56-02, Caiet Instalatii I-Instalatii electrice interioare;"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Elementele de identificare:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Instalație electrică interioară {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Verificările s-au făcut pe baza proiectului nr. {proiect_nr}, cât și a planșelor {planse};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Instalația electrică a fost montată conform proiectului tehnic nr. {proiect_nr}."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "S-a verificat funcționalitatea circuitelor de iluminat, prize și a tablourilor electrice, constatându-se funcționarea corectă a acestora."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Nu au fost constatate neconformități care să afecteze funcționarea instalației."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se poate trece la următoarea fază de execuție."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES VERBAL DE CONTROL AL CALITATII LUCRARILOR",
+   "IN FAZE DETERMINANTE"
+  ],
+  "meta": "Nr. {numar_pv_6}      Data .................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Ca urmare a controlului efectuat la obiectivul:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": ",,{obiectiv}  , ce se realizeaza in baza Autorizatiei de construire nr. "
+     },
+     {
+      "t": "{autorizatie_nr}",
+      "b": 1
+     },
+     {
+      "t": " din "
+     },
+     {
+      "t": "{autorizatie_data}",
+      "b": 1
+     },
+     {
+      "t": " emisa de PRIMARIA COMUNEI {locatie} se executa in baza proiectului "
+     },
+     {
+      "t": "nr.{proiect_nr}",
+      "b": 1
+     },
+     {
+      "t": ", elaborat de "
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "{proiectant_companie}",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Faza determinanta: "
+     },
+     {
+      "t": "Verificarea prizei de pământ și a continuității sistemului de legare la pământ a instalației electrice",
+      "b": 1
+     },
+     {
+      "t": ", pe obiectivul "
+     },
+     {
+      "t": "{tronson_cod}",
+      "b": 1
+     },
+     {
+      "t": " {specificatie_conducta}, Cf. C56-02, Caiet Instalatii I-Instalatii electrice interioare."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "In prezenta antreprenorului : "
+     },
+     {
+      "t": "SC CORNELLS’ FLOOR  SRL",
+      "b": 1
+     },
+     {
+      "t": "  "
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "reprezentat de "
+     },
+     {
+      "t": "Ing. {constructor_reprezentant}",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Cu participarea investitorului :  "
+     },
+     {
+      "t": "Comuna {locatie}",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Reprezentat de  diriginte  de santier : "
+     },
+     {
+      "t": "ing. {diriginte_nume}, autorizatie nr. {diriginte_autorizatie}, domeniile {diriginte_domenii}",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "si a proiectantului : "
+     },
+     {
+      "t": "{proiectant_companie} ",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "reprezentat de "
+     },
+     {
+      "t": "ing.  {proiectant_reprezentant}",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "In baza prevederilor "
+     },
+     {
+      "t": "Legii nr.10/1995",
+      "b": 1
+     },
+     {
+      "t": " , a procedurii privind controlul statului in fazele de executie determinante pentru rezistenta si stabilitatea constructiilor, aprobata prin "
+     },
+     {
+      "t": "Ordinul MLPAT",
+      "b": 1
+     },
+     {
+      "t": " "
+     },
+     {
+      "t": "nr.31/N/02.10.1995",
+      "b": 1
+     },
+     {
+      "t": ", a reglementarilor tehnice in vigoare, a controlului efectuat asupra lucrarilor din teren si a documentelor privind calitatea materialelor si a elementelor de constructie puse in opera, calitatea lucrarilor ce au devenit ascunse, calitatea lucrarilor constatate de investitor, executant si proiectant, cu prilejul verificarilor efectuate in baza obligatiilor legale si contractuale, se constata ca  : "
+     },
+     {
+      "t": "SUNT",
+      "b": 1
+     },
+     {
+      "t": " asigurate conditii corespunzatoare de continuare a executiei lucrarilor, "
+     },
+     {
+      "t": "SUNT",
+      "b": 1
+     },
+     {
+      "t": " respectate detaliile de executie prevazute in plansele proiectului"
+     },
+     {
+      "t": "; SUNT",
+      "b": 1
+     },
+     {
+      "t": " respectate reglementarile tehnice de in vigoare ."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Mentiuni speciale:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": " Autorizarea continuarii executiei lucrarilor in faza determinanta, s-a facut in baza verificarilor directe in teren, a documentatiei de executie si a urmatoarelor acte puse la dispozitie de antreprenor:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "procese verbale lucrari ascunse;"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "documente de provenienta si calitate a materialelor puse in opera"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "In baza celor de mai sus,"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "SE AUTORIZEAZA CONTINUAREA EXECUTARII LUCRARILOR",
+      "b": 1
+     }
+    ],
+    "center": true
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Prezentul proces verbal a fost intocmit in 3 exemplare, cate unul pentru fiecare parte."
+     }
+    ]
+   },
+   {
+    "type": "sig4col",
+    "header": [
+     "DIRIGINTE ȘANTIER,",
+     "PROIECTANT,",
+     "CONSTRUCTOR",
+     "R.T.E.,"
+    ],
+    "names": [
+     "ing. {diriginte_nume}",
+     "ing.  {proiectant_reprezentant}",
+     "Ing. {constructor_reprezentant}",
+     "Ing. {rte_nume}"
+    ]
+   }
+  ],
+  "sigHeader": null,
+  "sigRows": []
+ },
+ {
+  "titleLines": [
+   "PROCES-VERBAL DE RECEPȚIE",
+   "LA PUNEREA ÎN FUNCȚIUNE A INSTALAȚIEI ELECTRICE"
+  ],
+  "meta": "Nr. {numar_pv_7}      Data .................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Faza din lucrare supusă verificării:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Recepția instalației electrice interioare la punerea în funcțiune, Cf. C56-02, Caiet Instalatii I-Instalatii electrice interioare."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Elementele de identificare:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Instalație electrică interioară {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Verificările s-au făcut pe baza proiectului nr. {proiect_nr} și a planșelor {planse};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "La terminarea lucrărilor instalația electrică interioară este funcțională."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Lucrările s-au realizat conform proiectului tehnic de execuție și cerințelor caietului de sarcini C56-02."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Lucrarea poate fi propusă pentru recepția la punerea în funcțiune."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}",
+   "Proiectant.:              Ing. {proiectant_reprezentant}"
+  ]
+ }
+]

@@ -1,0 +1,747 @@
+[
+ {
+  "titleLines": [
+   "PROCES VERBAL DE PREDARE – PRIMIRE",
+   "FRONT DE LUCRU"
+  ],
+  "meta": "Nr. {numar_pv_1}      Data .................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Delimitare front de lucru predat (poziție, cotă, ax, etc.):"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Stație de pompare {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Au stat la bază următoarele documente:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Autorizația de construire nr. {autorizatie_nr} din {autorizatie_data} emisă de Consiliul Primăriei Comunei {locatie};"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Proiectul nr. {proiect_nr}, întocmit de {proiectant_companie}, planșele {planse}."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Beneficiarul, prin dirigintele de șantier "
+     },
+     {
+      "t": "ing. ",
+      "b": 1
+     },
+     {
+      "t": "{diriginte_nume}",
+      "b": 1
+     },
+     {
+      "t": ", "
+     },
+     {
+      "t": "predă amplasamentul obiectivului "
+     },
+     {
+      "t": "„",
+      "b": 1,
+      "i": 1
+     },
+     {
+      "t": "{obiectiv}",
+      "b": 1,
+      "i": 1
+     },
+     {
+      "t": "”",
+      "b": 1,
+      "i": 1
+     },
+     {
+      "t": " către constructorul S.C. CORNELL’S FLOOR S.R.L. Botoșani, reprezentat de "
+     },
+     {
+      "t": "ing. {constructor_reprezentant}",
+      "b": 1
+     },
+     {
+      "t": ", care preia frontul de lucru pentru executarea lucrărilor de construcții la stația de pompare, în condițiile stabilite de autorizația de construire și de proiectul mai sus amintit."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Frontul de lucru predat corespunde cu amplasamentul și planșele din proiectul nr. {proiect_nr}."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Constructorul a verificat vizual limitele frontului de lucru și accesul utilajelor pe amplasament."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se poate trece la executarea lucrărilor de construcții la stația de pompare."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}",
+   "Proiectant.:              Ing. {proiectant_reprezentant}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES VERBAL DE RECEPȚIE CALITATIVĂ",
+   "A SĂPĂTURILOR LA STAȚIA DE POMPARE"
+  ],
+  "meta": "Nr. {numar_pv_2}      Data .................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Faza din lucrare supusă verificării:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Execuția săpăturilor pentru fundația stației de pompare;"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Elementele de identificare:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Stație de pompare {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Verificările s-au făcut pe baza proiectului tehnic nr. {proiect_nr};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Săpăturile s-au executat conform cotelor și dimensiunilor din proiectul tehnic nr. {proiect_nr}."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Natura terenului corespunde cu studiul geotehnic al proiectului."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se poate trece la execuția lucrărilor de sprijinire."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES VERBAL DE RECEPȚIE CALITATIVĂ",
+   "A LUCRĂRILOR DE SPRIJINIRE"
+  ],
+  "meta": "Nr. {numar_pv_3}      Data .................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Faza din lucrare supusă verificării:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Lucrările de sprijinire a săpăturii pentru stația de pompare;"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Elementele de identificare:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Stație de pompare {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Verificările s-au făcut pe baza proiectului tehnic nr. {proiect_nr};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Lucrările de sprijinire sunt executate conform cerințelor proiectului tehnic nr. {proiect_nr}."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Sprijinirile asigură stabilitatea pereților săpăturii pe toată perioada execuției."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se poate trece la execuția lucrărilor de cofrare."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES VERBAL DE RECEPȚIE CALITATIVĂ",
+   "A LUCRĂRILOR DE COFRARE"
+  ],
+  "meta": "Nr. {numar_pv_4}      Data .................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Faza din lucrare supusă verificării:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Recepția calitativă a lucrărilor de cofrare la fundația și pereții stației de pompare;"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Elementele de identificare:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Stație de pompare {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Verificările s-au făcut pe baza proiectului tehnic nr. {proiect_nr};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Cofrajele sunt executate conform proiectului tehnic nr. {proiect_nr}, cu dimensiunile și forma prevăzute."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Cofrajele sunt etanșe, rigide și corect sprijinite, fără pericol de deformare la turnare."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se poate trece la recepția betonului adus pentru turnare."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES VERBAL DE RECEPȚIE CALITATIVĂ",
+   "A BETONULUI ADUS PENTRU TURNARE"
+  ],
+  "meta": "Nr. {numar_pv_5}      Data .................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Faza din lucrare supusă verificării:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Recepția calitativă pe șantier a betonului adus pentru turnarea fundației și pereților stației de pompare;"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Elementele de identificare:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Stație de pompare {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Verificările s-au făcut pe baza proiectului tehnic nr. {proiect_nr};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Betonul livrat corespunde clasei prevăzute în proiectul tehnic nr. {proiect_nr}, fiind însoțit de certificat de calitate/conformitate."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Consistența și timpul de transport al betonului se încadrează în parametrii admiși."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se poate trece la turnarea betonului."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES VERBAL DE RECEPȚIE CALITATIVĂ",
+   "A TURNĂRII ȘI VIBRĂRII BETONULUI"
+  ],
+  "meta": "Nr. {numar_pv_6}      Data .................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Faza din lucrare supusă verificării:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Turnarea și vibrarea betonului în fundația și pereții stației de pompare;"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Elementele de identificare:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Stație de pompare {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Verificările s-au făcut pe baza proiectului tehnic nr. {proiect_nr};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Turnarea și vibrarea betonului în fundație și pereți s-au efectuat conform caietului de sarcini."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Nu au fost identificate segregări, goluri sau defecte de compactare a betonului."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se poate trece la următoarea fază de execuție."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES VERBAL DE RECEPȚIE CALITATIVĂ",
+   "A CAPACELOR LA STAȚIA DE POMPARE"
+  ],
+  "meta": "Nr. {numar_pv_7}      Data .................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Faza din lucrare supusă verificării:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Recepția calitativă pe șantier a capacelor la stația de pompare ape uzate;"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Elementele de identificare:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Stație de pompare {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Verificările s-au făcut pe baza proiectului tehnic nr. {proiect_nr};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Capacele stației de pompare corespund specificațiilor tehnice și cantitative din proiectul nr. {proiect_nr}."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Capacele sunt însoțite de certificate de calitate/conformitate și nu prezintă deteriorări vizibile."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se poate trece la montarea suporturilor și a capacelor."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES-VERBAL DE RECEPȚIE",
+   "A MONTĂRII SUPORTURILOR ȘI A CAPACELOR"
+  ],
+  "meta": "Nr. {numar_pv_8}      Data .................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Faza din lucrare supusă verificării:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Recepția calitativă a montării suporturilor și a capacelor la stația de pompare ape uzate;"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Elementele de identificare:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Stație de pompare {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Verificările s-au făcut pe baza proiectului tehnic nr. {proiect_nr};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Suporturile și capacele au fost montate conform proiectului tehnic nr. {proiect_nr}, corect nivelate și fixate."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Lucrările s-au realizat conform proiectului tehnic de execuție."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Lucrarea poate fi propusă pentru recepție la terminarea lucrărilor."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}",
+   "Proiectant.:              Ing. {proiectant_reprezentant}"
+  ]
+ }
+]

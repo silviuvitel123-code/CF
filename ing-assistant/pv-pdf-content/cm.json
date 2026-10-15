@@ -1,0 +1,1940 @@
+[
+ {
+  "titleLines": [
+   "PROCES VERBAL DE PREDARE – PRIMIRE",
+   "FRONT DE LUCRU"
+  ],
+  "meta": "Nr. {numar_pv_1}      Data .................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Delimitare front de lucru predat (poziție, cotă, ax, etc.):"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Rețea de "
+     },
+     {
+      "t": "canalizare"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "a apelor uzate"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "in comuna {locatie},"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "Tronsonul {tronson_cod}, {specificatie_conducta} "
+     },
+     {
+      "t": "situata intre caminele: {reper_start} – {reper_end}, L={lungime} m."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Au stat la bază următoarele documente:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Autorizația de construire nr. "
+     },
+     {
+      "t": "{autorizatie_nr}",
+      "b": 1
+     },
+     {
+      "t": " din "
+     },
+     {
+      "t": "{autorizatie_data} ",
+      "b": 1
+     },
+     {
+      "t": "emisă de Consiliul Primăriei Comunei {locatie};"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Proiectul nr. "
+     },
+     {
+      "t": "{proiect_nr}",
+      "b": 1
+     },
+     {
+      "t": ", întocmit de {proiectant_companie}, "
+     },
+     {
+      "t": "planșele "
+     },
+     {
+      "t": "{planse}."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Beneficiarul, prin dirigintele de șantier "
+     },
+     {
+      "t": "ing. {diriginte_nume}",
+      "b": 1
+     },
+     {
+      "t": ", predă amplasamentul obiectivului "
+     },
+     {
+      "t": "„",
+      "b": 1,
+      "i": 1
+     },
+     {
+      "t": " {obiectiv}",
+      "b": 1,
+      "i": 1
+     },
+     {
+      "t": "”",
+      "b": 1,
+      "i": 1
+     },
+     {
+      "t": " către constructorul S.C. CORNELL’"
+     },
+     {
+      "t": "S FLOOR S.R.L. Botoșani, reprezentat de "
+     },
+     {
+      "t": "ing. {constructor_reprezentant}",
+      "b": 1
+     },
+     {
+      "t": ", care preia frontul de lucru pentru executarea lucrărilor în condițiile stabilite de autorizația de construire și de proiectul mai sus amintit."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Amplasamentul a fost predat liber de sarcini, delimitat conform planșelor {planse} din proiectul tehnic nr. {proiect_nr}, constructorul confirmând corespondența acestuia cu documentația tehnică."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}",
+   "Proiectant.:              Ing. {proiectant_reprezentant}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES-VERBAL DE TRASARE"
+  ],
+  "meta": "Nr. {numar_pv_2}      Data .................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "          Trasarea a fost executata pe baza planselor "
+     },
+     {
+      "t": "{planse}."
+     },
+     {
+      "t": "si a coordonatelor topometrice conform proiectului nr. {proiect_nr};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "          Elementul de reper si verificarea este : (borna, constructia invecinata, etc.)"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Rețea de canalizare"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "a apelor uzate"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "in comuna {locatie},"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "Tronsonul {tronson_cod}, {specificatie_conducta} "
+     },
+     {
+      "t": "situata intre caminele: {reper_start} – {reper_end}, L={lungime} m."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "S-a efectuat trasarea axului rețelei de canalizare conform planșelor {planse} și coordonatelor topometrice din proiectul tehnic nr. {proiect_nr}."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se confirmă corectitudinea trasării în plan și profil a rețelei de canalizare, motiv pentru care se aprobă trecerea la execuția lucrărilor de săpătură."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "PROCES VERBAL PENTRU VERIFICAREA CALITĂȚII",
+      "b": 1
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}"
+  ]
+ },
+ {
+  "titleLines": [
+   "LUCRĂRILOR CE DEVIN ASCUNSE"
+  ],
+  "meta": "Nr. {numar_pv_3}       Data  ",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Faza din lucrare supusă verificării:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Tranșee rețea de canalizare."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Elementul de indentificare (sector, porțiune, ax, etc.):"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Rețea de canalizare"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "a apelor uzate"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "in comuna {locatie},"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "Tronsonul {tronson_cod}, {specificatie_conducta} "
+     },
+     {
+      "t": "situata intre caminele: {reper_start} – {reper_end}, L={lungime} m."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Verificările s-au făcut pe baza proiectului tehnic nr. "
+     },
+     {
+      "t": "{proiect_nr}",
+      "b": 1
+     },
+     {
+      "t": ", elaborat de {proiectant_companie}, conform planșelor "
+     },
+     {
+      "t": "{planse}, "
+     },
+     {
+      "t": "{profil_longitudinal};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Săpătura tranșeei s-a executat la cotele, lățimea și adâncimea prevăzute în proiectul tehnic nr. {proiect_nr}, respectând profilul longitudinal și pantele de scurgere proiectate."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Pereții și taluzurile săpăturii sunt stabili, fără desprinderi de material sau pericol de surpare; sprijinirile (acolo unde au fost necesare) sunt corect montate conform normativului de securitate a muncii."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se poate trece la execuția pozării patului de montare a conductei."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES VERBAL PENTRU VERIFICAREA CALITĂȚII",
+   "LUCRĂRILOR CE DEVIN ASCUNSE"
+  ],
+  "meta": "Nr. {numar_pv_4}      Data ",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Faza din lucrare supusă verificării:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Verificare natura teren, cota fundare, pat pozare, sprijiniri, imbinare conducta;"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Elementul de indentificare (sector, porțiune, ax, etc.):"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Rețea de canalizare"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "a apelor uzate"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "in comuna {locatie},"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "Tronsonul {tronson_cod}, {specificatie_conducta} "
+     },
+     {
+      "t": "situata intre caminele: {reper_start} – {reper_end}, L={lungime} m."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Au stat la baza verificării următoarele documente:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Proiectul tehnic nr. "
+     },
+     {
+      "t": "{proiect_nr}",
+      "b": 1
+     },
+     {
+      "t": " și caietul de sarcini;"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Planurile de situație: "
+     },
+     {
+      "t": "{planse};"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Profilele longitudinale: "
+     },
+     {
+      "t": "{profil_longitudinal}",
+      "b": 1
+     },
+     {
+      "t": "."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "-    Natura terenului este în conformitate cu cea din studiul geotehnic, cât și cu cea din proiectul tehnic nr. "
+     },
+     {
+      "t": "{proiect_nr}",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Cota săpăturii este conform profilurilor longitudinale"
+     },
+     {
+      "t": " "
+     },
+     {
+      "t": "{profil_longitudinal};"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Stratul de nisip a fost executat conform proiectului – 10 cm"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Sprijinirile au fost realizare conform proiectului tehnic nr. "
+     },
+     {
+      "t": "{proiect_nr}",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Tuburile din {specificatie_conducta} au fost pozate astfel încât să se asigure unghiul de rezemare la centru de "
+     },
+     {
+      "t": "90°"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se poate trece la următoarea etapă de execuție."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}",
+   "Proiectant.:              Ing. {proiectant_reprezentant}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES VERBAL DE CONTROL AL CALITATII LUCRARILOR",
+   "IN FAZE DETERMINANTE",
+   "Incheiat astazi"
+  ],
+  "meta": "NR {numar_pv_5}        /  ",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Ca urmare a controlului efectuat la obiectivul:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": ",,{obiectiv}  , ce se realizeaza in baza Autorizatiei de construire nr. "
+     },
+     {
+      "t": "{autorizatie_nr}",
+      "b": 1
+     },
+     {
+      "t": " din "
+     },
+     {
+      "t": "{autorizatie_data}",
+      "b": 1
+     },
+     {
+      "t": " emisa de PRIMARIA COMUNEI {locatie} se executa in baza proiectului "
+     },
+     {
+      "t": "nr.{proiect_nr}",
+      "b": 1
+     },
+     {
+      "t": ", elaborat de "
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "{proiectant_companie}",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Responsabil tehnic cu executia : Ing. {rte_nume}, atestat nr. "
+     },
+     {
+      "t": "{rte_atestat}",
+      "b": 1
+     },
+     {
+      "t": ",                                             in domeniile  "
+     },
+     {
+      "t": "{rte_domenii}",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Faza determinanta: "
+     },
+     {
+      "t": "Se va verifica natura terenului, cota de fundare, patul de pozare, sprijinirile si imbinarea conductelor",
+      "b": 1
+     },
+     {
+      "t": ", ",
+      "b": 1
+     },
+     {
+      "t": "Tronsonul {tronson_cod}, {specificatie_conducta} "
+     },
+     {
+      "t": "situata intre caminele: {reper_start} – {reper_end}, L={lungime} m."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "In prezenta antreprenorului : "
+     },
+     {
+      "t": "SC CORNELLS’ FLOOR  SRL",
+      "b": 1
+     },
+     {
+      "t": "  "
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "reprezentat de "
+     },
+     {
+      "t": "Ing. {constructor_reprezentant}",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Cu participarea investitorului :  "
+     },
+     {
+      "t": "Comuna {locatie}",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Reprezentat de  diriginte  de santier : "
+     },
+     {
+      "t": "ing. {diriginte_nume}, autorizatie nr. {diriginte_autorizatie}, domeniile {diriginte_domenii}",
+      "b": 1
+     },
+     {
+      "t": ", 3.3;",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "si a proiectantului : "
+     },
+     {
+      "t": "{proiectant_companie} ",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "reprezentat de "
+     },
+     {
+      "t": "ing.  {proiectant_reprezentant}",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "In baza prevederilor "
+     },
+     {
+      "t": "Legii nr.10/1995",
+      "b": 1
+     },
+     {
+      "t": " , a procedurii privind controlul statului in fazele de executie determinante pentru rezistenta si stabilitatea constructiilor, aprobata prin "
+     },
+     {
+      "t": "Ordinul MLPAT",
+      "b": 1
+     },
+     {
+      "t": " "
+     },
+     {
+      "t": "nr.31/N/02.10.1995",
+      "b": 1
+     },
+     {
+      "t": ", a reglementarilor tehnice in vigoare, a controlului efectuat asupra lucrarilor din teren si a documentelor privind calitatea materialelor si a elementelor de constructie puse in opera, calitatea lucrarilor ce au devenit ascunse, calitatea lucrarilor constatate de investitor, executant si proiectant, cu prilejul verificarilor efectuate in baza obligatiilor legale si contractuale, se constata ca  : "
+     },
+     {
+      "t": "SUNT",
+      "b": 1
+     },
+     {
+      "t": " asigurate conditii corespunzatoare de continuare a executiei lucrarilor, "
+     },
+     {
+      "t": "SUNT",
+      "b": 1
+     },
+     {
+      "t": " respectate detaliile de executie prevazute in plansele proiectului"
+     },
+     {
+      "t": "; SUNT",
+      "b": 1
+     },
+     {
+      "t": " respectate reglementarile tehnice de in vigoare ."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Mentiuni speciale:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": " Autorizarea continuarii executiei lucrarilor in faza determinanta, s-a facut in baza verificarilor directe in teren, a documentatiei de executie si a urmatoarelor acte puse la dispozitie de antreprenor:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "procese verbale lucrari ascunse;"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "documente de provenienta si calitate a materialelor puse in opera"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "In baza celor de mai sus,"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "SE AUTORIZEAZA CONTINUAREA EXECUTARII LUCRARILOR",
+      "b": 1
+     }
+    ],
+    "center": true
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Prezentul proces verbal a fost intocmit in 3 exemplare, cate unul pentru fiecare parte."
+     }
+    ]
+   },
+   {
+    "type": "sig4col",
+    "header": [
+     "DIRIGINTE ȘANTIER,",
+     "PROIECTANT,",
+     "CONSTRUCTOR",
+     "R.T.E.,"
+    ],
+    "names": [
+     "ing. {diriginte_nume}",
+     "ing.  {proiectant_reprezentant}",
+     "Ing. {constructor_reprezentant}",
+     "Ing. {rte_nume}"
+    ]
+   }
+  ],
+  "sigHeader": null,
+  "sigRows": []
+ },
+ {
+  "titleLines": [
+   "PROCES VERBAL DE RECEPȚIE CALITATIVĂ"
+  ],
+  "meta": "Nr. {numar_pv_6}  Data ....................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Faza din lucrare, supusă verificării:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "    Receptia calitativa a materialelor la primirea pe santier;"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Elementele de identificare (sector, porțiune, ax, cotă, etc):"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Rețea de canalizare"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "a apelor uzate"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "in comuna {locatie},"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "Tronsonul {tronson_cod}, {specificatie_conducta} "
+     },
+     {
+      "t": "situata intre caminele: {reper_start} – {reper_end}, L={lungime} m."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Verificările s-au făcut pe baza proiectului nr. "
+     },
+     {
+      "t": "{proiect_nr}, "
+     },
+     {
+      "t": "cat si a planselor "
+     },
+     {
+      "t": "{planse};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Materialele au fost verificate vizual și dimensional (diametru, grosime perete, lungime bare/colaci), constatându-se corespondența cu specificațiile din caietul de sarcini și proiectul tehnic nr. {proiect_nr}."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Nu s-au constatat defecte de fabricație, deteriorări mecanice, fisuri, deformări sau alte neconformități care să afecteze funcționalitatea materialelor."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se confirmă conformitatea calitativă și cantitativă a materialelor recepționate cu documentația tehnică, motiv pentru care se aprobă punerea acestora în operă."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES-VERBAL PENTRU VERIFICAREA CALITATII",
+   "LUCRARILOR CE DEVIN ASCUNSE"
+  ],
+  "meta": "NR {numar_pv_7}  / DATA  ",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Faza din lucrare supusa verificarii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": " Calitatea executiei tuturor operatiilor care devin ascunse, verifica cotelor realizate pe profilul in lung al conductei."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Elementele de identificare (sector, portiune, ax, cota etc.):"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Rețea de canalizare"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "a apelor uzate"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "in comuna {locatie},"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "Tronsonul {tronson_cod}, {specificatie_conducta} "
+     },
+     {
+      "t": "situata intre caminele: {reper_start} – {reper_end}, L={lungime} m."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Verificarile s-au facut pe baza proiectului nr.{proiect_nr}, "
+     },
+     {
+      "t": "cat si a planselor "
+     },
+     {
+      "t": "{planse}, "
+     },
+     {
+      "t": "{profil_longitudinal};",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Cotele pe profilul în lung al conductei au fost realizate cu respectarea planului de execuție."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Abaterile înregistrate sunt în limitele toleranțelor admise conform normativului tehnic aplicabil ( NP 133/2013 – rețele de alimentare cu apă și canalizare)."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Panta longitudinală rezultată asigură funcționarea gravitațională/corectă a conductei."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se poate trece la urmatoarea faza de executie."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}",
+   "Proiectant.:              Ing. {proiectant_reprezentant}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES VERBAL",
+   "DE RECEPȚIE CALITATIVĂ"
+  ],
+  "meta": "Nr. {numar_pv_8} / Data ",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Faza din lucrare supusă verificării:",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Verificarea neobturării canalului cu pământ sau cu moloz."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Elementul de identificare ",
+      "b": 1
+     },
+     {
+      "t": "(sector, porțiune, ax, etc):"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Rețea de canalizare"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "a apelor uzate"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "in comuna {locatie},"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "Tronsonul {tronson_cod}, {specificatie_conducta} "
+     },
+     {
+      "t": "situata intre caminele: {reper_start} – {reper_end}, L={lungime} m."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Verificările s-au făcut pe baza  proiectului tehnic nr. "
+     },
+     {
+      "t": "{proiect_nr}",
+      "b": 1
+     },
+     {
+      "t": ", elaborat de {proiectant_companie}, conform planșelor : "
+     },
+     {
+      "t": "{planse};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Concluzii:",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "S-a efectuat verificarea vizuală interioară a conductei montate (prin capetele libere/căminele de vizitare), constatându-se lipsa oricăror depuneri de pământ, moloz, resturi de materiale sau corpuri străine."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se confirmă integritatea și libertatea de curgere a secțiunii conductei montate, motiv pentru care se aprobă trecerea la urmatoarea faza de executie."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES-VERBAL DE RECEPTIE CALITATIVA"
+  ],
+  "meta": "NR {numar_pv_9}      / DATA   ",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Faza din lucrare supusa verificarii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Verificarea etanseitatii hidraulice a conductelor."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Elementele de identificare (sector, portiune, ax, cota etc.):"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Rețea de canalizare"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "a apelor uzate"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "in comuna {locatie},"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "Tronsonul {tronson_cod}, {specificatie_conducta} "
+     },
+     {
+      "t": "situata intre caminele: {reper_start} – {reper_end}, L={lungime} m."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Verificarile s-au facut pe baza proiectului nr.{proiect_nr}, "
+     },
+     {
+      "t": "cat si a planselor "
+     },
+     {
+      "t": "{planse};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Verificarea etanșeității hidraulice a colectorului de canalizare s-a realizat prin umplerea completă a tronsonului cu apă, până la cota capacului de vizitare sau a piesei de capăt, conform NP 133/2013."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Proba s-a menținut timp de minim 30 de minute, perioadă în care nu s-au înregistrat pierderi de nivel sau infiltrații la îmbinări ori în structura conductei."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Toate îmbinările au fost inspectate vizual și au rămas etanșe pe toată durata încercării."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Conducta nu a prezentat scurgeri în zona racordurilor, camerelor de vizitare sau pieselor speciale."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se poate trece la urmatoarea faza de executie."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}",
+   "Proiectant.:              Ing. {proiectant_reprezentant}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES VERBAL DE CONTROL AL CALITATII LUCRARILOR",
+   "IN FAZE DETERMINANTE",
+   "Incheiat astazi"
+  ],
+  "meta": "NR {numar_pv_10}      /  ",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Ca urmare a controlului efectuat la obiectivul:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "{obiectiv}, ce se realizeaza in baza Autorizatiei de construire nr. "
+     },
+     {
+      "t": "{autorizatie_nr}",
+      "b": 1
+     },
+     {
+      "t": " din "
+     },
+     {
+      "t": "{autorizatie_data}",
+      "b": 1
+     },
+     {
+      "t": " emisa de PRIMARIA COMUNEI {locatie} se executa in baza proiectului "
+     },
+     {
+      "t": "nr.{proiect_nr}",
+      "b": 1
+     },
+     {
+      "t": ", elaborat de "
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "{proiectant_companie}",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Responsabil tehnic cu executia : Ing. {rte_nume}, atestat nr. "
+     },
+     {
+      "t": "{rte_atestat}",
+      "b": 1
+     },
+     {
+      "t": ",                                             in domeniile  "
+     },
+     {
+      "t": "{rte_domenii}",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Faza determinanta: "
+     },
+     {
+      "t": "Verificarea etanseitatii hidraulice a conductelor",
+      "b": 1
+     },
+     {
+      "t": ", ",
+      "b": 1
+     },
+     {
+      "t": "Tronsonul {tronson_cod}, {specificatie_conducta} "
+     },
+     {
+      "t": "situata intre caminele: {reper_start} – {reper_end}, L={lungime} m."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "In prezenta antreprenorului : "
+     },
+     {
+      "t": "SC CORNELLS’ FLOOR  SRL",
+      "b": 1
+     },
+     {
+      "t": "  "
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "reprezentat de "
+     },
+     {
+      "t": "Ing. {constructor_reprezentant}",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Cu participarea investitorului :  "
+     },
+     {
+      "t": "Comuna {locatie}",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Reprezentat de  diriginte  de santier : "
+     },
+     {
+      "t": "ing. {diriginte_nume}, autorizatie nr. {diriginte_autorizatie}, domeniile {diriginte_domenii};",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "si a proiectantului : "
+     },
+     {
+      "t": "{proiectant_companie} ",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "reprezentat de "
+     },
+     {
+      "t": "ing.  {proiectant_reprezentant}",
+      "b": 1
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "In baza prevederilor "
+     },
+     {
+      "t": "Legii nr.10/1995",
+      "b": 1
+     },
+     {
+      "t": " , a procedurii privind controlul statului in fazele de executie determinante pentru rezistenta si stabilitatea constructiilor, aprobata prin "
+     },
+     {
+      "t": "Ordinul MLPAT",
+      "b": 1
+     },
+     {
+      "t": " "
+     },
+     {
+      "t": "nr.31/N/02.10.1995",
+      "b": 1
+     },
+     {
+      "t": ", a reglementarilor tehnice in vigoare, a controlului efectuat asupra lucrarilor din teren si a documentelor privind calitatea materialelor si a elementelor de constructie puse in opera, calitatea lucrarilor ce au devenit ascunse, calitatea lucrarilor constatate de investitor, executant si proiectant, cu prilejul verificarilor efectuate in baza obligatiilor legale si contractuale, se constata ca  : "
+     },
+     {
+      "t": "SUNT",
+      "b": 1
+     },
+     {
+      "t": " asigurate conditii corespunzatoare de continuare a executiei lucrarilor, "
+     },
+     {
+      "t": "SUNT",
+      "b": 1
+     },
+     {
+      "t": " respectate detaliile de executie prevazute in plansele proiectului"
+     },
+     {
+      "t": "; SUNT",
+      "b": 1
+     },
+     {
+      "t": " respectate reglementarile tehnice de in vigoare ."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Mentiuni speciale:"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": " Autorizarea continuarii executiei lucrarilor in faza determinanta, s-a facut in baza verificarilor directe in teren, a documentatiei de executie si a urmatoarelor acte puse la dispozitie de antreprenor:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "procese verbale lucrari ascunse;"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "documente de provenienta si calitate a materialelor puse in opera"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "In baza celor de mai sus,"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "SE AUTORIZEAZA CONTINUAREA EXECUTARII LUCRARILOR",
+      "b": 1
+     }
+    ],
+    "center": true
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Prezentul proces verbal a fost intocmit in 3 exemplare, cate unul pentru fiecare parte."
+     }
+    ]
+   },
+   {
+    "type": "sig4col",
+    "header": [
+     "DIRIGINTE ȘANTIER,",
+     "PROIECTANT,",
+     "CONSTRUCTOR",
+     "R.T.E.,"
+    ],
+    "names": [
+     "ing. {diriginte_nume}",
+     "ing.  {proiectant_reprezentant}",
+     "Ing. {constructor_reprezentant}",
+     "Ing. {rte_nume}"
+    ]
+   }
+  ],
+  "sigHeader": null,
+  "sigRows": []
+ },
+ {
+  "titleLines": [
+   "PROCES-VERBAL DE RECEPTIE CALITATIVA"
+  ],
+  "meta": "NR {numar_pv_11}      / DATA  ",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Faza din lucrare supusa verificarii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Acoperirea definitiva a conductelor; "
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Elementele de identificare (sector, portiune, ax, cota etc.):"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Rețea de canalizare"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "a apelor uzate"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "in comuna {locatie},"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "Tronsonul {tronson_cod}, {specificatie_conducta} "
+     },
+     {
+      "t": "situata intre caminele: {reper_start} – {reper_end}, L={lungime} m."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Verificarile s-au facut pe baza proiectului nr.{proiect_nr}, planselor "
+     },
+     {
+      "t": "{planse};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Conducta a fost pozată corect pe patul de nisip și etanșă conform probelor efectuate anterior."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Materialele de umplutură utilizate sunt conforme cu specificațiile proiectului: pământ selectat, bine sortat și fără corpuri străine."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Umplerea s-a realizat în straturi succesive, compactate mecanic, până la cota prevăzută, cu respectarea gradului de compactare impus."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Acoperirea s-a realizat fără deplasarea, deformarea sau deteriorarea conductei și a accesoriilor montate."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se poate trece la urmatoarea faza de executie."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}"
+  ]
+ },
+ {
+  "titleLines": [
+   "PROCES-VERBAL DE RECEPTIE"
+  ],
+  "meta": "Nr. {numar_pv_12}       Data .......................",
+  "blocks": [
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Faza din lucrare supusa verificarii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Receptia la terminarea lucrarilor."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Elementele de identificare (sector, portiune, ax, cota etc.) :"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Rețea de canalizare"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "a apelor uzate"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "in comuna {locatie},"
+     },
+     {
+      "t": " ",
+      "b": 1
+     },
+     {
+      "t": "Tronsonul {tronson_cod}, {specificatie_conducta} "
+     },
+     {
+      "t": "situata intre caminele: {reper_start} – {reper_end}, L={lungime} m."
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "     "
+     },
+     {
+      "t": "Verificarile s-au facut pe baza proiectului "
+     },
+     {
+      "t": "nr. {proiect_nr}"
+     },
+     {
+      "t": " si a planselor: "
+     },
+     {
+      "t": "{planse};"
+     }
+    ]
+   },
+   {
+    "type": "text",
+    "segs": [
+     {
+      "t": "Concluzii:"
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Rețeaua de canalizare a fost executată integral pe tronsonul {reper_start} – {reper_end}, L={lungime} m, conform proiectului tehnic nr. {proiect_nr} și planșelor {planse}."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Nu au fost constatate neconformități, vicii aparente sau abateri de la documentația tehnică care să afecteze funcționarea rețelei."
+     }
+    ]
+   },
+   {
+    "type": "bullet",
+    "segs": [
+     {
+      "t": "Se confirmă că rețeaua de canalizare este funcțională la parametrii proiectați, lucrările fiind executate conform proiectului tehnic nr. {proiect_nr}, motiv pentru care se admite recepția la terminarea lucrărilor pentru tronsonul verificat."
+     }
+    ]
+   }
+  ],
+  "sigHeader": true,
+  "sigRows": [
+   "Diriginte șantier:      Ing. {diriginte_nume}",
+   "Constructor:             Ing. {constructor_reprezentant}",
+   "R.T.E.:                     Ing. {rte_nume}",
+   "Proiectant.:              Ing. {proiectant_reprezentant}"
+  ]
+ }
+]

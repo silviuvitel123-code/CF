@@ -29,6 +29,14 @@
      what the user supplied). No server, no PDF step. -->
 <script src="https://cdn.jsdelivr.net/npm/pizzip@3/dist/pizzip.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3/build/docxtemplater.min.js" defer></script>
+<!-- Generare PV ca PDF — motor alternativ, NU înlocuiește .docx de mai sus.
+     Layout controlat integral de noi (pdf-lib + fontkit, cu font Liberation
+     Sans auto-găzduit pentru diacritice ă/â/î/ș/ț), construit din conținutul
+     extras automat din șabloanele .docx reale (/pv-pdf-content/*.json) și
+     constante de poziționare măsurate pixel-precis dintr-o randare reală
+     Word→LibreOffice. Vezi buildPvPdfBytes mai jos. -->
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1/dist/pdf-lib.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1/dist/fontkit.umd.min.js" defer></script>
 <style>
   :root{
     /* "Muchie" — the flat, crisp variant of Oțel & Șantier: same graphite/
@@ -633,7 +641,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b77-2026-10-13";
+  var BUILD = "b78-2026-10-15";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -1692,6 +1700,306 @@
       ok.forEach(function (r) { zip.file(r.name, r.buf); });
       var blob = zip.generate({ type: "blob", mimeType: "application/zip", compression: "DEFLATE" });
       downloadBlob(blob, "PV-uri-" + siteSlugFor(site) + ".zip");
+      if (failed.length) {
+        failed.forEach(function (r) { console.error(r.cod, r.err); });
+        flashSyncError("Generate " + ok.length + " din " + results.length + " — au eșuat: " + failed.map(function (r) { return r.cod; }).join(", "));
+      }
+    });
+  }
+
+  // ---- Generare PV ca PDF — motor alternativ, NU înlocuiește fluxul .docx
+  // de mai sus (rămâne neschimbat, e opțiunea implicită). Layout controlat
+  // integral de noi (pdf-lib + fontkit), construit din conținutul extras
+  // automat din șabloanele .docx reale (/pv-pdf-content/<categorie>.json —
+  // titluri, meta, paragrafe/buline/semnături, pe PV, în ordinea din
+  // șablon) și constante de poziționare măsurate pixel-precis dintr-o
+  // randare reală Word→LibreOffice (header, titlu, corp, semnături — sub
+  // 1pt deviație față de randarea Word pentru PV-ul pilot). Fiecare PV al
+  // unui tronson iese pe propria pagină PDF, garantat (N PV-uri -> N pagini).
+  var PV_PDF_CONTENT_URLS = { cd: "/pv-pdf-content/cd.json", cm: "/pv-pdf-content/cm.json", cr: "/pv-pdf-content/cr.json", el: "/pv-pdf-content/el.json", rz: "/pv-pdf-content/rz.json", sp: "/pv-pdf-content/sp.json", im: "/pv-pdf-content/im.json" };
+  var PV_PDF_FONT_URLS = {
+    regular: "/pv-pdf-assets/LiberationSans-Regular.ttf",
+    bold: "/pv-pdf-assets/LiberationSans-Bold.ttf",
+    italic: "/pv-pdf-assets/LiberationSans-Italic.ttf",
+    boldItalic: "/pv-pdf-assets/LiberationSans-BoldItalic.ttf"
+  };
+  var PV_PDF_LOGO_URL = "/pv-pdf-assets/logo.png";
+
+  var pvPdfAssetsCache = null;
+  var pvPdfContentCache = {};
+
+  function fetchPvPdfBytes(url) {
+    return fetch(url).then(function (res) {
+      if (!res.ok) throw new Error("nu am putut încărca " + url + " (" + res.status + ")");
+      return res.arrayBuffer();
+    }).then(function (buf) { return new Uint8Array(buf); });
+  }
+  function loadPvPdfAssets() {
+    if (pvPdfAssetsCache) return Promise.resolve(pvPdfAssetsCache);
+    return Promise.all([
+      fetchPvPdfBytes(PV_PDF_FONT_URLS.regular),
+      fetchPvPdfBytes(PV_PDF_FONT_URLS.bold),
+      fetchPvPdfBytes(PV_PDF_FONT_URLS.italic),
+      fetchPvPdfBytes(PV_PDF_FONT_URLS.boldItalic),
+      fetchPvPdfBytes(PV_PDF_LOGO_URL)
+    ]).then(function (res) {
+      pvPdfAssetsCache = { regular: res[0], bold: res[1], italic: res[2], boldItalic: res[3], logo: res[4] };
+      return pvPdfAssetsCache;
+    });
+  }
+  function loadPvPdfContent(categorie) {
+    if (pvPdfContentCache[categorie]) return Promise.resolve(pvPdfContentCache[categorie]);
+    var url = PV_PDF_CONTENT_URLS[categorie];
+    if (!url) return Promise.reject(pvUserError("Nu există încă conținut PDF pentru această categorie."));
+    return fetch(url).then(function (res) {
+      if (!res.ok) throw new Error("nu am putut încărca conținutul PV (" + res.status + ")");
+      return res.json();
+    }).then(function (pvs) {
+      pvPdfContentCache[categorie] = pvs;
+      return pvs;
+    });
+  }
+  function pvPdfDataFields(pv, t) {
+    return {
+      locatie: pv.locatie, obiectiv: pv.obiectiv,
+      autorizatie_nr: pv.autorizatieNr, autorizatie_data: pv.autorizatieData,
+      proiect_nr: pv.proiectNr, proiectant_companie: pv.proiectantCompanie, proiectant_reprezentant: pv.proiectantReprezentant,
+      diriginte_nume: pv.dirigenteNume, diriginte_autorizatie: pv.dirigenteAutorizatie, diriginte_domenii: pv.dirigenteDomenii,
+      rte_nume: pv.rteNume, rte_atestat: pv.rteAtestat, rte_domenii: pv.rteDomenii,
+      constructor_reprezentant: pv.constructorReprezentant,
+      tronson_cod: t.cod, specificatie_conducta: t.specificatieConducta,
+      reper_start: t.reperStart, reper_end: t.reperEnd, lungime: t.lungime,
+      planse: t.planse, profil_longitudinal: t.profilLongitudinal
+    };
+  }
+
+  // Randează TOATE PV-urile unei categorii (un tronson întreg) într-un
+  // PDFDocument deja creat, fiecare PV pe pagina lui proprie. dataFields
+  // vine din pvPdfDataFields; pvStart e numărul global al primului PV al
+  // acestui tronson (din pvRangeMapForSite — același șir global ca la .docx).
+  function renderPvPdfPages(doc, F, logoImg, pvsContent, dataFields, pvStart) {
+    var rgb = PDFLib.rgb;
+    var PAGE_W = 595.3, PAGE_H = 841.89;
+    var MARGIN_L = 72.1, MARGIN_R = 72.1;
+    var CONTENT_W = PAGE_W - MARGIN_L - MARGIN_R;
+    var BODY_SIZE = 11, LINE_H = 12.65, CONCLUZII_LINE_H = 14.5, PARA_GAP_EXTRA = 6;
+    var BULLET_DASH_X = MARGIN_L + 72, BULLET_TEXT_X = MARGIN_L + 90;
+    var TAB_STOP_X = MARGIN_L + 368.25;
+    var SIG_ROW_H = 45.3;
+    var BASELINE_OFFSET = 9.9;
+    var SIG4_COL_X = [2.5, 122.5, 242.5, 362.5];
+    var SIG4_SIZE = 9;
+    var SIG4_ROW_H = 18.5;
+
+    function topY(distFromTop) { return PAGE_H - distFromTop - BASELINE_OFFSET; }
+    function fontFor(seg) {
+      if (seg.b && seg.i) return F.boldItalic;
+      if (seg.b) return F.bold;
+      if (seg.i) return F.italic;
+      return F.regular;
+    }
+    function segsToWords(segs, fillFn) {
+      var words = [];
+      segs.forEach(function (seg) {
+        var text = fillFn(seg.t);
+        var font = fontFor(seg);
+        text.split(" ").forEach(function (w) { if (w) words.push({ text: w, font: font }); });
+      });
+      return words;
+    }
+    function wrapWords(words, size, maxWidth) {
+      var spaceW = F.regular.widthOfTextAtSize(" ", size);
+      var lines = [];
+      var cur = [], curW = 0;
+      words.forEach(function (w) {
+        var ww = w.font.widthOfTextAtSize(w.text, size);
+        var add = cur.length ? spaceW + ww : ww;
+        if (curW + add > maxWidth && cur.length) { lines.push(cur); cur = [w]; curW = ww; }
+        else { cur.push(w); curW += add; }
+      });
+      if (cur.length) lines.push(cur);
+      return lines;
+    }
+    function drawWordsLine(pdfPage, words, x, y, size) {
+      var spaceW = F.regular.widthOfTextAtSize(" ", size);
+      var cx = x;
+      words.forEach(function (w, i) {
+        var isPunctAttach = i > 0 && /^[,.;:)]/.test(w.text);
+        if (i > 0 && !isPunctAttach) cx += spaceW;
+        pdfPage.drawText(w.text, { x: cx, y: y, size: size, font: w.font });
+        cx += w.font.widthOfTextAtSize(w.text, size);
+      });
+    }
+    function drawCentered(pdfPage, text, size, font, yTop) {
+      var w = font.widthOfTextAtSize(text, size);
+      pdfPage.drawText(text, { x: (PAGE_W - w) / 2, y: topY(yTop), size: size, font: font });
+    }
+
+    pvsContent.forEach(function (pvc, pvIdx) {
+      var localN = pvIdx + 1;
+      var globalNum = pvStart ? (pvStart + pvIdx) : "";
+      function fill(text) {
+        return text
+          .replace(new RegExp("\\{numar_pv_" + localN + "\\}", "g"), String(globalNum))
+          .replace(/\{(\w+)\}/g, function (m, k) { return dataFields[k] !== undefined ? dataFields[k] : m; });
+      }
+
+      var pdfPage = doc.addPage([PAGE_W, PAGE_H]);
+
+      var logoW = 87.25, logoH = 86.9, logoTopY = 20.9;
+      pdfPage.drawImage(logoImg, { x: 73.15, y: PAGE_H - (logoTopY + logoH), width: logoW, height: logoH });
+      var headerLines = [
+        "S.C. CORNELL’S FLOOR S.R.L.", "Sediu social: Sat Roma, Com. Roma, Botoșani",
+        "Adresă punct de lucru: Str. Miorița nr. 10, Botoșani", "J07/748/2008, CIF CUI: RO24616580",
+        "E-mail: cornells.floor@yahoo.com", "Fax: +40 231 516 116, Telefon: +40 231 516 116"
+      ];
+      var hyTop = 24.99;
+      headerLines.forEach(function (line, i) {
+        var font = i === 0 ? F.bold : F.regular;
+        var w = font.widthOfTextAtSize(line, 11);
+        pdfPage.drawText(line, { x: PAGE_W - MARGIN_R - w, y: topY(hyTop), size: 11, font: font, color: rgb(0.25, 0.25, 0.25) });
+        hyTop += 12.8;
+      });
+
+      var yTop = 141.99;
+      pvc.titleLines.forEach(function (line, i) {
+        var size = i === 0 ? 12 : 11;
+        drawCentered(pdfPage, fill(line), size, F.bold, yTop);
+        yTop += (i === 0 ? 19.76 : 18.65);
+      });
+      drawCentered(pdfPage, fill(pvc.meta), 11, F.regular, yTop);
+      yTop += 37.3;
+
+      var firstBlock = true;
+      pvc.blocks.forEach(function (block) {
+        if (block.type === "text" && !firstBlock) yTop += PARA_GAP_EXTRA;
+        firstBlock = false;
+        if (block.type === "text") {
+          var words = segsToWords(block.segs, fill);
+          var lines = wrapWords(words, BODY_SIZE, CONTENT_W);
+          lines.forEach(function (line) {
+            if (block.center) {
+              var totalW = line.reduce(function (s, w, idx) { return s + w.font.widthOfTextAtSize(w.text, BODY_SIZE) + (idx > 0 ? F.regular.widthOfTextAtSize(" ", BODY_SIZE) : 0); }, 0);
+              drawWordsLine(pdfPage, line, (PAGE_W - totalW) / 2, topY(yTop), BODY_SIZE);
+            } else {
+              drawWordsLine(pdfPage, line, MARGIN_L, topY(yTop), BODY_SIZE);
+            }
+            yTop += LINE_H;
+          });
+        } else if (block.type === "bullet") {
+          var lh = block.concluzii ? CONCLUZII_LINE_H : LINE_H;
+          var bwords = segsToWords(block.segs, fill);
+          var blines = wrapWords(bwords, BODY_SIZE, CONTENT_W - (BULLET_TEXT_X - MARGIN_L));
+          blines.forEach(function (line, i) {
+            if (i === 0) pdfPage.drawText("-", { x: BULLET_DASH_X, y: topY(yTop), size: BODY_SIZE, font: F.regular });
+            drawWordsLine(pdfPage, line, BULLET_TEXT_X, topY(yTop), BODY_SIZE);
+            yTop += lh;
+          });
+        } else if (block.type === "sig4col") {
+          yTop += PARA_GAP_EXTRA;
+          block.header.forEach(function (label, ci) {
+            pdfPage.drawText(fill(label), { x: MARGIN_L + SIG4_COL_X[ci], y: topY(yTop), size: SIG4_SIZE, font: F.regular });
+          });
+          yTop += SIG4_ROW_H;
+          block.names.forEach(function (name, ci) {
+            pdfPage.drawText(fill(name), { x: MARGIN_L + SIG4_COL_X[ci], y: topY(yTop), size: SIG4_SIZE, font: F.regular });
+          });
+          yTop += SIG4_ROW_H;
+        }
+      });
+
+      if (pvc.sigRows.length) {
+        var lastRowFromBottom = 75.74 - BASELINE_OFFSET;
+        var sigYFromBottom = lastRowFromBottom + pvc.sigRows.length * SIG_ROW_H;
+        if (pvc.sigHeader) {
+          pdfPage.drawText("      Nume", { x: MARGIN_L + 87.75, y: sigYFromBottom, size: 11, font: F.regular });
+          pdfPage.drawText("Prenume", { x: MARGIN_L + 211.70, y: sigYFromBottom, size: 11, font: F.regular });
+          pdfPage.drawText("Semnătura", { x: TAB_STOP_X, y: sigYFromBottom, size: 11, font: F.regular });
+          sigYFromBottom -= SIG_ROW_H;
+        }
+        pvc.sigRows.forEach(function (rowText) {
+          pdfPage.drawText(fill(rowText), { x: MARGIN_L, y: sigYFromBottom, size: 11, font: F.regular });
+          pdfPage.drawText("………………..", { x: TAB_STOP_X, y: sigYFromBottom, size: 11, font: F.regular });
+          sigYFromBottom -= SIG_ROW_H;
+        });
+      }
+    });
+  }
+
+  // Construiește bytes-ii PDF pentru TOATE PV-urile unui tronson (o
+  // categorie întreagă, N pagini) — echivalentul PDF al buildPvArrayBuffer.
+  function buildPvPdfBytes(pv, t, pvStart) {
+    if (typeof PDFLib === "undefined" || typeof fontkit === "undefined") {
+      return Promise.reject(pvUserError("Generatorul PDF nu s-a încărcat (verifică conexiunea la internet) — reîncearcă."));
+    }
+    var categorie = t.categorie;
+    return Promise.all([loadPvPdfAssets(), loadPvPdfContent(categorie)]).then(function (res) {
+      var assets = res[0], pvsContent = res[1];
+      var dataFields = pvPdfDataFields(pv, t);
+      return PDFLib.PDFDocument.create().then(function (doc) {
+        doc.registerFontkit(fontkit);
+        return Promise.all([
+          doc.embedFont(assets.regular, { subset: true }),
+          doc.embedFont(assets.bold, { subset: true }),
+          doc.embedFont(assets.italic, { subset: true }),
+          doc.embedFont(assets.boldItalic, { subset: true }),
+          doc.embedPng(assets.logo)
+        ]).then(function (embedded) {
+          var F = { regular: embedded[0], bold: embedded[1], italic: embedded[2], boldItalic: embedded[3] };
+          var logoImg = embedded[4];
+          renderPvPdfPages(doc, F, logoImg, pvsContent, dataFields, pvStart);
+          return doc.save();
+        });
+      });
+    });
+  }
+
+  function generatePvPdfForTronson(site, tronsonId) {
+    var t = tronsoane.filter(function (x) { return x.id === tronsonId; })[0];
+    if (!t) return;
+    var pv = pvDateForSite(site);
+    if (!pv) { flashSyncError("Completează mai întâi Date șantier → Date generale ale proiectului → Date pentru procese-verbale."); return; }
+    var missing = missingPvDateLabels(pv).concat(missingTronsonLabels(t));
+    if (missing.length && !confirmPvWarning(missing)) return;
+    var pvStart = pvRangeMapForSite(site)[t.id].start;
+    buildPvPdfBytes(pv, t, pvStart).then(function (bytes) {
+      var blob = new Blob([bytes], { type: "application/pdf" });
+      downloadBlob(blob, "PV-" + pvFileBaseName(t, pvStart) + "-" + siteSlugFor(site) + ".pdf");
+    }).catch(function (err) {
+      console.error(err);
+      flashSyncError(err.isPvUserError ? err.message : "Nu am putut genera procesul verbal (PDF).");
+    });
+  }
+
+  function generateAllPvsPdfForSite(site) {
+    var pv = pvDateForSite(site);
+    if (!pv) { flashSyncError("Completează mai întâi Date șantier → Date generale ale proiectului → Date pentru procese-verbale."); return; }
+    var all = tronsoaneOrderedForSite(site);
+    if (!all.length) { flashSyncError("Adaugă cel puțin un tronson înainte de a genera procesele-verbale."); return; }
+
+    var missing = missingPvDateLabels(pv);
+    all.forEach(function (t) {
+      var tMissing = missingTronsonLabels(t);
+      if (tMissing.length) missing.push((t.cod || t.categorie.toUpperCase()) + ": " + tMissing.join(", "));
+    });
+    if (missing.length && !confirmPvWarning(missing)) return;
+
+    var rangeMap = pvRangeMapForSite(site);
+    Promise.all(all.map(function (t) {
+      var pvStart = rangeMap[t.id].start;
+      return buildPvPdfBytes(pv, t, pvStart).then(function (bytes) {
+        return { ok: true, name: "PV-" + pvFileBaseName(t, pvStart) + ".pdf", buf: bytes };
+      }).catch(function (err) {
+        return { ok: false, cod: t.cod || t.categorie.toUpperCase(), err: err };
+      });
+    })).then(function (results) {
+      var ok = results.filter(function (r) { return r.ok; });
+      var failed = results.filter(function (r) { return !r.ok; });
+      if (!ok.length) { flashSyncError("Nu am putut genera niciun proces verbal."); return; }
+      var zip = new PizZip();
+      ok.forEach(function (r) { zip.file(r.name, r.buf); });
+      var blob = zip.generate({ type: "blob", mimeType: "application/zip", compression: "DEFLATE" });
+      downloadBlob(blob, "PV-uri-" + siteSlugFor(site) + "-pdf.zip");
       if (failed.length) {
         failed.forEach(function (r) { console.error(r.cod, r.err); });
         flashSyncError("Generate " + ok.length + " din " + results.length + " — au eșuat: " + failed.map(function (r) { return r.cod; }).join(", "));
@@ -3403,6 +3711,7 @@
         cellsHtml +
         '<td class="progrid-del-cell"><span style="display:flex;align-items:center;gap:8px;justify-content:center;white-space:nowrap">' +
           '<span class="btn btn-ghost btn-sm" data-generate-pv="' + row.id + '">' + icon("doc", 13) + 'Generează PV</span>' +
+          '<span class="btn btn-ghost btn-sm" data-generate-pv-pdf="' + row.id + '" title="Variantă alternativă, ca PDF — nu înlocuiește fișierul Word de mai sus">' + icon("doc", 13) + 'PDF</span>' +
           '<span class="progrid-del" data-remove-tronson="' + row.id + '" title="Șterge tronsonul">' + icon("trash", 13) + '</span>' +
         '</span></td>' +
       '</tr>';
@@ -3417,8 +3726,9 @@
   function tronsoanePanelHTML(site) {
     var hasTronsoane = tronsoane.some(function (t) { return t.santierId === site.id; });
     var bulkBtn = '<button class="btn btn-ghost btn-sm" style="margin-bottom:14px" data-generate-all-pv="' + site.id + '"' + (hasTronsoane ? "" : " disabled") + '>' + icon("doc", 13) + 'Generează toate PV-urile (.zip)</button>';
+    var bulkBtnPdf = '<button class="btn btn-ghost btn-sm" style="margin-bottom:14px;margin-left:8px" title="Variantă alternativă, ca PDF — nu înlocuiește arhiva Word de mai sus" data-generate-all-pv-pdf="' + site.id + '"' + (hasTronsoane ? "" : " disabled") + '>' + icon("doc", 13) + 'Generează toate PV-urile (PDF, .zip)</button>';
     var pvRangeMap = pvRangeMapForSite(site);
-    return bulkBtn +
+    return bulkBtn + bulkBtnPdf +
       (hasTronsoane ? '<div class="helper" style="margin-bottom:14px">Trage de mânerul (' + icon("grip", 11) + ') de lângă orice tronson, din orice categorie, ca să stabilești ordinea — coloana „Nr. PV” arată numerele PV-urilor acelui tronson (un tronson produce mai multe PV-uri), recalculate automat, continuând de la tronsonul anterior.</div>' : "") +
       TRONSON_CATEGORII.map(function (cat) { return tronsonCategoryTableHTML(site, cat, pvRangeMap); }).join("") +
       '<div class="helper">Completează câmpurile fiecărui tronson, apoi apasă „Generează PV” — se descarcă un fișier Word complet, cu antetul, subsolul și structura șablonului tău, doar cu datele acestui tronson completate automat. „Generează toate PV-urile” face același lucru pentru toate tronsoanele șantierului deodată, într-o arhivă .zip.</div>';
@@ -3699,7 +4009,7 @@
       "[data-merge-cells-confirm],[data-merge-cells-cancel],[data-unmerge-cell]," +
       "[data-undo-progres]," +
       "[data-edit-pv-date],[data-save-pv-date],[data-cancel-pv-date]," +
-      "[data-add-tronson],[data-remove-tronson],[data-generate-pv],[data-generate-all-pv]," +
+      "[data-add-tronson],[data-remove-tronson],[data-generate-pv],[data-generate-all-pv],[data-generate-pv-pdf],[data-generate-all-pv-pdf]," +
       "[data-open-jurnal-site],[data-open-add-jurnal],[data-save-jurnal],[data-cancel-jurnal]," +
       "[data-edit-jurnal],[data-delete-jurnal],[data-remove-jurnal-photo]"
     );
@@ -3978,6 +4288,16 @@
       else if (t.dataset.generateAllPv) {
         var gapvSite = findSite(t.dataset.generateAllPv);
         if (gapvSite) generateAllPvsForSite(gapvSite);
+        needsRender = false;
+      }
+      else if (t.dataset.generatePvPdf) {
+        var gpvpSite = findSite(state.selectedSiteId);
+        if (gpvpSite) generatePvPdfForTronson(gpvpSite, t.dataset.generatePvPdf);
+        needsRender = false;
+      }
+      else if (t.dataset.generateAllPvPdf) {
+        var gapvpSite = findSite(t.dataset.generateAllPvPdf);
+        if (gapvpSite) generateAllPvsPdfForSite(gapvpSite);
         needsRender = false;
       }
       else if (t.dataset.openJurnalSite) {
