@@ -248,6 +248,114 @@ paginare de mai sus.
   UI, descărcare reală verificată byte-cu-byte, inclusiv arhiva .zip cu
   numerotare globală pe mai multe tronsoane).
 
+## Materiale (listă materiale + comenzi) — subcapitol nou pe șantier
+
+Tab nou la nivel de șantier ("Materiale", lângă Date șantier/PV/Progres/
+Documente), cu două subtab-uri: **Listă materiale** (cantitățile prevăzute
+inițial, din listele de cantități/deviz) și **Comenzi** (comenzile de
+materiale care ajung în șantier și consumă din acel total). Cerut explicit
+de utilizator, cu mockup interactiv (Artifact „Design”) aprobat înainte de
+implementare.
+
+### Model de date (Supabase)
+
+Trei tabele noi, RLS `for all to public using (auth.role() = 'authenticated')`
+(același tipar ca `santier_tronsoane`/`santier_documente`):
+
+- **`santier_materiale`** — un rând per material: `santier_id, denumire,
+  unitate_masura, cantitate_prevazuta (numeric), ordine`. `denumire` rămâne
+  EXACT textul tehnic din deviz (ex: „Teava PE 100 SDR 17 PN 10 D=110x6.60
+  mm”) — decizie explicită a utilizatorului, nu se traduce în limbaj comun.
+- **`santier_materiale_comenzi`** — un rând per comandă: `santier_id, numar`
+  (auto-generat `COM-NNN`, secvențial pe șantier), `data_comanda, data_primire`
+  (nullable — necompletată = comanda nu a ajuns încă), `furnizor, observatii`,
+  plus `poza_path/poza_nume/poza_marime` (poză de la livrare) și
+  `aviz_path/aviz_nume/aviz_marime` (avizul de expediție) — fișierele folosesc
+  bucket-ul partajat `DOC_BUCKET = "santier-documente"`, același tipar ca
+  `uploadJurnalPhoto`/`uploadDocFile` (path `materiale/{santierId}/{comandaId}/
+  {poza|aviz}-{timestamp}-{filename}`).
+- **`santier_materiale_comenzi_itemi`** — tabel de legătură: o comandă poate
+  conține mai multe materiale diferite (o comandă/aviz real acoperă de regulă
+  mai multe tipuri de material), fiecare linie cu `comanda_id, material_id,
+  cantitate`.
+
+### Logica de avertizare (cea mai importantă regulă de business aici)
+
+Pentru fiecare material se calculează (funcția `materialCantitati`):
+
+- **Cantitate comandată** = suma `cantitate` din TOATE liniile de comandă ale
+  acelui material, INDIFERENT dacă comanda a ajuns deja pe șantier — e o
+  avertizare preventivă (depășirea bugetului de material e vizibilă chiar
+  înainte ca marfa să ajungă).
+- **Cantitate primită** = suma doar din liniile ale căror comenzi au
+  `data_primire` completată — ACEASTA se scade efectiv din cantitatea
+  prevăzută (`cantitate rămasă = prevăzută − primită`).
+- **Rând roșu + badge „DEPĂȘIT”** când comandată > prevăzută; altfel badge
+  verde „OK”. Această distincție comandată-vs-primită rezolvă ambiguitatea
+  din cererea inițială a utilizatorului fără să fie nevoie să aleagă o
+  singură interpretare — amândouă sunt utile și afișate separat.
+- Statusul unei comenzi (badge „Comandat”/„Primit”) e pur derivat din
+  `data_primire` fiind completată sau nu — nu există un câmp de status
+  separat.
+
+### Import din Excel ("Importă din Excel")
+
+Buton în Listă materiale care citește un fișier `.xls`/`.xlsx` de listă de
+cantități direct în browser (SheetJS, `xlsx@0.18.5`, din CDN — `<script defer>`,
+aceeași convenție ca docxtemplater/pizzip/pdf-lib) și populează automat
+materialele, cu o previzualizare (checkbox per rând) înainte de salvare.
+
+**Euristică de extracție** (funcția `parseDevizMatrix`, validată pe deviz-ul
+real Stăuceni — `Balanta_SIL2_completata_Stauceni.xls`, 1046 rânduri, 108
+materiale reale găsite, 0 fals-pozitive pe test manual): un deviz românesc
+„Borderou centralizator al situațiilor de plată cantitativ” mixează rânduri
+de manoperă (operații de execuție) cu rânduri de materiale. Coloana
+**„Simbol”**: valoare PUR NUMERICĂ (`/^\d+$/`) → cod real de produs/material
+(SKU); valoare ALFANUMERICĂ (ex: „TSC04F1”, indicator de normă de deviz) →
+operație de manoperă, se ignoră. Un material poate apărea la mai multe
+poziții (același tip de țeavă folosit în secțiuni diferite ale proiectului)
+— cantitatea se ADUNĂ pe cod unic, nu se ia o singură dată. Filtru adițional:
+un rând cu `cantitate <= 0` se ignoră (găsit empiric un fals-pozitiv: un antet
+de proiect repetat mid-sheet, cu un cod numeric întâmplător în coloana
+Simbol și cantitate 0 — un material real din listă are mereu o cantitate
+ofertată > 0).
+
+### UI / convenții respectate
+
+Subtab-urile Listă materiale/Comenzi urmează EXACT tiparul existent
+`.subtabs`/`.subtab` + `state.siteForm.materialeSubTab` (ca Date șantier/
+Progres Șantier). CRUD pe materiale/comenzi urmează tiparul tronsoanelor
+(`addTronson`/`persistTronsonField`/`removeTronson`): rând temporar `tmp-`
+afișat optimist, insert real în fundal, id-ul temporar e înlocuit la succes,
+rollback vizual la eroare. Editarea unui material e explicit edit/salvează
+(buton creion → rândul devine editabil → bifă salvează), nu „type-and-blur”
+ca la tronsoane — tipar aprobat explicit de utilizator în mockup-ul Artifact
+înainte de implementare.
+
+### Testare
+
+Fără script de test commis separat (scratchpad-only, per convenția
+proiectului) — dar verificat exhaustiv cu un test de integrare real
+(Playwright, Chromium) pe `index.html` NEMODIFICAT, cu librăriile reale
+supabase-js/xlsx (instalate local din npm, nu mock-uite): adăugare material,
+editare, salvare, adăugare comandă, adăugare linie de comandă cu cantitate
+care depășește prevăzutul (verificare badge „DEPĂȘIT” + rând roșu +
+cantități comandată/primită/rămasă corecte), și import real din fișierul
+Excel de producție Stăuceni prin UI (upload real → previzualizare → confirmă
+→ 108 materiale importate, exact ca extracția validată manual). **Notă
+tehnică utilă dacă se re-scrie acest test**: NU interceptați cross-origin
+cu `page.route()` cererile reale către `*.supabase.co` din sandbox-uri cu
+proxy — politica de rețea blochează `cdn.jsdelivr.net` ȘI
+`rwxsvsqoohepcfbawfng.supabase.co` direct la proxy (403), și interceptarea
+cross-origin cu `page.route()` s-a comportat inconsistent (reușea izolat,
+dar pica repetabil quando combinată cu alte rute înregistrate, fără o cauză
+clar identificabilă). Soluție robustă: serviți o copie same-origin a
+`index.html` (doar `SUPABASE_URL` și `<script src>`-urile supabase-js/xlsx
+rescrise să indice spre același server Node local), iar serverul Node însuși
+joacă rolul de backend Supabase fals (rute `/rest/v1`, `/auth/v1`,
+`/storage/v1` tratate direct în handler-ul HTTP) — elimină complet CORS/proxy
+din ecuație.
+
 ## Workflow de deploy
 
 Commit pe branch-ul de lucru → push → merge pe `main` → push. Bump `BUILD`

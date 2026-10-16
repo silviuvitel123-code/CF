@@ -37,6 +37,11 @@
      Word→LibreOffice. Vezi buildPvPdfBytes mai jos. -->
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1/dist/pdf-lib.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1/dist/fontkit.umd.min.js" defer></script>
+<!-- Materiale → "Importă din Excel": citește lista de cantități (.xls/.xlsx)
+     direct în browser, fără server — SheetJS parsează sheet-ul într-o matrice
+     de celule, pe care importMaterialeFromWorkbook o interpretează (vezi
+     comentariul de acolo pentru euristica Simbol numeric = material). -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
 <style>
   :root{
     /* "Muchie" — the flat, crisp variant of Oțel & Șantier: same graphite/
@@ -619,6 +624,75 @@
   .logout-link { margin-left: auto; cursor: pointer; color: var(--ink-faint); }
   .logout-link:hover { color: var(--red); }
 
+  /* Materiale: listă materiale (din deviz) + comenzi (recepții de materiale pe șantier) */
+  .mtable-panel { padding: 0; overflow: hidden; }
+  table.mtable { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  .mtable th { background: var(--surface-2); font-size: 10.5px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .03em; color: var(--ink-faint); text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+  .mtable td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--ink); }
+  .mtable tbody tr:last-child td { border-bottom: none; }
+  .mtable tr.row-over td { background: var(--red-soft); }
+  .mtable td.num { font-family: var(--mono); text-align: right; white-space: nowrap; }
+  .mtable td.actions { text-align: right; white-space: nowrap; }
+  .mtable td.denumire { max-width: 420px; }
+  .badge-ok { background: var(--green-soft); color: var(--green); }
+  .badge-over { background: var(--red-soft); color: var(--red); }
+  .badge-comandat { background: var(--amber-soft); color: var(--amber-strong); }
+  .badge-primit { background: var(--green-soft); color: var(--green); }
+  .cell-input { width: 100%; font-family: var(--sans); font-size: 12.5px; background: var(--bg); color: var(--ink);
+    border: 1px solid var(--navy); border-radius: 5px; padding: 5px 7px; }
+  .cell-input.num { text-align: right; font-family: var(--mono); }
+  .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px;
+    border-radius: 6px; color: var(--ink-faint); cursor: pointer; border: none; background: none; }
+  .icon-btn:hover { background: var(--surface-2); color: var(--ink); }
+  .icon-btn.danger:hover { color: var(--red); }
+  .edit-actions { display: flex; gap: 4px; justify-content: flex-end; }
+  .mat-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+  .orders-list { display: flex; flex-direction: column; }
+  .order-row { border-bottom: 1px solid var(--border); }
+  .order-row:last-child { border-bottom: none; }
+  .order-head { display: flex; align-items: center; gap: 14px; padding: 13px 16px; cursor: pointer; }
+  .order-head:hover { background: var(--surface-2); }
+  .order-num { font-family: var(--mono); font-weight: 700; font-size: 12.5px; color: var(--ink); width: 80px; flex-shrink: 0; }
+  .order-dates { font-size: 12px; color: var(--ink-soft); width: 220px; flex-shrink: 0; }
+  .order-dates b { color: var(--ink-faint); font-weight: 600; font-size: 10.5px; text-transform: uppercase; display: block; margin-bottom: 1px; }
+  .order-furnizor { font-size: 12.5px; color: var(--ink); flex: 1; }
+  .order-meta-icons { display: flex; align-items: center; gap: 10px; color: var(--ink-faint); font-size: 11px; flex-shrink: 0; }
+  .order-meta-icons span { display: flex; align-items: center; gap: 4px; }
+  .chev { transition: transform .15s ease; color: var(--ink-faint); flex-shrink: 0; }
+  .chev.open { transform: rotate(90deg); }
+  .order-body { padding: 4px 16px 18px 110px; display: flex; flex-direction: column; gap: 14px; border-top: 1px solid var(--border); }
+  .order-fields-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .order-field { display: flex; flex-direction: column; gap: 4px; }
+  .order-field label { font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--ink-faint); }
+  .order-field input { font-family: var(--sans); font-size: 12.5px; background: var(--bg); color: var(--ink);
+    border: 1px solid var(--border-strong); border-radius: 6px; padding: 6px 8px; }
+  .items-table { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .items-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .items-table th { background: var(--surface-2); font-size: 10px; text-transform: uppercase; color: var(--ink-faint);
+    text-align: left; padding: 7px 10px; font-weight: 600; }
+  .items-table td { padding: 8px 10px; border-top: 1px solid var(--border); color: var(--ink); }
+  .items-table td.num { font-family: var(--mono); text-align: right; }
+  .items-table select, .items-table input { font-family: var(--sans); font-size: 12px; background: var(--bg); color: var(--ink);
+    border: 1px solid var(--border-strong); border-radius: 5px; padding: 4px 6px; }
+  .attach-row { display: flex; gap: 22px; flex-wrap: wrap; }
+  .attach-group { display: flex; flex-direction: column; gap: 7px; }
+  .attach-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; color: var(--ink-faint); letter-spacing: .03em; }
+  .photo-chip { position: relative; width: 76px; height: 76px; border-radius: 8px; overflow: hidden; background: var(--surface-2);
+    border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--ink-faint); flex-shrink: 0; }
+  .photo-chip img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .file-chip { display: inline-flex; align-items: center; gap: 7px; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 11px; font-size: 12px; color: var(--ink); }
+  .file-chip a { color: var(--navy); text-decoration: none; }
+  .file-chip a:hover { text-decoration: underline; }
+  .upload-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px dashed var(--border-strong); background: none;
+    color: var(--ink-faint); border-radius: 8px; padding: 7px 11px; font-size: 11.5px; cursor: pointer; font-family: var(--sans); }
+  .upload-btn:hover { border-color: var(--navy); color: var(--navy-hover); }
+  .import-preview-row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+  .import-preview-row:last-child { border-bottom: none; }
+  .import-preview-row .ipr-denumire { flex: 1; }
+  .import-preview-row .ipr-num { font-family: var(--mono); color: var(--ink-soft); width: 110px; text-align: right; }
+
   @media print {
     body * { visibility: hidden; }
     #print-sheet, #print-sheet * { visibility: visible; }
@@ -641,7 +715,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b80-2026-10-16";
+  var BUILD = "b81-2026-10-16";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -691,7 +765,13 @@
       pasteAnchor: null,
       cellRangeSelect: null,
       pvDateEditing: false,
-      pvDateDraft: null
+      pvDateDraft: null,
+      materialeSubTab: "lista",
+      materialEditingId: null,
+      comandaExpandedId: null,
+      comandaItemDraft: {},
+      comandaUploading: {},
+      materialeImport: null
     },
     sidebarNameEdit: { siteId: null, draft: "" }
   };
@@ -976,9 +1056,12 @@
       sb.from("santier_pv_date").select("*"),
       sb.from("santier_tronsoane").select("*").order("ordine"),
       sb.from("santier_jurnal").select("*").order("data", { ascending: false }),
-      sb.from("santier_jurnal_poze").select("*").order("created_at")
+      sb.from("santier_jurnal_poze").select("*").order("created_at"),
+      sb.from("santier_materiale").select("*").order("ordine"),
+      sb.from("santier_materiale_comenzi").select("*").order("created_at"),
+      sb.from("santier_materiale_comenzi_itemi").select("*")
     ]).then(function (results) {
-      var mRes = results[0], eRes = results[1], cRes = results[2], sRes = results[3], dRes = results[4], pcRes = results[5], prRes = results[6], pvRes = results[7], trRes = results[8], jRes = results[9], jpRes = results[10];
+      var mRes = results[0], eRes = results[1], cRes = results[2], sRes = results[3], dRes = results[4], pcRes = results[5], prRes = results[6], pvRes = results[7], trRes = results[8], jRes = results[9], jpRes = results[10], matRes = results[11], comRes = results[12], comItemRes = results[13];
       workers = (mRes.data || []).map(function (w) {
         return { id: w.id, name: w.nume, functie: w.functie || "", salariu: w.salariu, metodaPlata: w.metoda_plata || "CARD", telefon: w.telefon || "" };
       });
@@ -993,6 +1076,9 @@
       tronsoane = (trRes.data || []).map(tronsonFromRow);
       jurnalEntries = (jRes.data || []).map(jurnalFromRow);
       jurnalPoze = (jpRes.data || []).map(jurnalPozaFromRow);
+      materiale = (matRes.data || []).map(materialFromRow);
+      materialeComenzi = (comRes.data || []).map(comandaFromRow);
+      materialeComenziItemi = (comItemRes.data || []).map(comandaItemFromRow);
     }).catch(function (err) {
       flashSyncError("Nu am putut încărca datele din Supabase.");
       console.error(err);
@@ -1020,6 +1106,7 @@
       workers = []; entries = {}; company = { name: "", cif: "", docTipOrder: null, docTipLabels: null }; sites = []; projectDocs = [];
       progresColoane = []; progresRanduri = []; progresSeededSites = {}; progresUndoStack = {};
       pvDateList = []; tronsoane = [];
+      materiale = []; materialeComenzi = []; materialeComenziItemi = [];
       state.view = "dashboard"; state.selectedSiteId = null;
       render();
     });
@@ -1356,6 +1443,11 @@
   var pvDateList = [];
   var tronsoane = [];
 
+  // --- Materiale: lista inițială (din deviz) + comenzile care o consumă ---
+  var materiale = [];
+  var materialeComenzi = [];
+  var materialeComenziItemi = [];
+
   // Câmpurile completate O SINGURĂ DATĂ per șantier (nu se repetă per tronson) —
   // apar identic în toate procesele-verbale generate pentru acel șantier.
   // Numele lor (a doua valoare din fiecare pereche) sunt exact tag-urile
@@ -1553,6 +1645,347 @@
     var payload = {}; payload[dbField] = t[field];
     sb.from("santier_tronsoane").update(payload).eq("id", t.id).then(function (res) {
       if (res.error) { flashSyncError("Nu am putut salva tronsonul."); console.error(res.error); render(); }
+    });
+  }
+
+  // --- Materiale: materialele inițiale (din deviz, subcap "Listă materiale")
+  // și comenzile care le consumă (subcap "Comenzi") — vezi comentariul din
+  // CLAUDE.md / planificarea din conversație pentru model: "cantitate
+  // comandată" = suma tuturor liniilor de comandă pentru acel material,
+  // indiferent de stadiu (avertizare preventivă); "cantitate primită" = doar
+  // din comenzile cu dată de primire completată — aceea se scade efectiv din
+  // cantitatea prevăzută. ---
+  function materialFromRow(r) {
+    return { id: r.id, santierId: r.santier_id, denumire: r.denumire || "", unitateMasura: r.unitate_masura || "", cantitatePrevazuta: r.cantitate_prevazuta || 0, ordine: r.ordine || 0 };
+  }
+  function comandaFromRow(r) {
+    return {
+      id: r.id, santierId: r.santier_id, numar: r.numar || "", dataComanda: r.data_comanda || "", dataPrimire: r.data_primire || "",
+      furnizor: r.furnizor || "", observatii: r.observatii || "",
+      pozaPath: r.poza_path || "", pozaNume: r.poza_nume || "", pozaMarime: r.poza_marime || null,
+      avizPath: r.aviz_path || "", avizNume: r.aviz_nume || "", avizMarime: r.aviz_marime || null,
+      createdAt: r.created_at || ""
+    };
+  }
+  function comandaItemFromRow(r) {
+    return { id: r.id, comandaId: r.comanda_id, materialId: r.material_id, cantitate: r.cantitate || 0 };
+  }
+  function materialeForSite(site) {
+    return materiale.filter(function (m) { return m.santierId === site.id; }).sort(function (a, b) { return a.ordine - b.ordine; });
+  }
+  function comenziForSite(site) {
+    return materialeComenzi.filter(function (c) { return c.santierId === site.id; })
+      .sort(function (a, b) { return (a.createdAt || "").localeCompare(b.createdAt || ""); });
+  }
+  function itemiForComanda(comandaId) {
+    return materialeComenziItemi.filter(function (it) { return it.comandaId === comandaId; });
+  }
+  function itemiForMaterial(materialId) {
+    return materialeComenziItemi.filter(function (it) { return it.materialId === materialId; });
+  }
+  function materialCantitati(material) {
+    var comandata = 0, primita = 0;
+    itemiForMaterial(material.id).forEach(function (it) {
+      comandata += it.cantitate || 0;
+      var com = materialeComenzi.filter(function (c) { return c.id === it.comandaId; })[0];
+      if (com && com.dataPrimire) primita += it.cantitate || 0;
+    });
+    return { comandata: comandata, primita: primita, ramasa: (material.cantitatePrevazuta || 0) - primita, peste: comandata > (material.cantitatePrevazuta || 0) };
+  }
+
+  function addMaterial(site) {
+    var tempId = "tmp-" + Date.now();
+    var all = materialeForSite(site);
+    var ordine = all.length ? Math.max.apply(null, all.map(function (m) { return m.ordine; })) + 1 : 0;
+    materiale.push({ id: tempId, santierId: site.id, denumire: "", unitateMasura: "", cantitatePrevazuta: 0, ordine: ordine });
+    state.siteForm.materialEditingId = tempId;
+    render();
+    sb.from("santier_materiale").insert({ santier_id: site.id, ordine: ordine }).select().single().then(function (res) {
+      if (res.error) {
+        materiale = materiale.filter(function (m) { return m.id !== tempId; });
+        if (state.siteForm.materialEditingId === tempId) state.siteForm.materialEditingId = null;
+        flashSyncError("Nu am putut adăuga materialul."); console.error(res.error); render(); return;
+      }
+      var live = materiale.filter(function (m) { return m.id === tempId; })[0];
+      if (!live) { sb.from("santier_materiale").delete().eq("id", res.data.id).then(function (r2) { if (r2.error) console.error(r2.error); }); return; }
+      live.id = res.data.id;
+      if (state.siteForm.materialEditingId === tempId) state.siteForm.materialEditingId = res.data.id;
+      render();
+    });
+  }
+  function startMaterialEdit(id) { state.siteForm.materialEditingId = id; render(); }
+  function saveMaterialEdit(id) {
+    state.siteForm.materialEditingId = null;
+    var m = materiale.filter(function (x) { return x.id === id; })[0];
+    if (m) m.cantitatePrevazuta = parseFloat(m.cantitatePrevazuta) || 0; // normalizează string-ul din input la număr
+    persistMaterialFields(id);
+    render();
+  }
+  function persistMaterialFields(id) {
+    var m = materiale.filter(function (x) { return x.id === id; })[0];
+    if (!m || String(m.id).indexOf("tmp-") === 0) return;
+    sb.from("santier_materiale").update({ denumire: m.denumire, unitate_masura: m.unitateMasura, cantitate_prevazuta: m.cantitatePrevazuta }).eq("id", m.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva materialul."); console.error(res.error); render(); }
+    });
+  }
+  function removeMaterial(id) {
+    var m = materiale.filter(function (x) { return x.id === id; })[0];
+    if (!m) return;
+    if (!confirmDelete('Ștergi materialul "' + (m.denumire || "fără denumire") + '"? Această acțiune nu poate fi anulată — se șterg și liniile din comenzi care îl referă.')) return;
+    materiale = materiale.filter(function (x) { return x !== m; });
+    materialeComenziItemi = materialeComenziItemi.filter(function (it) { return it.materialId !== m.id; });
+    if (state.siteForm.materialEditingId === m.id) state.siteForm.materialEditingId = null;
+    render();
+    if (String(m.id).indexOf("tmp-") === 0) return;
+    sb.from("santier_materiale").delete().eq("id", m.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut șterge materialul."); console.error(res.error); }
+    });
+  }
+
+  function nextComandaNumar(site) { return "COM-" + pad3(comenziForSite(site).length + 1); }
+  function addComanda(site) {
+    var tempId = "tmp-" + Date.now();
+    var numar = nextComandaNumar(site);
+    var today = new Date().toISOString().slice(0, 10);
+    materialeComenzi.push({
+      id: tempId, santierId: site.id, numar: numar, dataComanda: today, dataPrimire: "", furnizor: "", observatii: "",
+      pozaPath: "", pozaNume: "", pozaMarime: null, avizPath: "", avizNume: "", avizMarime: null, createdAt: new Date().toISOString()
+    });
+    state.siteForm.comandaExpandedId = tempId;
+    render();
+    sb.from("santier_materiale_comenzi").insert({ santier_id: site.id, numar: numar, data_comanda: today }).select().single().then(function (res) {
+      if (res.error) {
+        materialeComenzi = materialeComenzi.filter(function (c) { return c.id !== tempId; });
+        if (state.siteForm.comandaExpandedId === tempId) state.siteForm.comandaExpandedId = null;
+        flashSyncError("Nu am putut adăuga comanda."); console.error(res.error); render(); return;
+      }
+      var live = materialeComenzi.filter(function (c) { return c.id === tempId; })[0];
+      if (!live) { sb.from("santier_materiale_comenzi").delete().eq("id", res.data.id).then(function (r2) { if (r2.error) console.error(r2.error); }); return; }
+      live.id = res.data.id;
+      live.createdAt = res.data.created_at || live.createdAt;
+      if (state.siteForm.comandaExpandedId === tempId) state.siteForm.comandaExpandedId = res.data.id;
+      render();
+    });
+  }
+  function toggleComandaExpanded(id) {
+    state.siteForm.comandaExpandedId = state.siteForm.comandaExpandedId === id ? null : id;
+    render();
+  }
+  var COMANDA_DB_FIELD = { furnizor: "furnizor", dataComanda: "data_comanda", dataPrimire: "data_primire", observatii: "observatii" };
+  function persistComandaField(id, field) {
+    var c = materialeComenzi.filter(function (x) { return x.id === id; })[0];
+    if (!c || String(c.id).indexOf("tmp-") === 0) return;
+    var dbField = COMANDA_DB_FIELD[field];
+    if (!dbField) return;
+    var payload = {}; payload[dbField] = c[field] || null;
+    sb.from("santier_materiale_comenzi").update(payload).eq("id", c.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut salva comanda."); console.error(res.error); render(); }
+    });
+  }
+  function removeComanda(id) {
+    var c = materialeComenzi.filter(function (x) { return x.id === id; })[0];
+    if (!c) return;
+    if (!confirmDelete('Ștergi comanda "' + c.numar + '"? Această acțiune nu poate fi anulată.')) return;
+    var files = [c.pozaPath, c.avizPath].filter(Boolean);
+    materialeComenzi = materialeComenzi.filter(function (x) { return x !== c; });
+    materialeComenziItemi = materialeComenziItemi.filter(function (it) { return it.comandaId !== c.id; });
+    if (state.siteForm.comandaExpandedId === c.id) state.siteForm.comandaExpandedId = null;
+    render();
+    if (String(c.id).indexOf("tmp-") === 0) return;
+    files.forEach(function (p) { sb.storage.from(DOC_BUCKET).remove([p]); });
+    sb.from("santier_materiale_comenzi").delete().eq("id", c.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut șterge comanda."); console.error(res.error); }
+    });
+  }
+
+  function comandaItemDraft(comandaId) {
+    if (!state.siteForm.comandaItemDraft[comandaId]) state.siteForm.comandaItemDraft[comandaId] = { materialId: "", cantitate: "" };
+    return state.siteForm.comandaItemDraft[comandaId];
+  }
+  function addComandaItem(comandaId) {
+    var draft = comandaItemDraft(comandaId);
+    var materialId = draft.materialId;
+    var cantitate = parseFloat(draft.cantitate) || 0;
+    if (!materialId || !cantitate) return;
+    var tempId = "tmp-" + Date.now();
+    materialeComenziItemi.push({ id: tempId, comandaId: comandaId, materialId: materialId, cantitate: cantitate });
+    state.siteForm.comandaItemDraft[comandaId] = { materialId: "", cantitate: "" };
+    render();
+    sb.from("santier_materiale_comenzi_itemi").insert({ comanda_id: comandaId, material_id: materialId, cantitate: cantitate }).select().single().then(function (res) {
+      if (res.error) {
+        materialeComenziItemi = materialeComenziItemi.filter(function (it) { return it.id !== tempId; });
+        flashSyncError("Nu am putut adăuga materialul în comandă."); console.error(res.error); render(); return;
+      }
+      var live = materialeComenziItemi.filter(function (it) { return it.id === tempId; })[0];
+      if (live) live.id = res.data.id;
+      render();
+    });
+  }
+  function removeComandaItem(id) {
+    var it = materialeComenziItemi.filter(function (x) { return x.id === id; })[0];
+    if (!it) return;
+    materialeComenziItemi = materialeComenziItemi.filter(function (x) { return x !== it; });
+    render();
+    if (String(it.id).indexOf("tmp-") === 0) return;
+    sb.from("santier_materiale_comenzi_itemi").delete().eq("id", it.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut șterge linia din comandă."); console.error(res.error); }
+    });
+  }
+
+  // Poză de livrare + aviz de însoțire marfă pe o comandă — același tipar ca
+  // uploadJurnalPhoto/uploadDocFile (bucket-ul partajat DOC_BUCKET), dar cu
+  // două fișiere independente pe același rând (nu un fișier per "tip" ca la
+  // documentele de proiect).
+  function uploadComandaFile(comanda, kind, file) {
+    var key = comanda.id + "|" + kind;
+    var oldPath = kind === "poza" ? comanda.pozaPath : comanda.avizPath;
+    state.siteForm.comandaUploading[key] = true;
+    render();
+    var path = "materiale/" + comanda.santierId + "/" + comanda.id + "/" + kind + "-" + Date.now() + "-" + sanitizeFilename(file.name);
+    sb.storage.from(DOC_BUCKET).upload(path, file).then(function (upRes) {
+      if (upRes.error) {
+        delete state.siteForm.comandaUploading[key];
+        flashSyncError("Nu am putut încărca fișierul — încearcă din nou.");
+        console.error(upRes.error);
+        render();
+        return;
+      }
+      var payload = kind === "poza"
+        ? { poza_path: path, poza_nume: file.name, poza_marime: file.size }
+        : { aviz_path: path, aviz_nume: file.name, aviz_marime: file.size };
+      sb.from("santier_materiale_comenzi").update(payload).eq("id", comanda.id).then(function (res) {
+        delete state.siteForm.comandaUploading[key];
+        if (res.error) {
+          flashSyncError("Fișierul s-a încărcat dar nu am putut salva referința — încearcă din nou.");
+          console.error(res.error);
+          render();
+          return;
+        }
+        if (kind === "poza") { comanda.pozaPath = path; comanda.pozaNume = file.name; comanda.pozaMarime = file.size; }
+        else { comanda.avizPath = path; comanda.avizNume = file.name; comanda.avizMarime = file.size; }
+        render();
+        if (oldPath) sb.storage.from(DOC_BUCKET).remove([oldPath]); // replaced file — drop the orphaned old one
+      });
+    });
+  }
+  function removeComandaFile(comanda, kind) {
+    var oldPath = kind === "poza" ? comanda.pozaPath : comanda.avizPath;
+    if (!oldPath) return;
+    if (!confirmDelete("Ștergi fișierul? Această acțiune nu poate fi anulată.")) return;
+    if (kind === "poza") { comanda.pozaPath = ""; comanda.pozaNume = ""; comanda.pozaMarime = null; }
+    else { comanda.avizPath = ""; comanda.avizNume = ""; comanda.avizMarime = null; }
+    render();
+    sb.storage.from(DOC_BUCKET).remove([oldPath]);
+    var payload = kind === "poza" ? { poza_path: null, poza_nume: null, poza_marime: null } : { aviz_path: null, aviz_nume: null, aviz_marime: null };
+    sb.from("santier_materiale_comenzi").update(payload).eq("id", comanda.id).then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut actualiza baza de date."); console.error(res.error); render(); }
+    });
+  }
+
+  // --- Import "Listă materiale" direct dintr-un fișier Excel (.xls/.xlsx) de
+  // listă de cantități — parsare 100% client-side cu SheetJS. Euristică
+  // validată manual pe un deviz real (Stăuceni): în coloana "Simbol", un cod
+  // PUR NUMERIC e un cod de produs/material (SKU real), în timp ce un cod
+  // ALFANUMERIC (ex: "TSC04F1") e un indicator de normă de deviz — adică o
+  // operație de manoperă, nu un material. Materialele recurg la mai multe
+  // poziții (același tip de țeavă folosit în secțiuni diferite ale
+  // proiectului) — cantitatea lor trebuie ADUNATĂ pe cod unic, nu luată o
+  // singură dată. ---
+  function devizHeaderCell(v) { return String(v == null ? "" : v).trim().toLowerCase(); }
+  function findDevizHeaderRow(matrix) {
+    for (var i = 0; i < matrix.length; i++) {
+      var row = matrix[i] || [];
+      var hasSimbol = false, hasDenumire = false, hasUm = false;
+      for (var j = 0; j < row.length; j++) {
+        var v = devizHeaderCell(row[j]);
+        if (v === "simbol" || v === "cod") hasSimbol = true;
+        if (v.indexOf("denumire") !== -1) hasDenumire = true;
+        if (v === "u.m." || v === "um" || v === "u.m") hasUm = true;
+      }
+      if (hasSimbol && hasDenumire && hasUm) return i;
+    }
+    return -1;
+  }
+  function devizColumnIndex(headerRow, matchers) {
+    for (var i = 0; i < headerRow.length; i++) {
+      var v = devizHeaderCell(headerRow[i]);
+      for (var j = 0; j < matchers.length; j++) { if (matchers[j](v)) return i; }
+    }
+    return -1;
+  }
+  function parseDevizMatrix(matrix) {
+    var headerIdx = findDevizHeaderRow(matrix);
+    if (headerIdx === -1) return [];
+    var header = matrix[headerIdx];
+    var simbolIdx = devizColumnIndex(header, [function (v) { return v === "simbol"; }, function (v) { return v === "cod"; }]);
+    var denumireIdx = devizColumnIndex(header, [function (v) { return v.indexOf("denumire") !== -1; }]);
+    var umIdx = devizColumnIndex(header, [function (v) { return v === "u.m." || v === "um" || v === "u.m"; }]);
+    var cantitateIdx = devizColumnIndex(header, [function (v) { return v.indexOf("ofertat") !== -1; }, function (v) { return v.indexOf("cantitate") !== -1; }]);
+    if (simbolIdx === -1 || denumireIdx === -1 || cantitateIdx === -1) return [];
+    var byCode = {}, order = [];
+    for (var r = headerIdx + 1; r < matrix.length; r++) {
+      var row = matrix[r] || [];
+      var simbol = String(row[simbolIdx] == null ? "" : row[simbolIdx]).trim();
+      if (!/^\d+$/.test(simbol)) continue; // alfanumeric = articol de manoperă, nu material
+      var denumire = String(row[denumireIdx] == null ? "" : row[denumireIdx]).trim();
+      if (!denumire) continue;
+      var cantitateRaw = row[cantitateIdx];
+      var cantitate = typeof cantitateRaw === "number" ? cantitateRaw : (parseFloat(String(cantitateRaw == null ? "" : cantitateRaw).replace(",", ".")) || 0);
+      if (cantitate <= 0) continue; // rând fals-pozitiv (ex: un antet de proiect repetat cu un cod numeric întâmplător) — un material real din listă are mereu o cantitate ofertată > 0
+      var um = umIdx !== -1 ? String(row[umIdx] == null ? "" : row[umIdx]).trim() : "";
+      if (!byCode[simbol]) { byCode[simbol] = { denumire: denumire, um: um, cantitate: 0 }; order.push(simbol); }
+      byCode[simbol].cantitate += cantitate;
+    }
+    return order.map(function (code) { return byCode[code]; });
+  }
+  function importMaterialeFromFile(site, file) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      if (typeof XLSX === "undefined") { flashSyncError("Importul din Excel nu s-a încărcat (verifică conexiunea la internet) — reîncearcă."); return; }
+      var rows;
+      try {
+        var data = new Uint8Array(e.target.result);
+        var wb = XLSX.read(data, { type: "array" });
+        var matrix = [];
+        for (var i = 0; i < wb.SheetNames.length && !matrix.length; i++) {
+          var candidate = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[i]], { header: 1, defval: "", raw: true });
+          if (findDevizHeaderRow(candidate) !== -1) matrix = candidate;
+        }
+        rows = parseDevizMatrix(matrix);
+      } catch (err) {
+        console.error(err);
+        flashSyncError("Nu am putut citi fișierul Excel.");
+        return;
+      }
+      if (!rows.length) { flashSyncError("Nu am găsit materiale recunoscute în acest fișier — verifică că e o listă de cantități cu coloanele Simbol/Denumire/U.M."); return; }
+      state.siteForm.materialeImport = { siteId: site.id, rows: rows.map(function (r) { return { denumire: r.denumire, um: r.um, cantitate: r.cantitate, include: true }; }) };
+      render();
+    };
+    reader.readAsArrayBuffer(file);
+  }
+  function toggleMaterialeImportRow(idx) {
+    var imp = state.siteForm.materialeImport;
+    if (!imp || !imp.rows[idx]) return;
+    imp.rows[idx].include = !imp.rows[idx].include;
+    render();
+  }
+  function cancelMaterialeImport() { state.siteForm.materialeImport = null; render(); }
+  function confirmMaterialeImport(site) {
+    var imp = state.siteForm.materialeImport;
+    if (!imp) return;
+    var toImport = imp.rows.filter(function (r) { return r.include; });
+    state.siteForm.materialeImport = null;
+    if (!toImport.length) { render(); return; }
+    var all = materialeForSite(site);
+    var nextOrdine = all.length ? Math.max.apply(null, all.map(function (m) { return m.ordine; })) + 1 : 0;
+    var inserts = toImport.map(function (r, i) {
+      return { santier_id: site.id, denumire: r.denumire, unitate_masura: r.um, cantitate_prevazuta: r.cantitate, ordine: nextOrdine + i };
+    });
+    render();
+    sb.from("santier_materiale").insert(inserts).select().then(function (res) {
+      if (res.error) { flashSyncError("Nu am putut importa materialele."); console.error(res.error); render(); return; }
+      (res.data || []).forEach(function (row) { materiale.push(materialFromRow(row)); });
+      render();
     });
   }
 
@@ -2854,6 +3287,11 @@
       copy: '<rect x="9" y="9" width="11" height="11" rx="1.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
       undo: '<path d="M7 6 3 10l4 4"/><path d="M3 10h10.5a5.5 5.5 0 0 1 0 11H11"/>',
       unmerge: '<rect x="3" y="4" width="8" height="16" rx="1"/><rect x="13" y="4" width="8" height="16" rx="1"/>',
+      box: '<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5Z"/><path d="M3 7.5 12 12l9-4.5"/><path d="M12 12v9"/>',
+      camera: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><circle cx="12" cy="13.5" r="3.5"/>',
+      upload: '<path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 21h16"/>',
+      chevronDown: '<path d="M6 9l6 6 6-6"/>',
+      check: '<path d="M20 6 9 17l-5-5"/>',
       sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>',
       moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>'
     };
@@ -3761,6 +4199,181 @@
       '<button class="btn btn-ghost" style="margin-top:16px">' + icon("plus", 14) + 'Încarcă document</button></div>';
   }
 
+  function formatDateShort(dateStr) {
+    if (!dateStr) return "";
+    var p = dateStr.split("-");
+    if (p.length !== 3) return dateStr;
+    return p[2] + "." + p[1] + "." + p[0];
+  }
+
+  function materialePanelHTML(site) {
+    var subTab = state.siteForm.materialeSubTab || "lista";
+    var subtabsNav = '<div class="subtabs">' +
+      '<div class="subtab' + (subTab === "lista" ? " active" : "") + '" data-materiale-subtab="lista">Listă materiale</div>' +
+      '<div class="subtab' + (subTab === "comenzi" ? " active" : "") + '" data-materiale-subtab="comenzi">Comenzi</div>' +
+    '</div>';
+    return subtabsNav + (subTab === "comenzi" ? comenziPanelHTML(site) : listaMaterialePanelHTML(site));
+  }
+
+  function materialeImportPreviewHTML(site) {
+    var imp = state.siteForm.materialeImport;
+    var rows = imp.rows.map(function (r, idx) {
+      return '<label class="import-preview-row"><input type="checkbox" data-import-row-toggle="' + idx + '"' + (r.include ? " checked" : "") + '>' +
+        '<span class="ipr-denumire">' + esc(r.denumire) + '</span>' +
+        '<span class="ipr-num">' + formatGridNumber(r.cantitate) + ' ' + esc(r.um) + '</span>' +
+      '</label>';
+    }).join("");
+    var count = imp.rows.filter(function (r) { return r.include; }).length;
+    return '<div class="panel" style="margin-bottom:14px">' +
+      '<div class="panel-title">Previzualizare import — ' + imp.rows.length + ' materiale găsite în fișier</div>' +
+      '<div class="panel-sub">Debifează ce nu vrei să imporți — se adaugă ca materiale noi, nu suprascrie cele existente.</div>' +
+      '<div style="max-height:280px;overflow:auto;margin-top:8px;border:1px solid var(--border);border-radius:8px">' + rows + '</div>' +
+      '<div class="modal-actions" style="justify-content:flex-start;margin-top:14px">' +
+        '<button class="btn btn-primary btn-sm" data-confirm-import-materiale="' + site.id + '">Importă ' + count + (count === 1 ? " material" : " materiale") + '</button>' +
+        '<button class="btn btn-ghost btn-sm" data-cancel-import-materiale="1">Anulează</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function materialRowHTML(m) {
+    var calc = materialCantitati(m);
+    var isEditing = state.siteForm.materialEditingId === m.id;
+    var rowCls = calc.peste ? " row-over" : "";
+    if (isEditing) {
+      return '<tr class="' + rowCls + '">' +
+        '<td class="denumire"><input class="cell-input" data-material-field="' + m.id + '|denumire" value="' + esc(m.denumire) + '"></td>' +
+        '<td><input class="cell-input" style="width:60px" data-material-field="' + m.id + '|unitateMasura" value="' + esc(m.unitateMasura) + '"></td>' +
+        '<td class="num"><input class="cell-input num" style="width:100px" data-material-field="' + m.id + '|cantitatePrevazuta" value="' + esc(String(m.cantitatePrevazuta || 0)) + '"></td>' +
+        '<td class="num">' + formatGridNumber(calc.comandata) + '</td>' +
+        '<td class="num">' + formatGridNumber(calc.primita) + '</td>' +
+        '<td class="num">' + formatGridNumber(calc.ramasa) + '</td>' +
+        '<td></td>' +
+        '<td class="actions"><div class="edit-actions">' +
+          '<button class="icon-btn" title="Salvează" data-save-material="' + m.id + '">' + icon("check", 15) + '</button>' +
+          '<button class="icon-btn danger" title="Șterge" data-delete-material="' + m.id + '">' + icon("trash", 14) + '</button>' +
+        '</div></td>' +
+      '</tr>';
+    }
+    return '<tr class="' + rowCls + '">' +
+      '<td class="denumire">' + esc(m.denumire || "(fără denumire)") + '</td>' +
+      '<td>' + esc(m.unitateMasura) + '</td>' +
+      '<td class="num">' + formatGridNumber(m.cantitatePrevazuta) + '</td>' +
+      '<td class="num">' + formatGridNumber(calc.comandata) + '</td>' +
+      '<td class="num">' + formatGridNumber(calc.primita) + '</td>' +
+      '<td class="num">' + formatGridNumber(calc.ramasa) + '</td>' +
+      '<td>' + (calc.peste ? '<span class="badge badge-over">DEPĂȘIT</span>' : '<span class="badge badge-ok">OK</span>') + '</td>' +
+      '<td class="actions">' +
+        '<button class="icon-btn" title="Editează" data-edit-material="' + m.id + '">' + icon("pencil", 14) + '</button>' +
+        '<button class="icon-btn danger" title="Șterge" data-delete-material="' + m.id + '">' + icon("trash", 14) + '</button>' +
+      '</td>' +
+    '</tr>';
+  }
+
+  function listaMaterialePanelHTML(site) {
+    var mats = materialeForSite(site);
+    var importHtml = (state.siteForm.materialeImport && state.siteForm.materialeImport.siteId === site.id)
+      ? materialeImportPreviewHTML(site) : "";
+    var rowsHtml = mats.map(materialRowHTML).join("");
+    var emptyHtml = mats.length === 0 ? '<tr><td colspan="8" class="doclist-empty progrid-empty-cell">Niciun material adăugat încă.</td></tr>' : "";
+    return '' +
+      '<div class="mat-toolbar">' +
+        '<div class="helper" style="margin:0">' + mats.length + (mats.length === 1 ? " material" : " materiale") + ', din listele de cantități ale proiectului</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+          '<label class="btn btn-ghost btn-sm doc-upload-label" for="materiale-import-input-' + site.id + '">' + icon("upload", 13) + 'Importă din Excel' +
+            '<input type="file" id="materiale-import-input-' + site.id + '" data-import-excel-input="' + site.id + '" accept=".xls,.xlsx" style="display:none"></label>' +
+          '<button class="btn btn-ghost btn-sm" data-add-material="' + site.id + '">' + icon("plus", 13) + 'Adaugă material</button>' +
+        '</div>' +
+      '</div>' +
+      importHtml +
+      '<div class="panel mtable-panel"><table class="mtable"><thead><tr>' +
+        '<th style="width:32%">Denumire</th><th>UM</th><th style="text-align:right">Cant. prevăzută</th>' +
+        '<th style="text-align:right">Cant. comandată</th><th style="text-align:right">Cant. primită</th>' +
+        '<th style="text-align:right">Rămasă</th><th>Stare</th><th></th>' +
+      '</tr></thead><tbody>' + rowsHtml + emptyHtml + '</tbody></table></div>' +
+      '<div class="helper">„Cant. comandată” = suma din toate comenzile (indiferent dacă au ajuns); „Cant. primită” = doar din comenzile cu dată de primire completată — aceea se scade efectiv din prevăzut. Rând roșu + „DEPĂȘIT” = comandat peste cantitatea prevăzută.</div>';
+  }
+
+  function comandaRowHTML(site, o) {
+    var isOpen = state.siteForm.comandaExpandedId === o.id;
+    var isTmp = String(o.id).indexOf("tmp-") === 0;
+    var items = itemiForComanda(o.id);
+    var mats = materialeForSite(site);
+    var matsById = {}; mats.forEach(function (m) { matsById[m.id] = m; });
+    var statusLabel = o.dataPrimire ? "Primit" : "Comandat";
+    var statusCls = o.dataPrimire ? "badge-primit" : "badge-comandat";
+    var photoLabel = o.pozaPath ? "1 poză" : "fără poză";
+    var avizLabel = o.avizPath ? "aviz atașat" : "fără aviz";
+
+    var head = '' +
+      '<div class="order-head" data-toggle-comanda="' + o.id + '">' +
+        '<svg class="chev' + (isOpen ? " open" : "") + '" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>' +
+        '<div class="order-num">' + esc(o.numar) + '</div>' +
+        '<div class="order-dates"><b>Comandă / Primire</b>' + (o.dataComanda ? esc(formatDateShort(o.dataComanda)) : "—") + (o.dataPrimire ? " → " + esc(formatDateShort(o.dataPrimire)) : " (în așteptare)") + '</div>' +
+        '<div class="order-furnizor">' + (o.furnizor ? esc(o.furnizor) : '<span style="color:var(--ink-faint)">Furnizor neconfigurat</span>') + '</div>' +
+        '<div class="order-meta-icons"><span>' + icon("camera", 13) + photoLabel + '</span><span>' + icon("doc", 13) + avizLabel + '</span></div>' +
+        '<span class="badge ' + statusCls + '">' + statusLabel + '</span>' +
+        '<span class="icon-btn danger" data-remove-comanda="' + o.id + '" title="Șterge comanda">' + icon("trash", 13) + '</span>' +
+      '</div>';
+
+    var body = "";
+    if (isOpen) {
+      var itemsRows = items.map(function (it) {
+        var m = matsById[it.materialId];
+        return '<tr><td>' + esc(m ? m.denumire : "(material șters)") + '</td>' +
+          '<td class="num">' + formatGridNumber(it.cantitate) + (m ? " " + esc(m.unitateMasura) : "") +
+          ' <span class="icon-btn danger" style="width:18px;height:18px;display:inline-flex;vertical-align:middle" data-remove-comanda-item="' + it.id + '" title="Șterge linia">' + icon("trash", 11) + '</span></td></tr>';
+      }).join("");
+      var itemDraft = comandaItemDraft(o.id);
+      var matOptions = '<option value="">— alege material —</option>' + mats.map(function (m) {
+        return '<option value="' + m.id + '"' + (itemDraft.materialId === m.id ? " selected" : "") + '>' + esc(m.denumire || "(fără denumire)") + '</option>';
+      }).join("");
+      var addItemRow = isTmp ? "" : '<tr><td><select data-comanda-item-material="' + o.id + '">' + matOptions + '</select></td>' +
+        '<td class="num"><input type="number" step="any" style="width:90px" placeholder="cantitate" data-comanda-item-qty="' + o.id + '" value="' + esc(itemDraft.cantitate || "") + '">' +
+        ' <button class="btn btn-ghost btn-sm" data-add-comanda-item="' + o.id + '">' + icon("plus", 12) + '</button></td></tr>';
+
+      var pozaUrl = o.pozaPath ? sb.storage.from(DOC_BUCKET).getPublicUrl(o.pozaPath).data.publicUrl : "";
+      var avizUrl = o.avizPath ? sb.storage.from(DOC_BUCKET).getPublicUrl(o.avizPath).data.publicUrl : "";
+      var photoAttach = o.pozaPath
+        ? '<div class="photo-chip"><a href="' + esc(pozaUrl) + '" target="_blank" rel="noopener" draggable="false"><img src="' + esc(pozaUrl) + '" alt="poză livrare"></a>' +
+          '<span class="doc-file-del" style="position:absolute;top:2px;right:2px" data-remove-comanda-photo="' + o.id + '" title="Șterge poza">' + icon("trash", 11) + '</span></div>'
+        : (isTmp ? '<span class="helper" style="margin:0">salvează comanda mai întâi</span>' : '<label class="upload-btn" for="comanda-poza-' + o.id + '">' + icon("plus", 13) + 'Adaugă poză' +
+            '<input type="file" id="comanda-poza-' + o.id + '" data-comanda-photo-input="' + o.id + '" accept="image/*" style="display:none"></label>');
+      var avizAttach = o.avizPath
+        ? '<div class="file-chip">' + icon("doc", 14) + '<a href="' + esc(avizUrl) + '" target="_blank" rel="noopener" draggable="false">' + esc(o.avizNume) + '</a>' +
+          '<span class="doc-file-del" data-remove-comanda-aviz="' + o.id + '" title="Șterge avizul">' + icon("trash", 12) + '</span></div>'
+        : (isTmp ? '<span class="helper" style="margin:0">salvează comanda mai întâi</span>' : '<label class="upload-btn" for="comanda-aviz-' + o.id + '">' + icon("plus", 13) + 'Încarcă aviz' +
+            '<input type="file" id="comanda-aviz-' + o.id + '" data-comanda-aviz-input="' + o.id + '" accept=".pdf,image/*" style="display:none"></label>');
+
+      body = '' +
+        '<div class="order-body">' +
+          '<div class="order-fields-row">' +
+            '<div class="order-field"><label>Furnizor</label><input data-comanda-field="' + o.id + '|furnizor" value="' + esc(o.furnizor) + '"></div>' +
+            '<div class="order-field"><label>Data comandă</label><input type="date" data-comanda-field="' + o.id + '|dataComanda" value="' + esc(o.dataComanda) + '"></div>' +
+            '<div class="order-field"><label>Data primire</label><input type="date" data-comanda-field="' + o.id + '|dataPrimire" value="' + esc(o.dataPrimire) + '"></div>' +
+          '</div>' +
+          '<div class="items-table"><table><thead><tr><th>Material</th><th style="text-align:right">Cantitate</th></tr></thead><tbody>' + itemsRows + addItemRow + '</tbody></table></div>' +
+          '<div class="attach-row">' +
+            '<div class="attach-group"><div class="attach-label">Poză livrare</div>' + photoAttach + '</div>' +
+            '<div class="attach-group"><div class="attach-label">Aviz însoțire marfă</div>' + avizAttach + '</div>' +
+          '</div>' +
+        '</div>';
+    }
+
+    return '<div class="order-row">' + head + body + '</div>';
+  }
+
+  function comenziPanelHTML(site) {
+    var ords = comenziForSite(site);
+    var rowsHtml = ords.map(function (o) { return comandaRowHTML(site, o); }).join("");
+    var emptyHtml = ords.length === 0 ? '<div class="helper" style="padding:16px 0 0">Nicio comandă înregistrată încă.</div>' : "";
+    return '' +
+      '<div class="mat-toolbar">' +
+        '<div class="helper" style="margin:0">' + ords.length + (ords.length === 1 ? " comandă înregistrată" : " comenzi înregistrate") + '</div>' +
+        '<button class="btn btn-primary btn-sm" data-add-comanda="' + site.id + '">' + icon("plus", 13) + 'Adaugă comandă</button>' +
+      '</div>' +
+      (ords.length ? '<div class="panel mtable-panel"><div class="orders-list">' + rowsHtml + '</div></div>' : emptyHtml);
+  }
+
   function detailHTML() {
     var site = findSite(state.selectedSiteId);
     if (!site) {
@@ -3772,7 +4385,8 @@
       ["date-santier", "info", "Date șantier"],
       ["pv", "doc", "Procese-verbale"],
       ["progres", "chart", "Progres Șantier"],
-      ["documente", "docLines", "Documente"]
+      ["documente", "docLines", "Documente"],
+      ["materiale", "box", "Materiale"]
     ].map(function (t) {
       return '<div class="tab' + (state.activeTab === t[0] ? " active" : "") + '" data-tab="' + t[0] + '">' + icon(t[1], 15) + t[2] + '</div>';
     }).join("");
@@ -3782,6 +4396,7 @@
     else if (state.activeTab === "pv") tabContent = pvPanelHTML(site);
     else if (state.activeTab === "progres") tabContent = progresMainPanelHTML(site);
     else if (state.activeTab === "documente") tabContent = docsPanelHTML(site);
+    else if (state.activeTab === "materiale") tabContent = materialePanelHTML(site);
 
     return '' +
       '<div class="crumb"><span class="crumb-link" data-go="sites">Șantiere</span> / <b>' + esc(site.nume) + '</b></div>' +
@@ -3888,7 +4503,7 @@
     else if (state.view === "jurnal") main = jurnalSitesHTML();
     else if (state.view === "jurnal-detail") main = jurnalDetailHTML();
 
-    var navKey = state.view + "|" + state.activeTab + "|" + state.siteForm.subTab + "|" + state.siteForm.progresSubTab + "|" + state.selectedSiteId + "|" + state.jurnalSiteId;
+    var navKey = state.view + "|" + state.activeTab + "|" + state.siteForm.subTab + "|" + state.siteForm.progresSubTab + "|" + state.siteForm.materialeSubTab + "|" + state.selectedSiteId + "|" + state.jurnalSiteId;
     var navChanged = navKey !== lastNavKey;
     lastNavKey = navKey;
 
@@ -4024,7 +4639,11 @@
       "[data-edit-pv-date],[data-save-pv-date],[data-cancel-pv-date]," +
       "[data-add-tronson],[data-remove-tronson],[data-generate-pv],[data-generate-all-pv],[data-generate-pv-pdf],[data-generate-all-pv-pdf]," +
       "[data-open-jurnal-site],[data-open-add-jurnal],[data-save-jurnal],[data-cancel-jurnal]," +
-      "[data-edit-jurnal],[data-delete-jurnal],[data-remove-jurnal-photo]"
+      "[data-edit-jurnal],[data-delete-jurnal],[data-remove-jurnal-photo]," +
+      "[data-materiale-subtab],[data-add-material],[data-edit-material],[data-save-material],[data-delete-material]," +
+      "[data-add-comanda],[data-remove-comanda],[data-toggle-comanda],[data-add-comanda-item],[data-remove-comanda-item]," +
+      "[data-remove-comanda-photo],[data-remove-comanda-aviz]," +
+      "[data-confirm-import-materiale],[data-cancel-import-materiale]"
     );
 
     // Only re-render when something actually changes. A blanket render() on every
@@ -4067,12 +4686,14 @@
             state.view = "detail"; state.selectedSiteId = deferSiteId; state.activeTab = "date-santier";
             state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; state.siteForm.progresSubTab = "capitole"; state.siteForm.formulaBuilder = null;
             state.siteForm.pvDateEditing = false; state.siteForm.pvDateDraft = null;
+            state.siteForm.materialeSubTab = "lista"; state.siteForm.materialEditingId = null; state.siteForm.comandaExpandedId = null; state.siteForm.materialeImport = null;
             render();
             window.scrollTo(0, 0);
           }, 260);
         } else {
           state.view = "detail"; state.selectedSiteId = t.dataset.openSite; state.activeTab = "date-santier"; state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; state.siteForm.progresSubTab = "capitole"; state.siteForm.formulaBuilder = null; isNav = true;
           state.siteForm.pvDateEditing = false; state.siteForm.pvDateDraft = null;
+          state.siteForm.materialeSubTab = "lista"; state.siteForm.materialEditingId = null; state.siteForm.comandaExpandedId = null; state.siteForm.materialeImport = null;
         }
       }
       else if (t.dataset.tab) {
@@ -4326,6 +4947,34 @@
       }
       else if (t.dataset.deleteJurnal) { removeJurnalEntry(t.dataset.deleteJurnal); }
       else if (t.dataset.removeJurnalPhoto) { removeJurnalPhoto(t.dataset.removeJurnalPhoto); }
+      else if (t.dataset.materialeSubtab) {
+        state.siteForm.materialeSubTab = t.dataset.materialeSubtab;
+        state.siteForm.materialEditingId = null;
+        state.siteForm.comandaExpandedId = null;
+        state.siteForm.materialeImport = null;
+      }
+      else if (t.dataset.addMaterial) { var amSite = findSite(t.dataset.addMaterial); if (amSite) addMaterial(amSite); }
+      else if (t.dataset.editMaterial) { startMaterialEdit(t.dataset.editMaterial); }
+      else if (t.dataset.saveMaterial) { saveMaterialEdit(t.dataset.saveMaterial); }
+      else if (t.dataset.deleteMaterial) { removeMaterial(t.dataset.deleteMaterial); }
+      else if (t.dataset.addComanda) { var acSite = findSite(t.dataset.addComanda); if (acSite) addComanda(acSite); }
+      else if (t.dataset.removeComanda) { removeComanda(t.dataset.removeComanda); }
+      else if (t.dataset.toggleComanda) { toggleComandaExpanded(t.dataset.toggleComanda); }
+      else if (t.dataset.addComandaItem) { addComandaItem(t.dataset.addComandaItem); }
+      else if (t.dataset.removeComandaItem) { removeComandaItem(t.dataset.removeComandaItem); }
+      else if (t.dataset.removeComandaPhoto) {
+        var rcpCom = materialeComenzi.filter(function (c) { return c.id === t.dataset.removeComandaPhoto; })[0];
+        if (rcpCom) removeComandaFile(rcpCom, "poza");
+      }
+      else if (t.dataset.removeComandaAviz) {
+        var rcaCom = materialeComenzi.filter(function (c) { return c.id === t.dataset.removeComandaAviz; })[0];
+        if (rcaCom) removeComandaFile(rcaCom, "aviz");
+      }
+      else if (t.dataset.confirmImportMateriale) {
+        var cimSite = findSite(t.dataset.confirmImportMateriale);
+        if (cimSite) confirmMaterialeImport(cimSite);
+      }
+      else if (t.dataset.cancelImportMateriale) { cancelMaterialeImport(); }
     }
 
     if (needsRender) {
@@ -4360,6 +5009,17 @@
       if (tfRow) tfRow[tfParts[1]] = e.target.value;
     }
     else if (e.target.dataset.jurnalField) { state.jurnalForm.draft[e.target.dataset.jurnalField] = e.target.value; }
+    else if (e.target.dataset.materialField) {
+      var mfParts = e.target.dataset.materialField.split("|");
+      var mfRow = materiale.filter(function (x) { return x.id === mfParts[0]; })[0];
+      if (mfRow) mfRow[mfParts[1]] = e.target.value;
+    }
+    else if (e.target.dataset.comandaField) {
+      var cfParts = e.target.dataset.comandaField.split("|");
+      var cfRow = materialeComenzi.filter(function (x) { return x.id === cfParts[0]; })[0];
+      if (cfRow) cfRow[cfParts[1]] = e.target.value;
+    }
+    else if (e.target.dataset.comandaItemQty) { comandaItemDraft(e.target.dataset.comandaItemQty).cantitate = e.target.value; }
   });
   // focusout (not blur — blur doesn't bubble, so it can't be handled via
   // delegation on #app) persists a tronson field once the user moves on,
@@ -4368,6 +5028,10 @@
     if (e.target.dataset && e.target.dataset.tronsonField) {
       var parts = e.target.dataset.tronsonField.split("|");
       persistTronsonField(parts[0], parts[1]);
+    }
+    else if (e.target.dataset && e.target.dataset.comandaField) {
+      var cfoParts = e.target.dataset.comandaField.split("|");
+      persistComandaField(cfoParts[0], cfoParts[1]);
     }
   });
   document.getElementById("app").addEventListener("change", function (e) {
@@ -4390,6 +5054,25 @@
       var jpEntry = findJurnalEntry(e.target.dataset.jurnalPhotoInput);
       var jpFile = e.target.files && e.target.files[0];
       if (jpEntry && jpFile) uploadJurnalPhoto(jpEntry, jpFile);
+    }
+    else if (e.target.dataset.comandaItemMaterial) { comandaItemDraft(e.target.dataset.comandaItemMaterial).materialId = e.target.value; }
+    else if (e.target.dataset.importRowToggle !== undefined) {
+      toggleMaterialeImportRow(parseInt(e.target.dataset.importRowToggle, 10));
+    }
+    else if (e.target.dataset.comandaPhotoInput) {
+      var cpCom = materialeComenzi.filter(function (c) { return c.id === e.target.dataset.comandaPhotoInput; })[0];
+      var cpFile = e.target.files && e.target.files[0];
+      if (cpCom && cpFile) uploadComandaFile(cpCom, "poza", cpFile);
+    }
+    else if (e.target.dataset.comandaAvizInput) {
+      var caCom = materialeComenzi.filter(function (c) { return c.id === e.target.dataset.comandaAvizInput; })[0];
+      var caFile = e.target.files && e.target.files[0];
+      if (caCom && caFile) uploadComandaFile(caCom, "aviz", caFile);
+    }
+    else if (e.target.dataset.importExcelInput) {
+      var ieSite = findSite(e.target.dataset.importExcelInput);
+      var ieFile = e.target.files && e.target.files[0];
+      if (ieSite && ieFile) importMaterialeFromFile(ieSite, ieFile);
     }
   });
 
