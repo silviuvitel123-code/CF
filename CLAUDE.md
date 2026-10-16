@@ -268,12 +268,13 @@ Trei tabele noi, RLS `for all to public using (auth.role() = 'authenticated')`
   mm”) — decizie explicită a utilizatorului, nu se traduce în limbaj comun.
 - **`santier_materiale_comenzi`** — un rând per comandă: `santier_id, numar`
   (auto-generat `COM-NNN`, secvențial pe șantier), `data_comanda, data_primire`
-  (nullable — necompletată = comanda nu a ajuns încă), `furnizor, observatii`,
+  (nullable — necompletată = comanda nu a ajuns încă), `observatii`,
   plus `poza_path/poza_nume/poza_marime` (poză de la livrare) și
   `aviz_path/aviz_nume/aviz_marime` (avizul de expediție) — fișierele folosesc
   bucket-ul partajat `DOC_BUCKET = "santier-documente"`, același tipar ca
   `uploadJurnalPhoto`/`uploadDocFile` (path `materiale/{santierId}/{comandaId}/
-  {poza|aviz}-{timestamp}-{filename}`).
+  {poza|aviz}-{timestamp}-{filename}`). **NU există coloană de furnizor** —
+  eliminată explicit la cererea utilizatorului (vezi mai jos); nu o reintroduce.
 - **`santier_materiale_comenzi_itemi`** — tabel de legătură: o comandă poate
   conține mai multe materiale diferite (o comandă/aviz real acoperă de regulă
   mai multe tipuri de material), fiecare linie cu `comanda_id, material_id,
@@ -331,6 +332,45 @@ rollback vizual la eroare. Editarea unui material e explicit edit/salvează
 (buton creion → rândul devine editabil → bifă salvează), nu „type-and-blur”
 ca la tronsoane — tipar aprobat explicit de utilizator în mockup-ul Artifact
 înainte de implementare.
+
+**Revizuiri ulterioare, cerute explicit de utilizator după primul test în
+aplicația reală (nu doar în mockup)** — toate în `comandaRowHTML`/funcțiile
+`*Comanda*` din `index.html`:
+
+- **Furnizorul a fost eliminat complet** (coloană DB + UI). În antetul
+  comenzii (`.order-head`), unde era furnizorul, apare acum DENUMIREA
+  primului material din comandă (`+N materiale` dacă sunt mai multe) —
+  `.order-material-label`, calculat din `itemiForComanda(o.id)` +
+  `matsById`, NU dintr-un câmp separat.
+- **Editarea datei comenzii/primirii urmează EXACT tiparul de la Listă
+  materiale** (`state.siteForm.comandaEditingId`, `startComandaEdit`/
+  `saveComandaEdit`/`persistComandaDates`): câmpurile de dată sunt
+  INVIZIBILE în mod normal (data e deja vizibilă, read-only, pe linia
+  „Comandă / Primire” din antet) și apar editabile DOAR cât timp comanda e
+  în modul de editare (creion apăsat); fără apăsarea bifei de confirmare
+  (`saveComandaEdit`), modificările rămân doar în memorie (pe obiectul live
+  din `materialeComenzi`, mutate direct de `input`-handler-ul pentru
+  `data-comanda-field`) și NU se trimit la Supabase — de aceea NU există
+  un `focusout`-persist pentru `data-comanda-field` (eliminat intenționat;
+  nu-l re-adăuga, ar sparge regula „neconfirmat = nesalvat”).
+- **Selectarea materialului la adăugarea unei linii în comandă e un
+  `<input type="text" list="...">` + `<datalist>`** (nu `<select>`) — același
+  tipar ca `functii-sugestii` de la Pontaj (singurul alt loc din aplicație cu
+  sugestii de completare). Rezolvarea textului tăstat → `material_id` se face
+  prin potrivire EXACTĂ (trimmed) pe `denumire`, în handler-ul de `input`
+  pentru `data-comanda-item-material-search` — dacă nu există potrivire
+  exactă, `materialId` rămâne gol și butonul „Adaugă” (deja guardat) nu face
+  nimic.
+- **Bug de aliniere găsit și reparat**: aplicația are o regulă GLOBALĂ
+  `th, td { text-align: center }` (convenție veche, pentru alte tabele din
+  app). `.mtable`/`.items-table` suprascriau explicit doar coloanele
+  `.num`/`.actions` (right) — coloana de bază (`<td>` fără clasă, ex.
+  Denumire/UM/Stare la Listă materiale, Material la liniile de comandă)
+  MOȘTENEA centrarea globală, nu era un bug de layout nou. Fix:
+  `.mtable td { text-align: left }` și `.items-table td { text-align: left }`
+  explicit, cu `.num` suprascriind peste ele (right). Dacă adaugi un tabel
+  nou oriunde în app, verifică explicit alinierea celulelor de bază — nu te
+  baza pe default-ul browser-ului, regula globală centrată câștigă.
 
 ### Testare
 
