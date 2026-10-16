@@ -629,7 +629,7 @@
   table.mtable { border-collapse: collapse; width: 100%; font-size: 12.5px; }
   .mtable th { background: var(--surface-2); font-size: 10.5px; font-weight: 600; text-transform: uppercase;
     letter-spacing: .03em; color: var(--ink-faint); text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); }
-  .mtable td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--ink); }
+  .mtable td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--ink); text-align: left; }
   .mtable tbody tr:last-child td { border-bottom: none; }
   .mtable tr.row-over td { background: var(--red-soft); }
   .mtable td.num { font-family: var(--mono); text-align: right; white-space: nowrap; }
@@ -656,7 +656,7 @@
   .order-num { font-family: var(--mono); font-weight: 700; font-size: 12.5px; color: var(--ink); width: 80px; flex-shrink: 0; }
   .order-dates { font-size: 12px; color: var(--ink-soft); width: 220px; flex-shrink: 0; }
   .order-dates b { color: var(--ink-faint); font-weight: 600; font-size: 10.5px; text-transform: uppercase; display: block; margin-bottom: 1px; }
-  .order-furnizor { font-size: 12.5px; color: var(--ink); flex: 1; }
+  .order-material-label { font-size: 12.5px; color: var(--ink); flex: 1; text-align: left; }
   .order-meta-icons { display: flex; align-items: center; gap: 10px; color: var(--ink-faint); font-size: 11px; flex-shrink: 0; }
   .order-meta-icons span { display: flex; align-items: center; gap: 4px; }
   .chev { transition: transform .15s ease; color: var(--ink-faint); flex-shrink: 0; }
@@ -671,7 +671,7 @@
   .items-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
   .items-table th { background: var(--surface-2); font-size: 10px; text-transform: uppercase; color: var(--ink-faint);
     text-align: left; padding: 7px 10px; font-weight: 600; }
-  .items-table td { padding: 8px 10px; border-top: 1px solid var(--border); color: var(--ink); }
+  .items-table td { padding: 8px 10px; border-top: 1px solid var(--border); color: var(--ink); text-align: left; }
   .items-table td.num { font-family: var(--mono); text-align: right; }
   .items-table select, .items-table input { font-family: var(--sans); font-size: 12px; background: var(--bg); color: var(--ink);
     border: 1px solid var(--border-strong); border-radius: 5px; padding: 4px 6px; }
@@ -715,7 +715,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b81-2026-10-16";
+  var BUILD = "b82-2026-10-16";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -769,6 +769,7 @@
       materialeSubTab: "lista",
       materialEditingId: null,
       comandaExpandedId: null,
+      comandaEditingId: null,
       comandaItemDraft: {},
       comandaUploading: {},
       materialeImport: null
@@ -1661,7 +1662,7 @@
   function comandaFromRow(r) {
     return {
       id: r.id, santierId: r.santier_id, numar: r.numar || "", dataComanda: r.data_comanda || "", dataPrimire: r.data_primire || "",
-      furnizor: r.furnizor || "", observatii: r.observatii || "",
+      observatii: r.observatii || "",
       pozaPath: r.poza_path || "", pozaNume: r.poza_nume || "", pozaMarime: r.poza_marime || null,
       avizPath: r.aviz_path || "", avizNume: r.aviz_nume || "", avizMarime: r.aviz_marime || null,
       createdAt: r.created_at || ""
@@ -1748,7 +1749,7 @@
     var numar = nextComandaNumar(site);
     var today = new Date().toISOString().slice(0, 10);
     materialeComenzi.push({
-      id: tempId, santierId: site.id, numar: numar, dataComanda: today, dataPrimire: "", furnizor: "", observatii: "",
+      id: tempId, santierId: site.id, numar: numar, dataComanda: today, dataPrimire: "", observatii: "",
       pozaPath: "", pozaNume: "", pozaMarime: null, avizPath: "", avizNume: "", avizMarime: null, createdAt: new Date().toISOString()
     });
     state.siteForm.comandaExpandedId = tempId;
@@ -1771,14 +1772,24 @@
     state.siteForm.comandaExpandedId = state.siteForm.comandaExpandedId === id ? null : id;
     render();
   }
-  var COMANDA_DB_FIELD = { furnizor: "furnizor", dataComanda: "data_comanda", dataPrimire: "data_primire", observatii: "observatii" };
-  function persistComandaField(id, field) {
+  // Editarea datelor comenzii urmează EXACT tiparul de la Listă materiale:
+  // buton creion → câmpurile devin editabile → bifă confirmă și salvează.
+  // Fără apăsarea bifei, modificările rămân doar locale (nu se salvează) —
+  // decizie explicită a utilizatorului.
+  function startComandaEdit(id) {
+    state.siteForm.comandaEditingId = id;
+    state.siteForm.comandaExpandedId = id; // editarea cere ca rândul să fie deschis
+    render();
+  }
+  function saveComandaEdit(id) {
+    state.siteForm.comandaEditingId = null;
+    persistComandaDates(id);
+    render();
+  }
+  function persistComandaDates(id) {
     var c = materialeComenzi.filter(function (x) { return x.id === id; })[0];
     if (!c || String(c.id).indexOf("tmp-") === 0) return;
-    var dbField = COMANDA_DB_FIELD[field];
-    if (!dbField) return;
-    var payload = {}; payload[dbField] = c[field] || null;
-    sb.from("santier_materiale_comenzi").update(payload).eq("id", c.id).then(function (res) {
+    sb.from("santier_materiale_comenzi").update({ data_comanda: c.dataComanda || null, data_primire: c.dataPrimire || null }).eq("id", c.id).then(function (res) {
       if (res.error) { flashSyncError("Nu am putut salva comanda."); console.error(res.error); render(); }
     });
   }
@@ -1790,6 +1801,7 @@
     materialeComenzi = materialeComenzi.filter(function (x) { return x !== c; });
     materialeComenziItemi = materialeComenziItemi.filter(function (it) { return it.comandaId !== c.id; });
     if (state.siteForm.comandaExpandedId === c.id) state.siteForm.comandaExpandedId = null;
+    if (state.siteForm.comandaEditingId === c.id) state.siteForm.comandaEditingId = null;
     render();
     if (String(c.id).indexOf("tmp-") === 0) return;
     files.forEach(function (p) { sb.storage.from(DOC_BUCKET).remove([p]); });
@@ -1799,7 +1811,7 @@
   }
 
   function comandaItemDraft(comandaId) {
-    if (!state.siteForm.comandaItemDraft[comandaId]) state.siteForm.comandaItemDraft[comandaId] = { materialId: "", cantitate: "" };
+    if (!state.siteForm.comandaItemDraft[comandaId]) state.siteForm.comandaItemDraft[comandaId] = { materialId: "", materialQuery: "", cantitate: "" };
     return state.siteForm.comandaItemDraft[comandaId];
   }
   function addComandaItem(comandaId) {
@@ -1809,7 +1821,7 @@
     if (!materialId || !cantitate) return;
     var tempId = "tmp-" + Date.now();
     materialeComenziItemi.push({ id: tempId, comandaId: comandaId, materialId: materialId, cantitate: cantitate });
-    state.siteForm.comandaItemDraft[comandaId] = { materialId: "", cantitate: "" };
+    state.siteForm.comandaItemDraft[comandaId] = { materialId: "", materialQuery: "", cantitate: "" };
     render();
     sb.from("santier_materiale_comenzi_itemi").insert({ comanda_id: comandaId, material_id: materialId, cantitate: cantitate }).select().single().then(function (res) {
       if (res.error) {
@@ -4295,6 +4307,7 @@
 
   function comandaRowHTML(site, o) {
     var isOpen = state.siteForm.comandaExpandedId === o.id;
+    var isEditingDates = state.siteForm.comandaEditingId === o.id;
     var isTmp = String(o.id).indexOf("tmp-") === 0;
     var items = itemiForComanda(o.id);
     var mats = materialeForSite(site);
@@ -4304,14 +4317,22 @@
     var photoLabel = o.pozaPath ? "1 poză" : "fără poză";
     var avizLabel = o.avizPath ? "aviz atașat" : "fără aviz";
 
+    // În locul furnizorului (eliminat din schemă) — primul material din
+    // comandă, cu numărul celorlalte dacă sunt mai multe.
+    var firstMat = items.length ? matsById[items[0].materialId] : null;
+    var materialLabel = items.length
+      ? (firstMat ? firstMat.denumire : "(material șters)") + (items.length > 1 ? " +" + (items.length - 1) + " materiale" : "")
+      : "Niciun material adăugat";
+
     var head = '' +
       '<div class="order-head" data-toggle-comanda="' + o.id + '">' +
         '<svg class="chev' + (isOpen ? " open" : "") + '" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>' +
         '<div class="order-num">' + esc(o.numar) + '</div>' +
         '<div class="order-dates"><b>Comandă / Primire</b>' + (o.dataComanda ? esc(formatDateShort(o.dataComanda)) : "—") + (o.dataPrimire ? " → " + esc(formatDateShort(o.dataPrimire)) : " (în așteptare)") + '</div>' +
-        '<div class="order-furnizor">' + (o.furnizor ? esc(o.furnizor) : '<span style="color:var(--ink-faint)">Furnizor neconfigurat</span>') + '</div>' +
+        '<div class="order-material-label">' + esc(materialLabel) + '</div>' +
         '<div class="order-meta-icons"><span>' + icon("camera", 13) + photoLabel + '</span><span>' + icon("doc", 13) + avizLabel + '</span></div>' +
         '<span class="badge ' + statusCls + '">' + statusLabel + '</span>' +
+        '<span class="icon-btn" data-' + (isEditingDates ? "save-comanda" : "edit-comanda") + '="' + o.id + '" title="' + (isEditingDates ? "Salvează" : "Editează") + '">' + icon(isEditingDates ? "check" : "pencil", 13) + '</span>' +
         '<span class="icon-btn danger" data-remove-comanda="' + o.id + '" title="Șterge comanda">' + icon("trash", 13) + '</span>' +
       '</div>';
 
@@ -4324,10 +4345,12 @@
           ' <span class="icon-btn danger" style="width:18px;height:18px;display:inline-flex;vertical-align:middle" data-remove-comanda-item="' + it.id + '" title="Șterge linia">' + icon("trash", 11) + '</span></td></tr>';
       }).join("");
       var itemDraft = comandaItemDraft(o.id);
-      var matOptions = '<option value="">— alege material —</option>' + mats.map(function (m) {
-        return '<option value="' + m.id + '"' + (itemDraft.materialId === m.id ? " selected" : "") + '>' + esc(m.denumire || "(fără denumire)") + '</option>';
-      }).join("");
-      var addItemRow = isTmp ? "" : '<tr><td><select data-comanda-item-material="' + o.id + '">' + matOptions + '</select></td>' +
+      var matDatalistId = "mat-dl-" + o.id;
+      var matDatalistOptions = mats.map(function (m) { return '<option value="' + esc(m.denumire || "(fără denumire)") + '">'; }).join("");
+      var addItemRow = isTmp ? "" : '<tr><td>' +
+        '<input type="text" list="' + matDatalistId + '" placeholder="Caută material…" data-comanda-item-material-search="' + o.id + '" value="' + esc(itemDraft.materialQuery || "") + '">' +
+        '<datalist id="' + matDatalistId + '">' + matDatalistOptions + '</datalist>' +
+        '</td>' +
         '<td class="num"><input type="number" step="any" style="width:90px" placeholder="cantitate" data-comanda-item-qty="' + o.id + '" value="' + esc(itemDraft.cantitate || "") + '">' +
         ' <button class="btn btn-ghost btn-sm" data-add-comanda-item="' + o.id + '">' + icon("plus", 12) + '</button></td></tr>';
 
@@ -4344,13 +4367,19 @@
         : (isTmp ? '<span class="helper" style="margin:0">salvează comanda mai întâi</span>' : '<label class="upload-btn" for="comanda-aviz-' + o.id + '">' + icon("plus", 13) + 'Încarcă aviz' +
             '<input type="file" id="comanda-aviz-' + o.id + '" data-comanda-aviz-input="' + o.id + '" accept=".pdf,image/*" style="display:none"></label>');
 
+      // Rândul de date apare DOAR în modul de editare (apăsat pe creion) —
+      // altfel sunt deja vizibile, read-only, pe linia "Comandă / Primire"
+      // din antet; fără apăsarea bifei de confirmare, modificările de aici
+      // nu se salvează.
+      var fieldsRowHtml = isEditingDates ? '' +
+        '<div class="order-fields-row">' +
+          '<div class="order-field"><label>Data comandă</label><input type="date" data-comanda-field="' + o.id + '|dataComanda" value="' + esc(o.dataComanda) + '"></div>' +
+          '<div class="order-field"><label>Data primire</label><input type="date" data-comanda-field="' + o.id + '|dataPrimire" value="' + esc(o.dataPrimire) + '"></div>' +
+        '</div>' : '';
+
       body = '' +
         '<div class="order-body">' +
-          '<div class="order-fields-row">' +
-            '<div class="order-field"><label>Furnizor</label><input data-comanda-field="' + o.id + '|furnizor" value="' + esc(o.furnizor) + '"></div>' +
-            '<div class="order-field"><label>Data comandă</label><input type="date" data-comanda-field="' + o.id + '|dataComanda" value="' + esc(o.dataComanda) + '"></div>' +
-            '<div class="order-field"><label>Data primire</label><input type="date" data-comanda-field="' + o.id + '|dataPrimire" value="' + esc(o.dataPrimire) + '"></div>' +
-          '</div>' +
+          fieldsRowHtml +
           '<div class="items-table"><table><thead><tr><th>Material</th><th style="text-align:right">Cantitate</th></tr></thead><tbody>' + itemsRows + addItemRow + '</tbody></table></div>' +
           '<div class="attach-row">' +
             '<div class="attach-group"><div class="attach-label">Poză livrare</div>' + photoAttach + '</div>' +
@@ -4641,7 +4670,8 @@
       "[data-open-jurnal-site],[data-open-add-jurnal],[data-save-jurnal],[data-cancel-jurnal]," +
       "[data-edit-jurnal],[data-delete-jurnal],[data-remove-jurnal-photo]," +
       "[data-materiale-subtab],[data-add-material],[data-edit-material],[data-save-material],[data-delete-material]," +
-      "[data-add-comanda],[data-remove-comanda],[data-toggle-comanda],[data-add-comanda-item],[data-remove-comanda-item]," +
+      "[data-add-comanda],[data-remove-comanda],[data-toggle-comanda],[data-edit-comanda],[data-save-comanda]," +
+      "[data-add-comanda-item],[data-remove-comanda-item]," +
       "[data-remove-comanda-photo],[data-remove-comanda-aviz]," +
       "[data-confirm-import-materiale],[data-cancel-import-materiale]"
     );
@@ -4686,14 +4716,14 @@
             state.view = "detail"; state.selectedSiteId = deferSiteId; state.activeTab = "date-santier";
             state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; state.siteForm.progresSubTab = "capitole"; state.siteForm.formulaBuilder = null;
             state.siteForm.pvDateEditing = false; state.siteForm.pvDateDraft = null;
-            state.siteForm.materialeSubTab = "lista"; state.siteForm.materialEditingId = null; state.siteForm.comandaExpandedId = null; state.siteForm.materialeImport = null;
+            state.siteForm.materialeSubTab = "lista"; state.siteForm.materialEditingId = null; state.siteForm.comandaExpandedId = null; state.siteForm.comandaEditingId = null; state.siteForm.materialeImport = null;
             render();
             window.scrollTo(0, 0);
           }, 260);
         } else {
           state.view = "detail"; state.selectedSiteId = t.dataset.openSite; state.activeTab = "date-santier"; state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; state.siteForm.progresSubTab = "capitole"; state.siteForm.formulaBuilder = null; isNav = true;
           state.siteForm.pvDateEditing = false; state.siteForm.pvDateDraft = null;
-          state.siteForm.materialeSubTab = "lista"; state.siteForm.materialEditingId = null; state.siteForm.comandaExpandedId = null; state.siteForm.materialeImport = null;
+          state.siteForm.materialeSubTab = "lista"; state.siteForm.materialEditingId = null; state.siteForm.comandaExpandedId = null; state.siteForm.comandaEditingId = null; state.siteForm.materialeImport = null;
         }
       }
       else if (t.dataset.tab) {
@@ -4960,6 +4990,8 @@
       else if (t.dataset.addComanda) { var acSite = findSite(t.dataset.addComanda); if (acSite) addComanda(acSite); }
       else if (t.dataset.removeComanda) { removeComanda(t.dataset.removeComanda); }
       else if (t.dataset.toggleComanda) { toggleComandaExpanded(t.dataset.toggleComanda); }
+      else if (t.dataset.editComanda) { startComandaEdit(t.dataset.editComanda); }
+      else if (t.dataset.saveComanda) { saveComandaEdit(t.dataset.saveComanda); }
       else if (t.dataset.addComandaItem) { addComandaItem(t.dataset.addComandaItem); }
       else if (t.dataset.removeComandaItem) { removeComandaItem(t.dataset.removeComandaItem); }
       else if (t.dataset.removeComandaPhoto) {
@@ -5020,18 +5052,25 @@
       if (cfRow) cfRow[cfParts[1]] = e.target.value;
     }
     else if (e.target.dataset.comandaItemQty) { comandaItemDraft(e.target.dataset.comandaItemQty).cantitate = e.target.value; }
+    else if (e.target.dataset.comandaItemMaterialSearch) {
+      var cimsDraft = comandaItemDraft(e.target.dataset.comandaItemMaterialSearch);
+      cimsDraft.materialQuery = e.target.value;
+      var typed = e.target.value.trim();
+      var matchedMat = materiale.filter(function (m) { return (m.denumire || "").trim() === typed; })[0];
+      cimsDraft.materialId = matchedMat ? matchedMat.id : "";
+    }
   });
   // focusout (not blur — blur doesn't bubble, so it can't be handled via
   // delegation on #app) persists a tronson field once the user moves on,
   // matching the rest of the app's "type freely, save when you leave" feel.
+  // Comanda date fields are DELIBERATELY not included here — they only ever
+  // appear in edit mode and must wait for the explicit "confirmă" button
+  // (saveComandaEdit), per the user's instruction that an edit left
+  // unconfirmed must not be saved.
   document.getElementById("app").addEventListener("focusout", function (e) {
     if (e.target.dataset && e.target.dataset.tronsonField) {
       var parts = e.target.dataset.tronsonField.split("|");
       persistTronsonField(parts[0], parts[1]);
-    }
-    else if (e.target.dataset && e.target.dataset.comandaField) {
-      var cfoParts = e.target.dataset.comandaField.split("|");
-      persistComandaField(cfoParts[0], cfoParts[1]);
     }
   });
   document.getElementById("app").addEventListener("change", function (e) {
@@ -5055,7 +5094,6 @@
       var jpFile = e.target.files && e.target.files[0];
       if (jpEntry && jpFile) uploadJurnalPhoto(jpEntry, jpFile);
     }
-    else if (e.target.dataset.comandaItemMaterial) { comandaItemDraft(e.target.dataset.comandaItemMaterial).materialId = e.target.value; }
     else if (e.target.dataset.importRowToggle !== undefined) {
       toggleMaterialeImportRow(parseInt(e.target.dataset.importRowToggle, 10));
     }
