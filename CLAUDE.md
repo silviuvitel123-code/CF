@@ -158,44 +158,95 @@ paginare de mai sus.
 - **Logo**: `ing-assistant/pv-pdf-assets/logo.png` (extras din
   `word/media/image1.png` al unui șablon .docx existent).
 - **Conținutul fiecărui PV**: `ing-assistant/pv-pdf-content/{cd,cm,cr,el,rz,sp,im}.json`
-  — extras AUTOMAT din șabloanele `.docx` reale (nu scris de mână) cu
-  `ing-assistant/pv-pdf-content/extract.py` (commis în repo — dacă un șablon
-  `.docx` se modifică, regenerează cu
-  `python3 extract.py ../templates/pv-<cat>.docx <cat>.json` pentru fiecare
-  categorie). Logica: parsează `word/document.xml`, ancorează fiecare PV pe
-  linia lui „meta” care conține `{numar_pv_N}`, urcă pe blocul de titlu
-  centrat dinaintea ei, apoi clasifică fiecare paragraf din corp ca
-  `text`/`bullet`/`sig4col` (blocul cu 4 coloane „faze determinante”).
+  — extras AUTOMAT din șabloanele `.docx` reale (nu scris de mână), în DOI
+  pași (ambii scripturi sunt commise în `ing-assistant/pv-pdf-content/`):
+  1. `extract.py <template.docx> <out.json>` parsează `word/document.xml`,
+     ancorează fiecare PV pe linia lui „meta” (conține `{numar_pv_N}`), urcă
+     pe blocul de titlu (linii CENTRATE SAU INTEGRAL BOLD consecutive
+     dinaintea ei — vezi comentariul din fișier de ce „sau bold”: un titlu
+     poate să nu aibă `jc=center` explicit, dar tot bold e), apoi clasifică
+     fiecare paragraf din corp ca `text`/`bullet`/`sig4col` (blocul cu 4
+     coloane „faze determinante”).
+  2. `measure_gaps.py <cat> <template.docx> <word_real.pdf> <out.json>`
+     ADAUGĂ peste rezultatul de mai sus un `gapBefore` (în puncte) pe
+     fiecare bloc de `text`/`bullet` și un `_headerY` per PV (poziția Y
+     absolută a fiecărei linii de titlu + a liniei meta) — **măsurate
+     direct** dintr-o randare REALĂ a șablonului (`render_word_real.js` →
+     docxtemplater/pizzip reale → `soffice --headless --convert-to pdf` →
+     PyMuPDF), nu calculate dintr-o formulă. S-a încercat o formulă bazată
+     pe `spacing before/after/line` din XML — a mers bine pe un PV, dar
+     NU generalizează (alte PV-uri au alt spacing moștenit din
+     `docDefaults`/stiluri, imposibil de reconstruit fiabil fără un motor
+     complet de rezolvare a stilurilor Word) — de aceea se măsoară, nu se
+     ghicește. Regenerare completă pentru o categorie:
+     ```
+     cd ing-assistant/pv-pdf-content
+     npm install pizzip docxtemplater playwright   # o singura data
+     node render_word_real.js <cat> <numarPV>       # cd/cm/cr=12,el=7,rz/sp=8,im=6
+     soffice --headless --convert-to pdf word_real_<cat>.docx
+     python3 measure_gaps.py <cat> ../templates/pv-<cat>.docx \
+         word_real_<cat>.pdf <cat>.json
+     ```
 - **Motorul de randare**: funcțiile `renderPvPdfPages`/`buildPvPdfBytes` din
   `index.html` (lângă `buildPvArrayBuffer`). Fiecare PV al unui tronson iese
   pe PROPRIA pagină PDF nouă (nu curge Word-style) — elimină ambiguitatea de
-  flow complet. Constantele de poziționare (margini, mărimi font, înălțimi de
-  linie, poziția blocului de semnături, coloanele „faze determinante”) au
-  fost MĂSURATE pixel-precis dintr-o randare reală Word→LibreOffice→PDF
-  (PyMuPDF, nu ghicite) — nu le modifica fără să re-măsori la fel.
-  Constantele cheie: `MARGIN_L=MARGIN_R=72.1pt`, `BODY_SIZE=11pt`,
-  `LINE_H=12.65pt`, `SIG4_COL_X=[2.5,122.5,242.5,362.5]` (relativ la
-  MARGIN_L — tab-stop-urile twips 50/2450/4850/7250 din regula 6 de mai sus,
-  convertite DIRECT /20, fără ajustare după `ind left`), `SIG4_SIZE=9pt`,
-  `SIG4_ROW_H=18.5pt`, `SIG_ROW_H=45.3pt`, `BASELINE_OFFSET=9.9pt` (pdf-lib
-  `drawText` dă baseline-ul, PyMuPDF `bbox[1]` dă vârful glifului — trebuie
-  reconciliate).
-- **Bug real, rezolvat**: la PV-urile „faze determinante” (7 din 65: 2×cd,
-  2×cm, 2×cr, 1×el), paragraful de corp „reprezentat de Ing.
-  {constructor_reprezentant}” (NU un rând de semnătură) avea un `<w:tab/>`
-  final în șablonul original, ceea ce-l făcea să fie prins fals de
-  euristica de detectare a rândurilor de semnătură simple (`sigRows`) —
-  rezultat: suprapunere de text cu blocul de semnături pe 4 coloane. Fix:
-  euristica cere acum `:` urmat de `Ing\.`/`ing\.` (rândurile reale de
-  semnătură sunt gen „Diriginte șantier:      Ing. {nume}”), nu doar
-  prezența cuvântului „Ing.” oriunde în text.
-- **Testare**: fără script de test commis (scratchpad-only, per convenția
-  proiectului) — dar verificat exhaustiv: toate cele 65 PV-uri din cele 7
-  categorii (număr pagini = număr PV-uri, 0 pagini goale), numerotare globală
-  verificată prin tot fluxul (buton → dispatcher → `buildPvPdfBytes` →
-  `{numar_pv_N}` → `.zip`), și un test de integrare real pe `index.html`
-  nemodificat (Supabase + CDN-uri interceptate spre bundle-uri locale reale,
-  click efectiv pe butoane, descărcare reală verificată byte-cu-byte).
+  flow complet. Pozițiile liniilor de titlu/meta vin din `_headerY` (dacă
+  lipsesc, constante fallback `141.99`/`19.76`/`18.65`); spațiul dinaintea
+  fiecărui bloc de `text`/`bullet` vine din `gapBefore` (dacă lipsește,
+  `PARA_GAP_EXTRA=6pt` doar pentru blocuri `text`, 0 pentru `bullet` — ca să
+  nu se rupă randuri de buline consecutive în aceeași listă). Restul
+  constantelor (margini, mărimi font, coloanele „faze determinante”, blocul
+  de semnături simplu) au fost măsurate o singură dată, pixel-precis, pe
+  pilotul inițial și sunt stabile — nu le modifica fără să re-măsori la fel:
+  `MARGIN_L=MARGIN_R=72.1pt`, `BODY_SIZE=11pt`, `LINE_H=12.65pt`,
+  `SIG4_COL_X=[2.5,122.5,242.5,362.5]` (relativ la MARGIN_L — tab-stop-urile
+  twips 50/2450/4850/7250 din regula 6 de mai sus, convertite DIRECT /20,
+  fără ajustare după `ind left`), `SIG4_SIZE=9pt`, `SIG4_ROW_H=18.5pt`,
+  `SIG_ROW_H=45.3pt`, `BASELINE_OFFSET=9.9pt` (pdf-lib `drawText` dă
+  baseline-ul, PyMuPDF `bbox[1]` dă vârful glifului — trebuie reconciliate).
+  Blocul de semnături simplu (`sigRows`) rămâne ANCORAT la o distanță FIXĂ
+  de baza paginii (NU urmărește `gapBefore`) — decizie explicită a
+  utilizatorului („nu muta semnăturile mai sus”); singurul lucru care s-a
+  corectat e că CONȚINUTUL de deasupra lui acum ocupă spațiul real pe care-l
+  ocupă și în Word, deci golul dintre ele s-a redus natural, fără să se
+  mute semnătura.
+- **Bug-uri reale, rezolvate** (descoperite cu capturi de ecran trimise de
+  utilizator, comparând direct cu Word):
+  - La PV-urile „faze determinante” (7 din 65: 2×cd, 2×cm, 2×cr, 1×el),
+    paragraful de corp „reprezentat de Ing. {constructor_reprezentant}” (NU
+    un rând de semnătură) avea un `<w:tab/>` final în șablonul original,
+    prins fals de euristica de detectare a rândurilor de semnătură simple
+    (`sigRows`) → suprapunere de text cu blocul pe 4 coloane. Fix: euristica
+    cere acum `:` urmat de `Ing\.`/`ing\.` (rândurile reale sunt gen
+    „Diriginte șantier:      Ing. {nume}”), nu doar cuvântul „Ing.” oriunde.
+  - `extract.py` arunca orice paragraf gol din șablon — dar Word chiar
+    randează acel spațiu (fiecare paragraf gol are propria lui linie +
+    spacing), deci conținutul ieșea sistematic mai compact decât în Word,
+    lăsând un gol mare și nenatural înaintea blocului de semnături. Fix:
+    `measure_gaps.py` (vezi mai sus).
+  - La măsurare: marcajul de bulină „-” stă pe propriul lui „rând” de text
+    (PyMuPDF), nu mereu la EXACT același y0/y1 ca textul bulinei (diferă cu
+    sub 1pt în unele șabloane) — confundat cu un rând anterior real, dădea
+    `gapBefore` negativ. Fix: liniile care conțin DOAR „-” sunt excluse
+    complet din măsurătoare (bulina e desenată separat, la coloană fixă, de
+    motorul de randare — nu are nicio relevanță pentru spațiere).
+  - `pv-cr.docx` (șablonul LIVE, independent de munca de mai sus) are un bug
+    de paginare real: blocul de semnături al PV#1 e orfan pe propria pagină
+    (13 pagini în loc de 12 la randare reală cu date de producție) — motorul
+    PDF nu e afectat (fiecare PV oricum pe propria pagină), dar
+    `measure_gaps.py` nu mai poate presupune „pagina N = PV-ul N”; caută
+    acum pagina fiecărui PV după textul titlului lui, înainte, din pagina
+    găsită anterior. Bug-ul de paginare al `.docx`-ului în sine NU a fost
+    încă reparat (ar intra sub regulile din secțiunea de mai sus).
+- **Testare**: fără script de test commis separat (scratchpad-only, per
+  convenția proiectului) — dar verificat exhaustiv: toate cele 65 PV-uri din
+  cele 7 categorii (număr pagini = număr PV-uri, 0 pagini goale, 0 depășiri
+  de pagină), conținutul fiecărui PV comparat linie-cu-linie cu randarea
+  Word reală (diferențe sub 5pt pe toate transițiile verificate), și un test
+  de integrare real pe `index.html` nemodificat (Supabase + CDN-uri
+  interceptate spre bundle-uri locale reale, click efectiv pe butoane din
+  UI, descărcare reală verificată byte-cu-byte, inclusiv arhiva .zip cu
+  numerotare globală pe mai multe tronsoane).
 
 ## Workflow de deploy
 

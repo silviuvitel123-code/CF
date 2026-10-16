@@ -12,7 +12,8 @@
      {
       "t": "     Delimitare front de lucru predat (poziție, cotă, ax, etc.):"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -43,7 +44,8 @@
      {
       "t": "({reper_start} - {reper_end}), L={lungime} m."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -51,7 +53,8 @@
      {
       "t": "     Au stat la bază următoarele documente:"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "bullet",
@@ -73,7 +76,8 @@
      {
       "t": "emisă de Consiliul Primăriei Comunei {locatie};"
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -94,7 +98,8 @@
      {
       "t": "{planse}, ."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -144,7 +149,8 @@
      {
       "t": ", care preia frontul de lucru pentru executarea lucrărilor în condițiile stabilite de autorizația de construire și de proiectul mai sus amintit."
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -152,7 +158,8 @@
      {
       "t": "     Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "bullet",
@@ -160,7 +167,8 @@
      {
       "t": "Au fost stabilite următoarele măsuri: se poate trece la executarea urmatoarelor lucrări."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -168,7 +176,8 @@
      {
       "t": "Frontul de lucru predat corespunde cu amplasamentul și traseul prevăzut în proiectul nr. {proiect_nr}."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -176,7 +185,8 @@
      {
       "t": "Constructorul a verificat vizual limitele frontului de lucru și accesul utilajelor pe amplasament."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -184,7 +194,8 @@
      {
       "t": "Din punct de vedere executiv, se confirmă preluarea responsabilității de execuție de către constructor de la data prezentului proces verbal."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    }
   ],
   "sigHeader": true,
@@ -193,7 +204,18 @@
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}",
    "Proiectant.:              Ing. {proiectant_reprezentant}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    146.54075622558594,
+    166.29579162597656
+   ],
+   "meta": [
+    184.9457550048828,
+    197.2217559814453,
+    "Nr. 1 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -207,7 +229,8 @@
      {
       "t": "          Trasarea a fost executata pe baza planselor {planse} si a coordonatelor topometrice conform proiectului nr. {proiect_nr} ;"
      }
-    ]
+    ],
+    "gapBefore": 21.02
    },
    {
     "type": "text",
@@ -215,7 +238,8 @@
      {
       "t": "          Elementul de reper si verificarea este : (borna, constructia invecinata, etc.)"
      }
-    ]
+    ],
+    "gapBefore": 31.02
    },
    {
     "type": "bullet",
@@ -243,7 +267,8 @@
      {
       "t": "({reper_start} - {reper_end}), L={lungime} m."
      }
-    ]
+    ],
+    "gapBefore": 9.37
    },
    {
     "type": "text",
@@ -251,7 +276,8 @@
      {
       "t": "Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 13.02
    },
    {
     "type": "bullet",
@@ -259,7 +285,8 @@
      {
       "t": "S-a facut trasarea conform proiectului tehnic nr. {proiect_nr}."
      }
-    ]
+    ],
+    "gapBefore": 9.57
    },
    {
     "type": "bullet",
@@ -267,7 +294,8 @@
      {
       "t": "S-a identificat intersectia cu retelele celorlalte utilitati."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -275,7 +303,8 @@
      {
       "t": "Reperele de trasare (puncte, axe, cote) au fost materializate și protejate corespunzător pentru evitarea deplasării acestora pe parcursul execuției."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -283,7 +312,8 @@
      {
       "t": "Din punct de vedere tehnic, abaterile constatate la trasare se încadrează în tolerantele admise de proiect."
      }
-    ]
+    ],
+    "gapBefore": 1.57
    },
    {
     "type": "bullet",
@@ -291,7 +321,8 @@
      {
       "t": "Se autorizează începerea lucrărilor de săpătură pe tronsonul trasat."
      }
-    ]
+    ],
+    "gapBefore": 1.57
    }
   ],
   "sigHeader": true,
@@ -299,7 +330,17 @@
    "Diriginte șantier:      Ing. {diriginte_nume}",
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    141.3457794189453
+   ],
+   "meta": [
+    182.64576721191406,
+    194.92176818847656,
+    "Nr. 2 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -314,7 +355,8 @@
      {
       "t": "     Faza din lucrare supusă verificării:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -322,7 +364,8 @@
      {
       "t": "Realizare transee;"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -330,7 +373,8 @@
      {
       "t": "     Elementul de indentificare (sector, porțiune, ax, etc.):"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -358,7 +402,8 @@
      {
       "t": "({reper_start} - {reper_end}), L={lungime} m."
      }
-    ]
+    ],
+    "gapBefore": 19.02
    },
    {
     "type": "text",
@@ -376,7 +421,8 @@
      {
       "t": "{planse};"
      }
-    ]
+    ],
+    "gapBefore": 19.02
    },
    {
     "type": "text",
@@ -384,7 +430,8 @@
      {
       "t": "     Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 32.72
    },
    {
     "type": "bullet",
@@ -396,7 +443,8 @@
       "t": "{proiect_nr};",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 10.22
    },
    {
     "type": "bullet",
@@ -404,7 +452,8 @@
      {
       "t": "Se poate trece la execuția pozării patului de montare a conductei."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -412,7 +461,8 @@
      {
       "t": "Pereții și taluzurile transeei prezintă stabilitate corespunzătoare, fără desprinderi de material."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -420,7 +470,8 @@
      {
       "t": "Dimensiunile transeei (lățime, adâncime) corespund cu cele din profilul tehnic de execuție."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -428,7 +479,8 @@
      {
       "t": "Din punct de vedere executiv, nu au fost identificate neconformități care să impună remedieri înainte de continuarea lucrărilor."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    }
   ],
   "sigHeader": true,
@@ -436,7 +488,18 @@
    "Diriginte șantier:      Ing. {diriginte_nume}",
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    139.3457794189453,
+    157.99574279785156
+   ],
+   "meta": [
+    195.29579162597656,
+    207.57179260253906,
+    "Nr. 3 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -451,7 +514,8 @@
      {
       "t": "     Faza din lucrare supusă verificării:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -459,7 +523,8 @@
      {
       "t": "Verificare natura teren, cota fundare, pat pozare, sprijiniri, imbinare conducta;"
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -467,7 +532,8 @@
      {
       "t": "     Elementul de indentificare (sector, porțiune, ax, etc.):"
      }
-    ]
+    ],
+    "gapBefore": 19.02
    },
    {
     "type": "bullet",
@@ -495,7 +561,8 @@
      {
       "t": "({reper_start} - {reper_end}), L={lungime} m."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -503,7 +570,8 @@
      {
       "t": "     Au stat la baza verificării următoarele documente:"
      }
-    ]
+    ],
+    "gapBefore": 13.02
    },
    {
     "type": "bullet",
@@ -518,7 +586,8 @@
      {
       "t": " și caietul de sarcini;"
      }
-    ]
+    ],
+    "gapBefore": 9.37
    },
    {
     "type": "bullet",
@@ -529,7 +598,8 @@
      {
       "t": "{planse};"
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -537,7 +607,8 @@
      {
       "t": "     Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -549,7 +620,8 @@
       "t": "{proiect_nr}",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 9.37
    },
    {
     "type": "bullet",
@@ -557,7 +629,8 @@
      {
       "t": "Cota săpăturii este conform profilurilor longitudinale {profil_longitudinal};"
      }
-    ]
+    ],
+    "gapBefore": 1.37
    },
    {
     "type": "bullet",
@@ -569,7 +642,8 @@
       "t": "{proiect_nr}",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -589,7 +663,8 @@
      {
       "t": "90°"
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -597,7 +672,8 @@
      {
       "t": "Patul de pozare este realizat din material granular corespunzător, fără corpuri dure."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -605,7 +681,8 @@
      {
       "t": "Se poate trece la următoarea etapă de execuție."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    }
   ],
   "sigHeader": true,
@@ -614,7 +691,18 @@
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}",
    "Proiectant.:              Ing. {proiectant_reprezentant}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    143.3457794189453,
+    161.99574279785156
+   ],
+   "meta": [
+    180.64576721191406,
+    192.92176818847656,
+    "Nr. 4 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -629,7 +717,8 @@
      {
       "t": "Ca urmare a controlului efectuat la obiectivul:"
      }
-    ]
+    ],
+    "gapBefore": 14.56
    },
    {
     "type": "text",
@@ -658,7 +747,8 @@
      {
       "t": ", elaborat de "
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -667,7 +757,8 @@
       "t": "{proiectant_companie}",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": -0.0
    },
    {
     "type": "text",
@@ -686,7 +777,8 @@
       "t": "{rte_domenii}",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -714,7 +806,8 @@
      {
       "t": "({reper_start} - {reper_end}), L={lungime} m."
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -729,7 +822,8 @@
      {
       "t": "  "
      }
-    ]
+    ],
+    "gapBefore": 0.92
    },
    {
     "type": "text",
@@ -741,7 +835,8 @@
       "t": "Ing. {constructor_reprezentant}",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -753,7 +848,8 @@
       "t": "Comuna {locatie}",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -769,7 +865,8 @@
       "t": ", 3.3;",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -781,7 +878,8 @@
       "t": "{proiectant_companie} ",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -793,7 +891,8 @@
       "t": "ing.  {proiectant_reprezentant}",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -843,7 +942,8 @@
      {
       "t": " respectate reglementarile tehnice de in vigoare ."
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -851,7 +951,8 @@
      {
       "t": "Mentiuni speciale:"
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -859,7 +960,8 @@
      {
       "t": " Autorizarea continuarii executiei lucrarilor in faza determinanta, s-a facut in baza verificarilor directe in teren, a documentatiei de executie si a urmatoarelor acte puse la dispozitie de antreprenor:"
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "bullet",
@@ -867,7 +969,8 @@
      {
       "t": "procese verbale lucrari ascunse;"
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "bullet",
@@ -875,7 +978,8 @@
      {
       "t": "documente de provenienta si calitate a materialelor puse in opera"
      }
-    ]
+    ],
+    "gapBefore": 1.8
    },
    {
     "type": "text",
@@ -883,7 +987,8 @@
      {
       "t": "In baza celor de mai sus,"
      }
-    ]
+    ],
+    "gapBefore": 1.8
    },
    {
     "type": "text",
@@ -893,7 +998,8 @@
       "b": 1
      }
     ],
-    "center": true
+    "center": true,
+    "gapBefore": 12.2
    },
    {
     "type": "text",
@@ -901,7 +1007,8 @@
      {
       "t": "Prezentul proces verbal a fost intocmit in 3 exemplare, cate unul pentru fiecare parte."
      }
-    ]
+    ],
+    "gapBefore": 0.0
    },
    {
     "type": "sig4col",
@@ -920,7 +1027,18 @@
    }
   ],
   "sigHeader": null,
-  "sigRows": []
+  "sigRows": [],
+  "_headerY": {
+   "titleLines": [
+    144.17677307128906,
+    167.9767608642578
+   ],
+   "meta": [
+    190.0957794189453,
+    202.3717803955078,
+    "Nr. 5 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -934,7 +1052,8 @@
      {
       "t": "     Faza din lucrare, supusă verificării:"
      }
-    ]
+    ],
+    "gapBefore": 43.67
    },
    {
     "type": "bullet",
@@ -942,7 +1061,8 @@
      {
       "t": "    Receptia calitativa a materialelor la primirea pe santier;"
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -950,7 +1070,8 @@
      {
       "t": "     Elementele de identificare (sector, porțiune, ax, cotă, etc):"
      }
-    ]
+    ],
+    "gapBefore": 6.42
    },
    {
     "type": "bullet",
@@ -978,7 +1099,8 @@
      {
       "t": "({reper_start} - {reper_end}), L={lungime} m."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -989,7 +1111,8 @@
      {
       "t": "{proiect_nr} ;"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "text",
@@ -997,7 +1120,8 @@
      {
       "t": "     Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -1005,7 +1129,8 @@
      {
       "t": "S-a verificat calitatea materialelor ce urmeaza a fi puse in lucru, acestea fiind conforme cu documentația tehnica."
      }
-    ]
+    ],
+    "gapBefore": 0.57
    },
    {
     "type": "bullet",
@@ -1013,7 +1138,8 @@
      {
       "t": "Materialele sunt însoțite de certificate de calitate/conformitate și au fost depozitate corespunzător pe șantier."
      }
-    ]
+    ],
+    "gapBefore": 2.42
    },
    {
     "type": "bullet",
@@ -1021,7 +1147,8 @@
      {
       "t": "Nu au fost constatate deteriorări mecanice sau defecte vizibile ale conductelor și fitingurilor."
      }
-    ]
+    ],
+    "gapBefore": 2.42
    },
    {
     "type": "bullet",
@@ -1029,7 +1156,8 @@
      {
       "t": "Se poate trece la urmatoarea faza de executie."
      }
-    ]
+    ],
+    "gapBefore": 2.42
    }
   ],
   "sigHeader": true,
@@ -1037,7 +1165,17 @@
    "Diriginte șantier:      Ing. {diriginte_nume}",
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    142.3457794189453
+   ],
+   "meta": [
+    179.64576721191406,
+    191.92176818847656,
+    "Nr. 6 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -1052,7 +1190,8 @@
      {
       "t": "Faza din lucrare supusa verificarii:"
      }
-    ]
+    ],
+    "gapBefore": 21.02
    },
    {
     "type": "bullet",
@@ -1060,7 +1199,8 @@
      {
       "t": " Calitatea executiei tuturor operatiilor care devin ascunse, verifica cotelor realizate pe profilul in lung al conductei."
      }
-    ]
+    ],
+    "gapBefore": 8.57
    },
    {
     "type": "text",
@@ -1068,7 +1208,8 @@
      {
       "t": "Elementele de identificare (sector, portiune, ax, cota etc.):"
      }
-    ]
+    ],
+    "gapBefore": 1.37
    },
    {
     "type": "bullet",
@@ -1096,7 +1237,8 @@
      {
       "t": "({reper_start} - {reper_end}), L={lungime} m."
      }
-    ]
+    ],
+    "gapBefore": 9.37
    },
    {
     "type": "text",
@@ -1110,7 +1252,8 @@
      {
       "t": "{planse};"
      }
-    ]
+    ],
+    "gapBefore": 13.02
    },
    {
     "type": "text",
@@ -1118,7 +1261,8 @@
      {
       "t": "Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 9.37
    },
    {
     "type": "bullet",
@@ -1126,7 +1270,8 @@
      {
       "t": "Cotele pe profilul în lung al conductei au fost realizate cu respectarea planului de execuție."
      }
-    ]
+    ],
+    "gapBefore": 9.57
    },
    {
     "type": "bullet",
@@ -1134,7 +1279,8 @@
      {
       "t": "Abaterile înregistrate sunt în limitele toleranțelor admise conform normativului tehnic aplicabil ( NP 133/2013 – rețele de alimentare cu apă și canalizare)."
      }
-    ]
+    ],
+    "gapBefore": 0.57
    },
    {
     "type": "bullet",
@@ -1142,7 +1288,8 @@
      {
       "t": "Se poate trece la urmatoarea faza de executie."
      }
-    ]
+    ],
+    "gapBefore": 0.57
    }
   ],
   "sigHeader": true,
@@ -1150,7 +1297,18 @@
    "Diriginte șantier:      Ing. {diriginte_nume}",
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    143.3457794189453,
+    164.99574279785156
+   ],
+   "meta": [
+    186.64576721191406,
+    198.92176818847656,
+    "Nr. 7 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -1166,7 +1324,8 @@
       "t": "Faza din lucrare supusă verificării:",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 24.02
    },
    {
     "type": "bullet",
@@ -1174,7 +1333,8 @@
      {
       "t": "Verificarea neobturării canalului cu pământ sau cu moloz."
      }
-    ]
+    ],
+    "gapBefore": 9.37
    },
    {
     "type": "text",
@@ -1186,7 +1346,8 @@
      {
       "t": "(sector, porțiune, ax, etc):"
      }
-    ]
+    ],
+    "gapBefore": 16.82
    },
    {
     "type": "bullet",
@@ -1214,7 +1375,8 @@
      {
       "t": "({reper_start} - {reper_end}), L={lungime} m."
      }
-    ]
+    ],
+    "gapBefore": 9.37
    },
    {
     "type": "text",
@@ -1232,7 +1394,8 @@
      {
       "t": "{planse}, {profil_longitudinal};"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "text",
@@ -1241,7 +1404,8 @@
       "t": "Concluzii:",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 22.02
    },
    {
     "type": "bullet",
@@ -1249,7 +1413,8 @@
      {
       "t": "Canalul nu prezintă semne de obturare cu pământ, moloz sau cu orice alt tip de material."
      }
-    ]
+    ],
+    "gapBefore": 7.37
    },
    {
     "type": "bullet",
@@ -1257,7 +1422,8 @@
      {
       "t": "Interiorul conductei a fost verificat vizual pe toată lungimea tronsonului examinat."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -1265,7 +1431,8 @@
      {
       "t": "Secțiunea de curgere este liberă, fără reduceri de diametru util."
      }
-    ]
+    ],
+    "gapBefore": 2.32
    },
    {
     "type": "bullet",
@@ -1273,7 +1440,8 @@
      {
       "t": "Se poate trece la execuția următoarei faze a execuției."
      }
-    ]
+    ],
+    "gapBefore": 2.32
    }
   ],
   "sigHeader": true,
@@ -1281,7 +1449,18 @@
    "Diriginte șantier:      Ing. {diriginte_nume}",
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    143.3457794189453,
+    156.99574279785156
+   ],
+   "meta": [
+    178.64576721191406,
+    190.92176818847656,
+    "Nr. 8 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -1295,7 +1474,8 @@
      {
       "t": "Faza din lucrare supusa verificarii:"
      }
-    ]
+    ],
+    "gapBefore": 21.02
    },
    {
     "type": "bullet",
@@ -1303,7 +1483,8 @@
      {
       "t": "Verificarea etanseitatii hidraulice a conductelor."
      }
-    ]
+    ],
+    "gapBefore": 8.37
    },
    {
     "type": "text",
@@ -1311,7 +1492,8 @@
      {
       "t": "Elementele de identificare (sector, portiune, ax, cota etc.):"
      }
-    ]
+    ],
+    "gapBefore": 9.42
    },
    {
     "type": "bullet",
@@ -1339,7 +1521,8 @@
      {
       "t": "({reper_start} - {reper_end}), L={lungime} m."
      }
-    ]
+    ],
+    "gapBefore": 10.22
    },
    {
     "type": "text",
@@ -1353,7 +1536,8 @@
      {
       "t": "{planse};"
      }
-    ]
+    ],
+    "gapBefore": 22.87
    },
    {
     "type": "text",
@@ -1361,7 +1545,8 @@
      {
       "t": "Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 10.22
    },
    {
     "type": "bullet",
@@ -1369,7 +1554,8 @@
      {
       "t": "În urma testării hidraulice efectuate asupra conductelor de apă s-a constatat că sistemul îndeplinește condițiile tehnice de etanșeitate, nefiind evidențiate pierderi de apă sau scurgeri."
      }
-    ]
+    ],
+    "gapBefore": 16.42
    },
    {
     "type": "bullet",
@@ -1377,7 +1563,8 @@
      {
       "t": "Toate îmbinările au fost inspectate vizual și au rămas etanșe pe toată durata încercării."
      }
-    ]
+    ],
+    "gapBefore": 0.57
    },
    {
     "type": "bullet",
@@ -1385,7 +1572,8 @@
      {
       "t": "Conducta nu a prezentat scurgeri în zona branșamentelor și pieselor speciale."
      }
-    ]
+    ],
+    "gapBefore": 0.57
    },
    {
     "type": "bullet",
@@ -1393,7 +1581,8 @@
      {
       "t": "Presiunea de încercare și durata testului s-au încadrat în parametrii prevăzuți de normativul tehnic în vigoare."
      }
-    ]
+    ],
+    "gapBefore": 0.57
    },
    {
     "type": "bullet",
@@ -1401,7 +1590,8 @@
      {
       "t": "Se poate trece la urmatoarea faza de executie."
      }
-    ]
+    ],
+    "gapBefore": 0.57
    }
   ],
   "sigHeader": true,
@@ -1410,7 +1600,17 @@
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}",
    "Proiectant.:              Ing. {proiectant_reprezentant}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    143.1957550048828
+   ],
+   "meta": [
+    165.6957550048828,
+    177.9717559814453,
+    "Nr. 9 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -1425,7 +1625,8 @@
      {
       "t": "Ca urmare a controlului efectuat la obiectivul:"
      }
-    ]
+    ],
+    "gapBefore": 16.86
    },
    {
     "type": "text",
@@ -1454,7 +1655,8 @@
      {
       "t": ", elaborat de "
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -1463,7 +1665,8 @@
       "t": "{proiectant_companie}",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 0.0
    },
    {
     "type": "text",
@@ -1482,7 +1685,8 @@
       "t": "{rte_domenii}",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -1506,7 +1710,8 @@
      {
       "t": "({reper_start} - {reper_end}), L={lungime} m."
      }
-    ]
+    ],
+    "gapBefore": 1.8
    },
    {
     "type": "text",
@@ -1521,7 +1726,8 @@
      {
       "t": "  "
      }
-    ]
+    ],
+    "gapBefore": 1.72
    },
    {
     "type": "text",
@@ -1533,7 +1739,8 @@
       "t": "Ing. {constructor_reprezentant}",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 1.8
    },
    {
     "type": "text",
@@ -1545,7 +1752,8 @@
       "t": "Comuna {locatie}",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 1.8
    },
    {
     "type": "text",
@@ -1557,7 +1765,8 @@
       "t": "ing. {diriginte_nume}, autorizatie nr. {diriginte_autorizatie}, domeniile {diriginte_domenii};",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 1.8
    },
    {
     "type": "text",
@@ -1569,7 +1778,8 @@
       "t": "{proiectant_companie} ",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -1581,7 +1791,8 @@
       "t": "ing.  {proiectant_reprezentant}",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 1.8
    },
    {
     "type": "text",
@@ -1631,7 +1842,8 @@
      {
       "t": " respectate reglementarile tehnice de in vigoare ."
      }
-    ]
+    ],
+    "gapBefore": 1.8
    },
    {
     "type": "text",
@@ -1639,7 +1851,8 @@
      {
       "t": "Mentiuni speciale:"
      }
-    ]
+    ],
+    "gapBefore": 1.8
    },
    {
     "type": "text",
@@ -1647,7 +1860,8 @@
      {
       "t": " Autorizarea continuarii executiei lucrarilor in faza determinanta, s-a facut in baza verificarilor directe in teren, a documentatiei de executie si a urmatoarelor acte puse la dispozitie de antreprenor:"
      }
-    ]
+    ],
+    "gapBefore": 1.8
    },
    {
     "type": "bullet",
@@ -1655,7 +1869,8 @@
      {
       "t": "procese verbale lucrari ascunse;"
      }
-    ]
+    ],
+    "gapBefore": 1.8
    },
    {
     "type": "bullet",
@@ -1663,7 +1878,8 @@
      {
       "t": "documente de provenienta si calitate a materialelor puse in opera"
      }
-    ]
+    ],
+    "gapBefore": 1.8
    },
    {
     "type": "text",
@@ -1671,7 +1887,8 @@
      {
       "t": "In baza celor de mai sus,"
      }
-    ]
+    ],
+    "gapBefore": 1.8
    },
    {
     "type": "text",
@@ -1681,7 +1898,8 @@
       "b": 1
      }
     ],
-    "center": true
+    "center": true,
+    "gapBefore": 12.2
    },
    {
     "type": "text",
@@ -1689,7 +1907,8 @@
      {
       "t": "Prezentul proces verbal a fost intocmit in 3 exemplare, cate unul pentru fiecare parte."
      }
-    ]
+    ],
+    "gapBefore": 0.0
    },
    {
     "type": "sig4col",
@@ -1708,7 +1927,18 @@
    }
   ],
   "sigHeader": null,
-  "sigRows": []
+  "sigRows": [],
+  "_headerY": {
+   "titleLines": [
+    145.17677307128906,
+    169.9767608642578
+   ],
+   "meta": [
+    193.0957794189453,
+    205.3717803955078,
+    "Nr. 10 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -1722,7 +1952,8 @@
      {
       "t": "Faza din lucrare supusa verificarii:"
      }
-    ]
+    ],
+    "gapBefore": 21.02
    },
    {
     "type": "bullet",
@@ -1730,7 +1961,8 @@
      {
       "t": "Acoperirea definitiva a conductelor; "
      }
-    ]
+    ],
+    "gapBefore": 8.37
    },
    {
     "type": "text",
@@ -1738,7 +1970,8 @@
      {
       "t": "Elementele de identificare (sector, portiune, ax, cota etc.):"
      }
-    ]
+    ],
+    "gapBefore": 1.42
    },
    {
     "type": "bullet",
@@ -1766,7 +1999,8 @@
      {
       "t": "({reper_start} - {reper_end}), L={lungime} m."
      }
-    ]
+    ],
+    "gapBefore": 9.37
    },
    {
     "type": "text",
@@ -1777,7 +2011,8 @@
      {
       "t": "{planse}, {profil_longitudinal};"
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -1785,7 +2020,8 @@
      {
       "t": "Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 9.37
    },
    {
     "type": "bullet",
@@ -1793,7 +2029,8 @@
      {
       "t": "Conducta este pozată corect și etanșă conform probelor efectuate anterior."
      }
-    ]
+    ],
+    "gapBefore": 9.57
    },
    {
     "type": "bullet",
@@ -1801,7 +2038,8 @@
      {
       "t": "Materialele de umplutură utilizate sunt conforme cu specificațiile proiectului: pământ selectat, bine sortat și fără corpuri străine."
      }
-    ]
+    ],
+    "gapBefore": 0.57
    },
    {
     "type": "bullet",
@@ -1809,7 +2047,8 @@
      {
       "t": "Umplerea s-a realizat în straturi succesive, compactate mecanic, până la cota prevăzută, cu respectarea gradului de compactare impus."
      }
-    ]
+    ],
+    "gapBefore": 0.57
    },
    {
     "type": "bullet",
@@ -1817,7 +2056,8 @@
      {
       "t": "Acoperirea s-a realizat fără deplasarea, deformarea sau deteriorarea conductei și a accesoriilor montate."
      }
-    ]
+    ],
+    "gapBefore": 0.57
    },
    {
     "type": "bullet",
@@ -1825,7 +2065,8 @@
      {
       "t": "Gradul de compactare realizat corespunde cerințelor din caietul de sarcini pentru zona carosabilă/necarosabilă traversată."
      }
-    ]
+    ],
+    "gapBefore": 0.57
    },
    {
     "type": "bullet",
@@ -1833,7 +2074,8 @@
      {
       "t": "Se poate trece la urmatoarea faza de executie."
      }
-    ]
+    ],
+    "gapBefore": 0.57
    }
   ],
   "sigHeader": true,
@@ -1841,7 +2083,17 @@
    "Diriginte șantier:      Ing. {diriginte_nume}",
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    142.3457794189453
+   ],
+   "meta": [
+    163.99574279785156,
+    176.27174377441406,
+    "Nr. 11 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -1855,7 +2107,8 @@
      {
       "t": "Faza din lucrare supusa verificarii:"
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -1863,7 +2116,8 @@
      {
       "t": "Receptia tronsonului la finalizarea executiei."
      }
-    ]
+    ],
+    "gapBefore": 9.57
    },
    {
     "type": "text",
@@ -1871,7 +2125,8 @@
      {
       "t": "Elementele de identificare (sector, portiune, ax, cota etc.) :"
      }
-    ]
+    ],
+    "gapBefore": 2.02
    },
    {
     "type": "bullet",
@@ -1899,7 +2154,8 @@
      {
       "t": "({reper_start} - {reper_end}), L={lungime} m."
      }
-    ]
+    ],
+    "gapBefore": 9.37
    },
    {
     "type": "text",
@@ -1919,7 +2175,8 @@
      {
       "t": "{planse};"
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -1927,7 +2184,8 @@
      {
       "t": "Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -1938,7 +2196,8 @@
      {
       "t": "reteaua de alimentare cu apa este functionala."
      }
-    ]
+    ],
+    "gapBefore": 9.57
    },
    {
     "type": "bullet",
@@ -1946,7 +2205,8 @@
      {
       "t": "Lucrarile s-au realizat conform proiectului tehnic de executie."
      }
-    ]
+    ],
+    "gapBefore": 1.17
    },
    {
     "type": "bullet",
@@ -1954,7 +2214,8 @@
      {
       "t": "Lucrarea poate fi propusă pentru recepție la terminarea lucrarilor."
      }
-    ]
+    ],
+    "gapBefore": 1.17
    }
   ],
   "sigHeader": true,
@@ -1963,6 +2224,16 @@
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}",
    "Proiectant.:              Ing. {proiectant_reprezentant}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    142.3457794189453
+   ],
+   "meta": [
+    185.64576721191406,
+    197.92176818847656,
+    "Nr. 12 Data ................."
+   ]
+  }
  }
 ]

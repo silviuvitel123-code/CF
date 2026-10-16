@@ -12,7 +12,8 @@
      {
       "t": "     Delimitare front de lucru predat (poziție, cotă, ax, etc.):"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -20,7 +21,8 @@
      {
       "t": "Rezervor de înmagazinare {specificatie_conducta}, tip {reper_start}, volum {lungime} mc, comuna {locatie}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -28,7 +30,8 @@
      {
       "t": "     Au stat la bază următoarele documente:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -36,7 +39,8 @@
      {
       "t": "Autorizația de construire nr. {autorizatie_nr} din {autorizatie_data} emisă de Consiliul Primăriei Comunei {locatie};"
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -44,7 +48,8 @@
      {
       "t": "Proiectul nr. {proiect_nr}, întocmit de {proiectant_companie}, planșele {planse}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -74,7 +79,8 @@
      {
       "t": ", care preia frontul de lucru pentru executarea lucrărilor de construcții la rezervorul de înmagazinare, în condițiile stabilite de autorizația de construire și de proiectul mai sus amintit."
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "text",
@@ -82,7 +88,8 @@
      {
       "t": "     Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "bullet",
@@ -90,7 +97,8 @@
      {
       "t": "Frontul de lucru predat corespunde cu amplasamentul și planșele din proiectul nr. {proiect_nr}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -98,7 +106,8 @@
      {
       "t": "Constructorul a verificat vizual limitele frontului de lucru și accesul utilajelor pe amplasament."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -106,7 +115,8 @@
      {
       "t": "Se poate trece la executarea lucrărilor de construcții la rezervorul de înmagazinare."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    }
   ],
   "sigHeader": true,
@@ -115,7 +125,18 @@
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}",
    "Proiectant.:              Ing. {proiectant_reprezentant}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    145.3457794189453,
+    163.99574279785156
+   ],
+   "meta": [
+    182.64576721191406,
+    194.92176818847656,
+    "Nr. 1 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -129,7 +150,8 @@
      {
       "t": "     Faza din lucrare supusă verificării:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "text",
@@ -137,7 +159,8 @@
      {
       "t": "Execuția săpăturilor pentru fundația rezervorului de înmagazinare;"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -145,7 +168,8 @@
      {
       "t": "     Elementele de identificare:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -153,7 +177,8 @@
      {
       "t": "Rezervor de înmagazinare {specificatie_conducta}, tip {reper_start}, volum {lungime} mc, comuna {locatie}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -161,7 +186,8 @@
      {
       "t": "     Verificările s-au făcut pe baza proiectului tehnic nr. {proiect_nr};"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -169,7 +195,8 @@
      {
       "t": "     Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "bullet",
@@ -177,7 +204,8 @@
      {
       "t": "Săpăturile s-au executat conform cotelor și dimensiunilor din proiectul tehnic nr. {proiect_nr}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -185,7 +213,8 @@
      {
       "t": "Natura terenului corespunde cu studiul geotehnic al proiectului."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -193,7 +222,8 @@
      {
       "t": "Pereții săpăturii nu prezintă surpări sau fisuri, iar pământul excavat a fost depozitat la distanța regulamentară față de marginea săpăturii."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -201,7 +231,8 @@
      {
       "t": "Se poate trece la execuția lucrărilor de sprijinire."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    }
   ],
   "sigHeader": true,
@@ -209,7 +240,17 @@
    "Diriginte șantier:      Ing. {diriginte_nume}",
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    120.69575500488281
+   ],
+   "meta": [
+    157.99574279785156,
+    170.27174377441406,
+    "Nr. 2 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -223,7 +264,8 @@
      {
       "t": "     Faza din lucrare supusă verificării:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "text",
@@ -231,7 +273,8 @@
      {
       "t": "Lucrările de sprijinire a săpăturii pentru rezervorul de înmagazinare;"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -239,7 +282,8 @@
      {
       "t": "     Elementele de identificare:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -247,7 +291,8 @@
      {
       "t": "Rezervor de înmagazinare {specificatie_conducta}, tip {reper_start}, volum {lungime} mc, comuna {locatie}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -255,7 +300,8 @@
      {
       "t": "     Verificările s-au făcut pe baza proiectului tehnic nr. {proiect_nr};"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -263,7 +309,8 @@
      {
       "t": "     Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "bullet",
@@ -271,7 +318,8 @@
      {
       "t": "Lucrările de sprijinire sunt executate conform cerințelor proiectului tehnic nr. {proiect_nr}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -279,7 +327,8 @@
      {
       "t": "Sprijinirile asigură stabilitatea pereților săpăturii pe toată perioada execuției."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -350,7 +399,8 @@
      {
       "t": ". "
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -358,7 +408,8 @@
      {
       "t": "Sprijinirile permit executarea în siguranță a lucrărilor următoare (cofrare, armare, betonare), cu respectarea normelor de securitate și sănătate în muncă."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -366,7 +417,8 @@
      {
       "t": "Se poate trece la execuția lucrărilor de cofrare."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    }
   ],
   "sigHeader": true,
@@ -374,7 +426,17 @@
    "Diriginte șantier:      Ing. {diriginte_nume}",
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    120.69575500488281
+   ],
+   "meta": [
+    157.99574279785156,
+    170.27174377441406,
+    "Nr. 3 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -388,7 +450,8 @@
      {
       "t": "     Faza din lucrare supusă verificării:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "text",
@@ -396,7 +459,8 @@
      {
       "t": "Recepția calitativă a lucrărilor de cofrare la fundația și pereții rezervorului;"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -404,7 +468,8 @@
      {
       "t": "     Elementele de identificare:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -412,7 +477,8 @@
      {
       "t": "Rezervor de înmagazinare {specificatie_conducta}, tip {reper_start}, volum {lungime} mc, comuna {locatie}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -420,7 +486,8 @@
      {
       "t": "     Verificările s-au făcut pe baza proiectului tehnic nr. {proiect_nr};"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -428,7 +495,8 @@
      {
       "t": "     Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "bullet",
@@ -436,7 +504,8 @@
      {
       "t": "Cofrajele sunt executate conform proiectului tehnic nr. {proiect_nr}, cu dimensiunile și forma prevăzute."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -444,7 +513,8 @@
      {
       "t": "Cofrajele sunt etanșe, rigide și corect sprijinite, fără pericol de deformare la turnare."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -452,7 +522,8 @@
      {
       "t": "Suprafața interioară a cofrajelor a fost curățată și tratată cu decofrol, fără resturi de materiale sau impurități. "
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -460,7 +531,8 @@
      {
       "t": "Golurile și piesele înglobate (treceri conducte, manșoane) sunt poziționate conform proiectului și fixate corespunzător."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -468,7 +540,8 @@
      {
       "t": "Se poate trece la recepția betonului adus pentru turnare."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    }
   ],
   "sigHeader": true,
@@ -476,7 +549,17 @@
    "Diriginte șantier:      Ing. {diriginte_nume}",
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    120.69575500488281
+   ],
+   "meta": [
+    157.99574279785156,
+    170.27174377441406,
+    "Nr. 4 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -490,7 +573,8 @@
      {
       "t": "     Faza din lucrare supusă verificării:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "text",
@@ -498,7 +582,8 @@
      {
       "t": "Recepția calitativă pe șantier a betonului adus pentru turnarea fundației și pereților rezervorului;"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -506,7 +591,8 @@
      {
       "t": "     Elementele de identificare:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -514,7 +600,8 @@
      {
       "t": "Rezervor de înmagazinare {specificatie_conducta}, tip {reper_start}, volum {lungime} mc, comuna {locatie}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -522,7 +609,8 @@
      {
       "t": "     Verificările s-au făcut pe baza proiectului tehnic nr. {proiect_nr};"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -530,7 +618,8 @@
      {
       "t": "     Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "bullet",
@@ -538,7 +627,8 @@
      {
       "t": "Betonul livrat corespunde clasei prevăzute în proiectul tehnic nr. {proiect_nr}, fiind însoțit de certificat de calitate/conformitate."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -546,7 +636,8 @@
      {
       "t": "Consistența și timpul de transport al betonului se încadrează în parametrii admiși."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -554,7 +645,8 @@
      {
       "t": "Betonul livrat este omogen, fără separarea agregatelor de pasta de ciment, fără început de priză și fără adaosuri de apă pe șantier."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -562,7 +654,8 @@
      {
       "t": "Se poate trece la turnarea betonului."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    }
   ],
   "sigHeader": true,
@@ -570,7 +663,17 @@
    "Diriginte șantier:      Ing. {diriginte_nume}",
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    120.69575500488281
+   ],
+   "meta": [
+    157.99574279785156,
+    170.27174377441406,
+    "Nr. 5 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -584,7 +687,8 @@
      {
       "t": "     Faza din lucrare supusă verificării:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "text",
@@ -592,7 +696,8 @@
      {
       "t": "Turnarea și vibrarea betonului în fundația și pereții rezervorului;"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -600,7 +705,8 @@
      {
       "t": "     Elementele de identificare:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -608,7 +714,8 @@
      {
       "t": "Rezervor de înmagazinare {specificatie_conducta}, tip {reper_start}, volum {lungime} mc, comuna {locatie}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -616,7 +723,8 @@
      {
       "t": "     Verificările s-au făcut pe baza proiectului tehnic nr. {proiect_nr};"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -624,7 +732,8 @@
      {
       "t": "     Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "bullet",
@@ -632,7 +741,8 @@
      {
       "t": "Turnarea și vibrarea betonului în fundație și pereți s-au efectuat conform caietului de sarcini."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -640,7 +750,8 @@
      {
       "t": "Nu au fost identificate segregări, goluri sau defecte de compactare a betonului."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -648,7 +759,8 @@
      {
       "t": "Turnarea s-a realizat continuu, în straturi, cu respectarea înălțimii maxime de cădere liberă a betonului."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -656,7 +768,8 @@
      {
       "t": "Se poate trece la următoarea fază de execuție."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    }
   ],
   "sigHeader": true,
@@ -664,7 +777,17 @@
    "Diriginte șantier:      Ing. {diriginte_nume}",
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    120.69575500488281
+   ],
+   "meta": [
+    157.99574279785156,
+    170.27174377441406,
+    "Nr. 6 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -678,7 +801,8 @@
      {
       "t": "     Faza din lucrare supusă verificării:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "text",
@@ -686,7 +810,8 @@
      {
       "t": "Recepția calitativă pe șantier a rezervorului de înmagazinare;"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -694,7 +819,8 @@
      {
       "t": "     Elementele de identificare:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -702,7 +828,8 @@
      {
       "t": "Rezervor de înmagazinare {specificatie_conducta}, tip {reper_start}, volum {lungime} mc, comuna {locatie}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -710,7 +837,8 @@
      {
       "t": "     Verificările s-au făcut pe baza proiectului tehnic nr. {proiect_nr};"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -718,7 +846,8 @@
      {
       "t": "     Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "bullet",
@@ -726,7 +855,8 @@
      {
       "t": "Rezervorul de înmagazinare corespunde specificațiilor tehnice și cantitative din proiectul nr. {proiect_nr}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -734,7 +864,8 @@
      {
       "t": "Rezervorul este însoțit de certificate de calitate/conformitate și nu prezintă deteriorări vizibile."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -817,7 +948,8 @@
      {
       "t": "."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -825,7 +957,8 @@
      {
       "t": "Se poate trece la montarea suporturilor și a rezervorului."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    }
   ],
   "sigHeader": true,
@@ -833,7 +966,17 @@
    "Diriginte șantier:      Ing. {diriginte_nume}",
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    120.69575500488281
+   ],
+   "meta": [
+    157.99574279785156,
+    170.27174377441406,
+    "Nr. 7 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -847,7 +990,8 @@
      {
       "t": "     Faza din lucrare supusă verificării:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "text",
@@ -855,7 +999,8 @@
      {
       "t": "Recepția calitativă a montării suporturilor și a rezervorului de înmagazinare;"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -863,7 +1008,8 @@
      {
       "t": "     Elementele de identificare:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -871,7 +1017,8 @@
      {
       "t": "Rezervor de înmagazinare {specificatie_conducta}, tip {reper_start}, volum {lungime} mc, comuna {locatie}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -879,7 +1026,8 @@
      {
       "t": "     Verificările s-au făcut pe baza proiectului tehnic nr. {proiect_nr};"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -887,7 +1035,8 @@
      {
       "t": "     Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "bullet",
@@ -895,7 +1044,8 @@
      {
       "t": "Suporturile și rezervorul au fost montate conform proiectului tehnic nr. {proiect_nr}, corect nivelate și fixate."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -903,7 +1053,8 @@
      {
       "t": "Lucrările s-au realizat conform proiectului tehnic de execuție."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -911,7 +1062,8 @@
      {
       "t": "Racordurile rezervorului sunt poziționate conform proiectului, pentru legarea la conductele de alimentare, distribuție, preaplin și golire."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -919,7 +1071,8 @@
      {
       "t": "Îmbinările și elementele de fixare au fost verificate, iar rezervorul nu prezintă deformații sau deteriorări apărute în timpul montajului."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -927,7 +1080,8 @@
      {
       "t": "Lucrarea poate fi propusă pentru recepție la terminarea lucrărilor."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    }
   ],
   "sigHeader": true,
@@ -936,6 +1090,16 @@
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}",
    "Proiectant.:              Ing. {proiectant_reprezentant}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    120.69575500488281
+   ],
+   "meta": [
+    157.99574279785156,
+    170.27174377441406,
+    "Nr. 8 Data ................."
+   ]
+  }
  }
 ]

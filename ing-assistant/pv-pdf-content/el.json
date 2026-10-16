@@ -12,7 +12,8 @@
      {
       "t": "     Delimitare amplasament predat (obiectiv, adresă, etc.):"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -20,7 +21,8 @@
      {
       "t": "Instalație electrică interioară {specificatie_conducta}, obiectivul {tronson_cod}, la „{obiectiv}”, comuna {locatie}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -28,7 +30,8 @@
      {
       "t": "     Au stat la bază următoarele documente:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -36,7 +39,8 @@
      {
       "t": "Autorizația de construire nr. {autorizatie_nr} din {autorizatie_data} emisă de Consiliul Primăriei Comunei {locatie};"
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -44,7 +48,8 @@
      {
       "t": "Proiectul nr. {proiect_nr}, întocmit de {proiectant_companie}, planșele {planse}, Cf. C56-02, Caiet Instalatii I-Instalatii electrice interioare."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -91,7 +96,8 @@
      {
       "t": ", care preia amplasamentul pentru executarea lucrărilor de instalații electrice interioare, în condițiile stabilite de autorizația de construire și de proiectul mai sus amintit."
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "text",
@@ -99,7 +105,8 @@
      {
       "t": "     Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "bullet",
@@ -107,7 +114,8 @@
      {
       "t": "Amplasamentul predat corespunde cu planurile de instalații electrice din proiectul nr. {proiect_nr}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -115,7 +123,8 @@
      {
       "t": "Constructorul a verificat vizual accesul la punctele de racordare și traseele prevăzute pentru instalația electrică."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -123,7 +132,8 @@
      {
       "t": "Se poate trece la executarea lucrărilor de instalații electrice interioare."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    }
   ],
   "sigHeader": true,
@@ -131,7 +141,18 @@
    "Diriginte șantier:      Ing. {diriginte_nume}",
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    145.3457794189453,
+    163.99574279785156
+   ],
+   "meta": [
+    182.64576721191406,
+    194.92176818847656,
+    "Nr. 1 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -146,7 +167,8 @@
      {
       "t": "          Trasarea a fost executata pe baza planselor {planse}, Cf. C56-02, Caiet Instalatii I-Instalatii electrice interioare."
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "text",
@@ -154,7 +176,8 @@
      {
       "t": "          Elementul de reper și verificarea este: (tablou electric, doze de derivație, trasee tuburi/cabluri, etc.)"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -162,7 +185,8 @@
      {
       "t": "Instalație electrică interioară {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -170,7 +194,8 @@
      {
       "t": "Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "bullet",
@@ -178,7 +203,8 @@
      {
       "t": "S-a făcut trasarea traseelor de cabluri și a pozițiilor tablourilor/dozelor conform proiectului tehnic nr. {proiect_nr}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -186,7 +212,8 @@
      {
       "t": "S-a identificat intersecția cu alte instalații/rețele din amplasament."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -194,7 +221,8 @@
      {
       "t": "Reperele de trasare au fost materializate și protejate corespunzător pentru evitarea deplasării acestora pe parcursul execuției."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -202,7 +230,8 @@
      {
       "t": "Din punct de vedere tehnic, abaterile constatate la trasare se încadrează în toleranțele admise de proiect."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -210,7 +239,8 @@
      {
       "t": "Se autorizează începerea lucrărilor de montaj a instalației electrice."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    }
   ],
   "sigHeader": true,
@@ -218,7 +248,18 @@
    "Diriginte șantier:      Ing. {diriginte_nume}",
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    120.69575500488281,
+    139.3457794189453
+   ],
+   "meta": [
+    157.99574279785156,
+    170.27174377441406,
+    "Nr. 2 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -233,7 +274,8 @@
      {
       "t": "     Faza din lucrare supusă verificării:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "text",
@@ -241,7 +283,8 @@
      {
       "t": "Recepția calitativă a materialelor și echipamentelor electrice la primirea pe șantier, Cf. C56-02, Caiet Instalatii I-Instalatii electrice interioare;"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -249,7 +292,8 @@
      {
       "t": "     Elementele de identificare:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -257,7 +301,8 @@
      {
       "t": "Instalație electrică interioară {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -265,7 +310,8 @@
      {
       "t": "     Verificările s-au făcut pe baza proiectului nr. {proiect_nr};"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -273,7 +319,8 @@
      {
       "t": "     Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "bullet",
@@ -281,7 +328,8 @@
      {
       "t": "S-au verificat caracteristicile tehnice și calitatea materialelor și echipamentelor electrice ce urmează a fi puse în operă, acestea fiind conforme cu documentația tehnică."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -289,7 +337,8 @@
      {
       "t": "Materialele și echipamentele sunt însoțite de certificate de calitate/conformitate și au fost depozitate corespunzător pe șantier."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -297,7 +346,8 @@
      {
       "t": "Nu au fost constatate deteriorări mecanice sau defecte vizibile ale materialelor și echipamentelor electrice."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -305,7 +355,8 @@
      {
       "t": "Se poate trece la următoarea fază de execuție."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    }
   ],
   "sigHeader": true,
@@ -313,7 +364,18 @@
    "Diriginte șantier:      Ing. {diriginte_nume}",
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    120.69575500488281,
+    139.3457794189453
+   ],
+   "meta": [
+    157.99574279785156,
+    170.27174377441406,
+    "Nr. 3 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -328,7 +390,8 @@
      {
       "t": "     Faza din lucrare supusă verificării:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "text",
@@ -336,7 +399,8 @@
      {
       "t": "Montarea tuburilor de protecție și pozarea cablurilor electrice ce devin ascunse, Cf. C56-02, Caiet Instalatii I-Instalatii electrice interioare;"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -344,7 +408,8 @@
      {
       "t": "     Elementul de identificare:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -352,7 +417,8 @@
      {
       "t": "Instalație electrică interioară {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -360,7 +426,8 @@
      {
       "t": "     Verificările s-au făcut pe baza proiectului tehnic nr. {proiect_nr}, elaborat de {proiectant_companie}, conform planșelor {planse};"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -368,7 +435,8 @@
      {
       "t": "     Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "bullet",
@@ -376,7 +444,8 @@
      {
       "t": "Tuburile de protecție și cablurile electrice au fost montate conform traseelor din proiectul tehnic nr. {proiect_nr}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -384,7 +453,8 @@
      {
       "t": "Îmbinările și derivațiile au fost executate corect, fără deteriorarea izolației conductoarelor."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -392,7 +462,8 @@
      {
       "t": "Nu au fost identificate neconformități care să impună remedieri înainte de acoperirea/închiderea traseelor."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -400,7 +471,8 @@
      {
       "t": "Se poate trece la următoarea fază de execuție."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    }
   ],
   "sigHeader": true,
@@ -409,7 +481,18 @@
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}",
    "Proiectant.:              Ing. {proiectant_reprezentant}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    120.69575500488281,
+    139.3457794189453
+   ],
+   "meta": [
+    157.99574279785156,
+    170.27174377441406,
+    "Nr. 4 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -424,7 +507,8 @@
      {
       "t": "     Faza din lucrare supusă verificării:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "text",
@@ -432,7 +516,8 @@
      {
       "t": "Verificarea lucrărilor executate și a funcționalității instalației electrice interioare, Cf. C56-02, Caiet Instalatii I-Instalatii electrice interioare;"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -440,7 +525,8 @@
      {
       "t": "     Elementele de identificare:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -448,7 +534,8 @@
      {
       "t": "Instalație electrică interioară {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -456,7 +543,8 @@
      {
       "t": "     Verificările s-au făcut pe baza proiectului nr. {proiect_nr}, cât și a planșelor {planse};"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -464,7 +552,8 @@
      {
       "t": "     Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "bullet",
@@ -472,7 +561,8 @@
      {
       "t": "Instalația electrică a fost montată conform proiectului tehnic nr. {proiect_nr}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -480,7 +570,8 @@
      {
       "t": "S-a verificat funcționalitatea circuitelor de iluminat, prize și a tablourilor electrice, constatându-se funcționarea corectă a acestora."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -488,7 +579,8 @@
      {
       "t": "Nu au fost constatate neconformități care să afecteze funcționarea instalației."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -496,7 +588,8 @@
      {
       "t": "Se poate trece la următoarea fază de execuție."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    }
   ],
   "sigHeader": true,
@@ -504,7 +597,18 @@
    "Diriginte șantier:      Ing. {diriginte_nume}",
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    120.69575500488281,
+    139.3457794189453
+   ],
+   "meta": [
+    157.99574279785156,
+    170.27174377441406,
+    "Nr. 5 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -519,7 +623,8 @@
      {
       "t": "Ca urmare a controlului efectuat la obiectivul:"
      }
-    ]
+    ],
+    "gapBefore": 13.21
    },
    {
     "type": "text",
@@ -548,7 +653,8 @@
      {
       "t": ", elaborat de "
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -557,7 +663,8 @@
       "t": "{proiectant_companie}",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -579,7 +686,8 @@
      {
       "t": " {specificatie_conducta}, Cf. C56-02, Caiet Instalatii I-Instalatii electrice interioare."
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -594,7 +702,8 @@
      {
       "t": "  "
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -606,7 +715,8 @@
       "t": "Ing. {constructor_reprezentant}",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 0.0
    },
    {
     "type": "text",
@@ -618,7 +728,8 @@
       "t": "Comuna {locatie}",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -630,7 +741,8 @@
       "t": "ing. {diriginte_nume}, autorizatie nr. {diriginte_autorizatie}, domeniile {diriginte_domenii}",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -642,7 +754,8 @@
       "t": "{proiectant_companie} ",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 0.0
    },
    {
     "type": "text",
@@ -654,7 +767,8 @@
       "t": "ing.  {proiectant_reprezentant}",
       "b": 1
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -704,7 +818,8 @@
      {
       "t": " respectate reglementarile tehnice de in vigoare ."
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "text",
@@ -712,7 +827,8 @@
      {
       "t": "Mentiuni speciale:"
      }
-    ]
+    ],
+    "gapBefore": 0.0
    },
    {
     "type": "text",
@@ -720,7 +836,8 @@
      {
       "t": " Autorizarea continuarii executiei lucrarilor in faza determinanta, s-a facut in baza verificarilor directe in teren, a documentatiei de executie si a urmatoarelor acte puse la dispozitie de antreprenor:"
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "bullet",
@@ -728,7 +845,8 @@
      {
       "t": "procese verbale lucrari ascunse;"
      }
-    ]
+    ],
+    "gapBefore": 0.95
    },
    {
     "type": "bullet",
@@ -736,7 +854,8 @@
      {
       "t": "documente de provenienta si calitate a materialelor puse in opera"
      }
-    ]
+    ],
+    "gapBefore": 1.8
    },
    {
     "type": "text",
@@ -744,7 +863,8 @@
      {
       "t": "In baza celor de mai sus,"
      }
-    ]
+    ],
+    "gapBefore": 1.8
    },
    {
     "type": "text",
@@ -754,7 +874,8 @@
       "b": 1
      }
     ],
-    "center": true
+    "center": true,
+    "gapBefore": 12.2
    },
    {
     "type": "text",
@@ -762,7 +883,8 @@
      {
       "t": "Prezentul proces verbal a fost intocmit in 3 exemplare, cate unul pentru fiecare parte."
      }
-    ]
+    ],
+    "gapBefore": -0.0
    },
    {
     "type": "sig4col",
@@ -781,7 +903,18 @@
    }
   ],
   "sigHeader": null,
-  "sigRows": []
+  "sigRows": [],
+  "_headerY": {
+   "titleLines": [
+    144.17677307128906,
+    167.9767608642578
+   ],
+   "meta": [
+    190.0957794189453,
+    202.3717803955078,
+    "Nr. 6 Data ................."
+   ]
+  }
  },
  {
   "titleLines": [
@@ -796,7 +929,8 @@
      {
       "t": "     Faza din lucrare supusă verificării:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "text",
@@ -804,7 +938,8 @@
      {
       "t": "Recepția instalației electrice interioare la punerea în funcțiune, Cf. C56-02, Caiet Instalatii I-Instalatii electrice interioare."
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -812,7 +947,8 @@
      {
       "t": "     Elementele de identificare:"
      }
-    ]
+    ],
+    "gapBefore": 25.02
    },
    {
     "type": "bullet",
@@ -820,7 +956,8 @@
      {
       "t": "Instalație electrică interioară {specificatie_conducta}, obiectivul {tronson_cod}, comuna {locatie}."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "text",
@@ -828,7 +965,8 @@
      {
       "t": "     Verificările s-au făcut pe baza proiectului nr. {proiect_nr} și a planșelor {planse};"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "text",
@@ -836,7 +974,8 @@
      {
       "t": "     Concluzii:"
      }
-    ]
+    ],
+    "gapBefore": 6.37
    },
    {
     "type": "bullet",
@@ -844,7 +983,8 @@
      {
       "t": "La terminarea lucrărilor instalația electrică interioară este funcțională."
      }
-    ]
+    ],
+    "gapBefore": 0.37
    },
    {
     "type": "bullet",
@@ -852,7 +992,8 @@
      {
       "t": "Lucrările s-au realizat conform proiectului tehnic de execuție și cerințelor caietului de sarcini C56-02."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    },
    {
     "type": "bullet",
@@ -860,7 +1001,8 @@
      {
       "t": "Lucrarea poate fi propusă pentru recepția la punerea în funcțiune."
      }
-    ]
+    ],
+    "gapBefore": 2.22
    }
   ],
   "sigHeader": true,
@@ -869,6 +1011,17 @@
    "Constructor:             Ing. {constructor_reprezentant}",
    "R.T.E.:                     Ing. {rte_nume}",
    "Proiectant.:              Ing. {proiectant_reprezentant}"
-  ]
+  ],
+  "_headerY": {
+   "titleLines": [
+    120.69575500488281,
+    139.3457794189453
+   ],
+   "meta": [
+    157.99574279785156,
+    170.27174377441406,
+    "Nr. 7 Data ................."
+   ]
+  }
  }
 ]
