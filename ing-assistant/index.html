@@ -641,7 +641,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b79-2026-10-15";
+  var BUILD = "b80-2026-10-16";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -1861,18 +1861,31 @@
         hyTop += 12.8;
       });
 
+      var headerY = pvc._headerY || {};
+      var titleYs = headerY.titleLines || [];
       var yTop = 141.99;
       pvc.titleLines.forEach(function (line, i) {
         var size = i === 0 ? 12 : 11;
-        drawCentered(pdfPage, fill(line), size, F.bold, yTop);
-        yTop += (i === 0 ? 19.76 : 18.65);
+        var ty = titleYs[i] != null ? titleYs[i] : yTop;
+        drawCentered(pdfPage, fill(line), size, F.bold, ty);
+        yTop = ty + (i === 0 ? 19.76 : 18.65);
       });
-      drawCentered(pdfPage, fill(pvc.meta), 11, F.regular, yTop);
-      yTop += 37.3;
+      var metaY = (headerY.meta && headerY.meta[0] != null) ? headerY.meta[0] : yTop;
+      drawCentered(pdfPage, fill(pvc.meta), 11, F.regular, metaY);
+      // gapBefore-ul primului bloc de conținut e măsurat față de Y1 (baza)
+      // liniei meta, nu față de Y0 (vârful) ei — avansăm cu înălțimea unei
+      // linii, la fel cum yTop avansează după fiecare linie desenată mai jos.
+      yTop = metaY + LINE_H;
 
       var firstBlock = true;
       pvc.blocks.forEach(function (block) {
-        if (block.type === "text" && !firstBlock) yTop += PARA_GAP_EXTRA;
+        if (firstBlock) {
+          yTop += (block.gapBefore != null ? block.gapBefore : 37.3);
+        } else if (block.gapBefore != null) {
+          yTop += block.gapBefore;
+        } else if (block.type === "text") {
+          yTop += PARA_GAP_EXTRA;
+        }
         firstBlock = false;
         if (block.type === "text") {
           var words = segsToWords(block.segs, fill);
