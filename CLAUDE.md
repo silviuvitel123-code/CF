@@ -353,14 +353,35 @@ aplicația reală (nu doar în mockup)** — toate în `comandaRowHTML`/funcții
   `data-comanda-field`) și NU se trimit la Supabase — de aceea NU există
   un `focusout`-persist pentru `data-comanda-field` (eliminat intenționat;
   nu-l re-adăuga, ar sparge regula „neconfirmat = nesalvat”).
-- **Selectarea materialului la adăugarea unei linii în comandă e un
-  `<input type="text" list="...">` + `<datalist>`** (nu `<select>`) — același
-  tipar ca `functii-sugestii` de la Pontaj (singurul alt loc din aplicație cu
-  sugestii de completare). Rezolvarea textului tăstat → `material_id` se face
-  prin potrivire EXACTĂ (trimmed) pe `denumire`, în handler-ul de `input`
-  pentru `data-comanda-item-material-search` — dacă nu există potrivire
-  exactă, `materialId` rămâne gol și butonul „Adaugă” (deja guardat) nu face
-  nimic.
+- **Selectarea materialului la adăugarea unei linii în comandă e o listă de
+  sugestii CUSTOM** (`.mat-search-wrap` + `.mat-suggest-list`), NU
+  `<select>` și NU `<input list="...">`+`<datalist>`. Istoricul: prima
+  variantă a folosit `<datalist>` nativ (ca `functii-sugestii` de la
+  Pontaj) — a trecut testul automat (Chromium), dar **bug real găsit în
+  producție**: utilizatorul a plasat 3 comenzi reale, niciuna n-a ajuns să
+  aibă vreun material în ea (`santier_materiale_comenzi_itemi` gol, verificat
+  direct în DB), pentru că `<datalist>` nu arată NICIO sugestie pe
+  Safari/iOS — utilizatorul tasta, nu vedea nimic de ales, iar rezolvarea
+  text→`material_id` cerea potrivire EXACTĂ pe `denumire`, deci rămânea
+  goală; butonul „Adaugă” făcea un `return` tăcut, fără nicio eroare. Dublu
+  fix, amândouă obligatorii la orice alt loc din app cu nevoie de căutare:
+  1. Listă de sugestii randată de aplicație însăși (`div`-uri cu
+     `data-comanda-item-pick="comandaId|materialId"`, deschisă la click pe
+     `data-comanda-item-search-open`, închisă la alegere sau la click în
+     afara ei — tipar identic cu `colorPickerOpen`), nu `<datalist>`.
+  2. **`addComandaItem` nu mai face NICIODATĂ un `return` tăcut** — fără
+     material ales sau fără cantitate > 0, arată `flashSyncError` cu un
+     mesaj clar. O acțiune a utilizatorului care pare să reușească dar nu
+     face nimic e mult mai rău decât o eroare vizibilă.
+  Filtrarea listei de sugestii e LIVE (pe sub-șir, nu doar prefix) la fiecare
+  literă tastată, dar handler-ul de `input` pentru
+  `data-comanda-item-material-search` NU apelează `render()` (ar reconstrui
+  tot `#app`, vezi comentariul din funcția `render()`, și ar fura focusul din
+  input la mijlocul tastării) — patch-uiește direct nodul
+  `#mat-suggest-<comandaId>` din DOM, prin `comandaItemSuggestionsListHTML()`.
+  Deschiderea inițială a listei (click) TOT prin `render()` trece, pentru că
+  un click e o acțiune discretă, nu tastare continuă — doar actualizările
+  ulterioare, din tastare, ocolesc `render()`.
 - **Bug de aliniere găsit și reparat**: aplicația are o regulă GLOBALĂ
   `th, td { text-align: center }` (convenție veche, pentru alte tabele din
   app). `.mtable`/`.items-table` suprascriau explicit doar coloanele
