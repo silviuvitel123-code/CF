@@ -587,3 +587,43 @@ Commit pe branch-ul de lucru → push → merge pe `main` → push. Bump `BUILD`
 în `index.html` la fiecare schimbare de șablon/cod. Vezi istoricul de commit-uri
 recente pentru exemple de mesaje de commit (în română, cu explicația cauzei
 reale, nu doar "fix pagination").
+
+Deploy-ul live e pe Vercel (`https://ing-assistant.vercel.app/`), cu
+GitHub integration care redeployează automat la fiecare push pe `main` —
+`vercel.json` (în `ing-assistant/`) pune `Cache-Control: no-cache, no-store,
+must-revalidate` pe toate rutele, special ca un bump de `BUILD` să ajungă
+imediat la utilizatori, fără cache de browser.
+
+**Incident real (21 oct. 2026)**: utilizatorul a raportat că două feature-uri
+noi (bară de căutare + sortare la Listă materiale) nu apăreau deloc, deși
+erau deja pe `main` — `git log origin/main` confirma codul corect, cu
+`BUILD` la zi. Nu era deloc cache de browser/PWA (ipoteza inițială, greșită).
+Cauza reală, găsită uitându-ne direct în Vercel → Deployments:
+1. **Promovarea în Production are o întârziere reală** față de push — fiecare
+   commit pe `main` apare întâi ca deployment "Ready" dar fără bulina
+   albastră de "Production" activă; abia după un timp (minute, posibil mai
+   mult dacă vin push-uri rapide unul după altul, posibil coadă) devine
+   activ cel care chiar servește domeniul. Deci imediat după un push, un
+   test al utilizatorului poate corect să arate încă build-ul vechi — nu
+   înseamnă că ceva e stricat.
+2. **Un "Redeploy" manual dat din dashboard pe un rând VECHI din listă**
+   (utilizatorul încercase să forțeze actualizarea) a creat un deployment
+   nou de tip "Redeploy of `<id>`" (ID intern Vercel, NU hash de commit) —
+   acesta a devenit activ ca Production, suprascriind commit-ul cel mai nou,
+   pentru că redeployează codul deployment-ului vechi ales, nu HEAD-ul
+   curent al lui `main`.
+   **Regulă de reținut**: NU da "Redeploy" pe un rând vechi din listă ca să
+   forțezi o actualizare — redeployează EXACT codul vechi al ălui rând. Ca
+   să garantezi că merge codul cel mai nou: fie aștepți promovarea automată
+   (de obicei câteva minute), fie dai "Promote to Production" (nu
+   "Redeploy") explicit pe rândul cu commit-ul cel mai recent din `main`,
+   fie (cel mai simplu, din partea Claude) se face un push nou pe `main`
+   (chiar și un commit minor, ex. doar documentație) — asta creează un
+   deployment proaspăt din HEAD-ul curent, pe calea normală de auto-deploy
+   GitHub→Vercel, care se promovează normal, nu prin "Redeploy of <id>".
+Verificare: `BUILD`-ul afișat în aplicație (colțul stânga-jos, sub logo)
+trebuie să corespundă cu ultimul `var BUILD = "..."` din `ing-assistant/
+index.html` pe `main`. Nu există acces direct la Vercel din sandbox-ul
+Claude (politica de rețea blochează `*.vercel.app`, atât `curl` cât și
+unealta de web-fetch) — verificarea trebuie făcută manual, din
+dashboard-ul Vercel al utilizatorului.
