@@ -509,6 +509,22 @@ aplicația reală (nu doar în mockup)** — toate în `comandaRowHTML`/funcții
   explicit, cu `.num` suprascriind peste ele (right). Dacă adaugi un tabel
   nou oriunde în app, verifică explicit alinierea celulelor de bază — nu te
   baza pe default-ul browser-ului, regula globală centrată câștigă.
+- **Bară de căutare la Listă materiale** (cerută explicit după ce utilizatorul
+  a importat 108 materiale reale din Excel și nu mai găsea nimic cu scroll):
+  `state.siteForm.materialeSearchQuery`, input cu `data-materiale-search`,
+  filtrare live pe substring (case-insensitive) din `denumire`, prin
+  `materialeMatchesQuery`/`materialeTbodyHTML`/`materialeCountLabelHTML`.
+  Ca la căutarea din Comenzi: handler-ul de `input` NU apelează `render()`
+  (ar reconstrui tot `#app` și ar fura focusul la mijlocul tastării) — în
+  loc patch-uiește direct `#materiale-tbody-<siteId>` și
+  `#materiale-count-<siteId>` din DOM, prin id. Capcană reală evitată
+  explicit: `addMaterial` creează un rând nou cu `denumire: ""`, care NU s-ar
+  potrivi niciunui filtru activ nevid — ar fi apărut invizibil, exact genul de
+  „acțiune care pare să nu facă nimic" interzis explicit de regula de la
+  `addComandaItem` mai sus; fix: `addMaterial` golește
+  `materialeSearchQuery` înainte de `render()`, ca rândul nou (editabil) să
+  fie mereu vizibil imediat. Căutarea se resetează și la navigarea către alt
+  șantier (alături de celelalte câmpuri de `siteForm` legate de Materiale).
 
 ### Testare
 
