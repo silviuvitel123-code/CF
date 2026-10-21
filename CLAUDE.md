@@ -457,6 +457,48 @@ aplicația reală (nu doar în mockup)** — toate în `comandaRowHTML`/funcții
   preferință pentru „deasupra”, nu doar `position: fixed` simplu (care
   rezolvă DOAR tăierea prin `overflow:hidden`, nu și acoperirea de
   tastatură — două bug-uri diferite, descoperite separat, în două runde).
+- **Runda 3 — utilizatorul NU era pe telefon, era pe desktop browser** (a
+  clarificat-o explicit abia acum) și a raportat DOUĂ simptome noi, distincte
+  de tot ce era documentat mai sus:
+  1. **Dropdown-ul se deschidea în SUS în loc de jos.** Normal — preferința
+     „deasupra” de la runda 2 era necondiționată (presupunea mereu o
+     tastatură de evitat), dar pe desktop nu există nicio tastatură virtuală
+     de evitat, deci deschiderea în sus era pur și simplu greșită/surprinzătoare
+     acolo. Fix: „deasupra” se aplică ACUM doar dacă există dovadă CONCRETĂ că
+     o tastatură chiar acoperă ceva chiar acum (`window.innerHeight -
+     window.visualViewport.height > 80`) — pe desktop diferența aia e
+     întotdeauna 0, deci lista se deschide normal dedesubt, exact ca
+     `.colorpop`/`.daypop`.
+  2. **Nu putea scrie deloc în bara de căutare — bug real, separat, mai
+     vechi decât runda 2, care exista de la introducerea dropdown-ului
+     custom și nu fusese niciodată prins.** Cauza: click-ul pe
+     `data-comanda-item-search-open` focalizează automat `<input>`-ul din
+     interior (comportamentul implicit al browserului la click pe un câmp de
+     text) — dar handler-ul de `click` din aplicație rulează apoi `render()`
+     generic la finalul lanțului de `if/else`, care distruge ȘI RECONSTRUIEȘTE
+     tot `#app`, inclusiv acel input proaspăt focalizat. Rezultatul: input-ul
+     ARĂTA focalizat o clipă, dar tastarea nu ajungea nicăieri (focusul se
+     pierduse odată cu DOM-ul vechi). Exact tiparul „a render() here would
+     steal focus back off the field” documentat deja în handler-ul de
+     `input` din app pentru alte câmpuri — dar NU fusese aplicat la
+     deschiderea acestui dropdown. Fix: branch-ul de
+     `data-comanda-item-search-open` își face acum PROPRIUL `render()`
+     (nu lasă `render()`-ul generic de la final să ruleze — `needsRender =
+     false`), apoi apelează explicit `.focus()` pe input-ul nou creat —
+     exact tiparul deja folosit de handler-ele de `dblclick` pentru editarea
+     etichetelor/celulelor (`labelInput.focus()` etc., vezi mai jos în fișier).
+  **De ce testul automat nu a prins bug-ul #2 de două ori**: testul folosea
+  `page.fill()` pentru bara de căutare, care forțează focus pe elementul țintă
+  prin CDP, INDIFERENT de starea reală a DOM-ului paginii — deci „funcționa”
+  chiar și cu bug-ul de focus prezent. Rescris să folosească `page.click()`
+  (ca un click real) + `page.keyboard.type()` (care scrie DOAR în elementul
+  care are ACTUALMENTE focus, exact ca o apăsare de tastă reală), plus o
+  verificare explicită `document.activeElement === inputul respectiv` chiar
+  după deschidere. **Lecție de testare, generală**: `page.fill()` e
+  convenabil dar MASCHEAZĂ exact genul de bug „am construit un input nou dar
+  am uitat să-l focalizez” — pentru orice câmp deschis dinamic (popover, rând
+  nou, modal), verifică `document.activeElement` și folosește
+  `keyboard.type()`, nu `fill()`, dacă vrei ca testul să conteze ceva.
 - **Bug de aliniere găsit și reparat**: aplicația are o regulă GLOBALĂ
   `th, td { text-align: center }` (convenție veche, pentru alte tabele din
   app). `.mtable`/`.items-table` suprascriau explicit doar coloanele
