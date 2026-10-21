@@ -676,6 +676,11 @@
   .items-table select, .items-table input { font-family: var(--sans); font-size: 12px; background: var(--bg); color: var(--ink);
     border: 1px solid var(--border-strong); border-radius: 5px; padding: 4px 6px; }
   .mat-search-wrap input { width: 100%; }
+  .mat-list-search-wrap { position: relative; display: flex; align-items: center; }
+  .mat-list-search-wrap svg { position: absolute; left: 9px; color: var(--ink-faint); pointer-events: none; }
+  .mat-list-search-wrap input { font-family: var(--sans); font-size: 12.5px; background: var(--bg); color: var(--ink);
+    border: 1px solid var(--border-strong); border-radius: 6px; padding: 7px 10px 7px 31px; width: 220px; }
+  .mat-list-search-wrap input:focus { border-color: var(--navy); outline: none; background: var(--surface); }
   /* position:fixed + JS-computed left/top (positionMatSuggestList(), set from
      getBoundingClientRect() — same pattern as .daypop/.colorpop below), NOT
      position:absolute: this dropdown lives inside .items-table/.mtable-panel,
@@ -729,7 +734,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b87-2026-10-21";
+  var BUILD = "b88-2026-10-21";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -787,7 +792,8 @@
       comandaItemDraft: {},
       comandaItemDropdownOpen: null,
       comandaUploading: {},
-      materialeImport: null
+      materialeImport: null,
+      materialeSearchQuery: ""
     },
     sidebarNameEdit: { siteId: null, draft: "" }
   };
@@ -1715,6 +1721,11 @@
     var ordine = all.length ? Math.max.apply(null, all.map(function (m) { return m.ordine; })) + 1 : 0;
     materiale.push({ id: tempId, santierId: site.id, denumire: "", unitateMasura: "", cantitatePrevazuta: 0, ordine: ordine });
     state.siteForm.materialEditingId = tempId;
+    // Golește căutarea activă — materialul nou are denumire goală, deci ar
+    // fi filtrat (invizibil) din tabel dacă ar rămâne un query activ, exact
+    // genul de "acțiune care pare să nu facă nimic" interzis explicit în
+    // acest cod (vezi addComandaItem).
+    state.siteForm.materialeSearchQuery = "";
     render();
     sb.from("santier_materiale").insert({ santier_id: site.id, ordine: ordine }).select().single().then(function (res) {
       if (res.error) {
@@ -3343,7 +3354,8 @@
       chevronDown: '<path d="M6 9l6 6 6-6"/>',
       check: '<path d="M20 6 9 17l-5-5"/>',
       sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>',
-      moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>'
+      moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>',
+      search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>'
     };
     return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' + icons[name] + '</svg>';
   }
@@ -4319,16 +4331,43 @@
     '</tr>';
   }
 
+  function materialeMatchesQuery(m, query) {
+    var q = (query || "").trim().toLowerCase();
+    if (!q) return true;
+    return (m.denumire || "").toLowerCase().indexOf(q) !== -1;
+  }
+
+  function materialeTbodyHTML(mats, query) {
+    var filtered = mats.filter(function (m) { return materialeMatchesQuery(m, query); });
+    var rowsHtml = filtered.map(materialRowHTML).join("");
+    var emptyHtml = filtered.length === 0
+      ? '<tr><td colspan="8" class="doclist-empty progrid-empty-cell">' +
+        (mats.length === 0 ? "Niciun material adăugat încă." : "Niciun material nu corespunde căutării.") +
+        '</td></tr>'
+      : "";
+    return rowsHtml + emptyHtml;
+  }
+
+  function materialeCountLabelHTML(mats, query) {
+    var filteredCount = mats.filter(function (m) { return materialeMatchesQuery(m, query); }).length;
+    if ((query || "").trim() && filteredCount !== mats.length) {
+      return filteredCount + " din " + mats.length + (mats.length === 1 ? " material" : " materiale") + ' găsite, din listele de cantități ale proiectului';
+    }
+    return mats.length + (mats.length === 1 ? " material" : " materiale") + ', din listele de cantități ale proiectului';
+  }
+
   function listaMaterialePanelHTML(site) {
     var mats = materialeForSite(site);
+    var query = state.siteForm.materialeSearchQuery || "";
     var importHtml = (state.siteForm.materialeImport && state.siteForm.materialeImport.siteId === site.id)
       ? materialeImportPreviewHTML(site) : "";
-    var rowsHtml = mats.map(materialRowHTML).join("");
-    var emptyHtml = mats.length === 0 ? '<tr><td colspan="8" class="doclist-empty progrid-empty-cell">Niciun material adăugat încă.</td></tr>' : "";
     return '' +
       '<div class="mat-toolbar">' +
-        '<div class="helper" style="margin:0">' + mats.length + (mats.length === 1 ? " material" : " materiale") + ', din listele de cantități ale proiectului</div>' +
-        '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        '<div class="helper" id="materiale-count-' + site.id + '" style="margin:0">' + materialeCountLabelHTML(mats, query) + '</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+          '<div class="mat-list-search-wrap">' + icon("search", 14) +
+            '<input type="text" autocomplete="off" placeholder="Caută în materiale…" id="materiale-search-' + site.id + '" data-materiale-search="' + site.id + '" value="' + esc(query) + '">' +
+          '</div>' +
           '<label class="btn btn-ghost btn-sm doc-upload-label" for="materiale-import-input-' + site.id + '">' + icon("upload", 13) + 'Importă din Excel' +
             '<input type="file" id="materiale-import-input-' + site.id + '" data-import-excel-input="' + site.id + '" accept=".xls,.xlsx" style="display:none"></label>' +
           '<button class="btn btn-ghost btn-sm" data-add-material="' + site.id + '">' + icon("plus", 13) + 'Adaugă material</button>' +
@@ -4339,7 +4378,7 @@
         '<th style="width:32%">Denumire</th><th>UM</th><th style="text-align:center">Cant. prevăzută</th>' +
         '<th style="text-align:center">Cant. comandată</th><th style="text-align:center">Cant. primită</th>' +
         '<th style="text-align:center">Rămasă</th><th>Stare</th><th></th>' +
-      '</tr></thead><tbody>' + rowsHtml + emptyHtml + '</tbody></table></div>' +
+      '</tr></thead><tbody id="materiale-tbody-' + site.id + '">' + materialeTbodyHTML(mats, query) + '</tbody></table></div>' +
       '<div class="helper">„Cant. comandată” = suma din toate comenzile (indiferent dacă au ajuns); „Cant. primită” = doar din comenzile cu dată de primire completată — aceea se scade efectiv din prevăzut. Rând roșu + „DEPĂȘIT” = comandat peste cantitatea prevăzută.</div>';
   }
 
@@ -4834,14 +4873,14 @@
             state.view = "detail"; state.selectedSiteId = deferSiteId; state.activeTab = "date-santier";
             state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; state.siteForm.progresSubTab = "capitole"; state.siteForm.formulaBuilder = null;
             state.siteForm.pvDateEditing = false; state.siteForm.pvDateDraft = null;
-            state.siteForm.materialeSubTab = "lista"; state.siteForm.materialEditingId = null; state.siteForm.comandaExpandedId = null; state.siteForm.comandaEditingId = null; state.siteForm.comandaItemDropdownOpen = null; state.siteForm.materialeImport = null;
+            state.siteForm.materialeSubTab = "lista"; state.siteForm.materialEditingId = null; state.siteForm.comandaExpandedId = null; state.siteForm.comandaEditingId = null; state.siteForm.comandaItemDropdownOpen = null; state.siteForm.materialeImport = null; state.siteForm.materialeSearchQuery = "";
             render();
             window.scrollTo(0, 0);
           }, 260);
         } else {
           state.view = "detail"; state.selectedSiteId = t.dataset.openSite; state.activeTab = "date-santier"; state.siteForm.editing = false; state.siteForm.subTab = "sintetice"; state.siteForm.progresSubTab = "capitole"; state.siteForm.formulaBuilder = null; isNav = true;
           state.siteForm.pvDateEditing = false; state.siteForm.pvDateDraft = null;
-          state.siteForm.materialeSubTab = "lista"; state.siteForm.materialEditingId = null; state.siteForm.comandaExpandedId = null; state.siteForm.comandaEditingId = null; state.siteForm.comandaItemDropdownOpen = null; state.siteForm.materialeImport = null;
+          state.siteForm.materialeSubTab = "lista"; state.siteForm.materialEditingId = null; state.siteForm.comandaExpandedId = null; state.siteForm.comandaEditingId = null; state.siteForm.comandaItemDropdownOpen = null; state.siteForm.materialeImport = null; state.siteForm.materialeSearchQuery = "";
         }
       }
       else if (t.dataset.tab) {
@@ -5192,6 +5231,22 @@
       var cfParts = e.target.dataset.comandaField.split("|");
       var cfRow = materialeComenzi.filter(function (x) { return x.id === cfParts[0]; })[0];
       if (cfRow) cfRow[cfParts[1]] = e.target.value;
+    }
+    else if (e.target.dataset.materialeSearch) {
+      var msSiteId = e.target.dataset.materialeSearch;
+      state.siteForm.materialeSearchQuery = e.target.value;
+      // Live filter, direct pe nodurile din DOM (NU render() complet) — exact
+      // motivul de la data-comanda-item-material-search mai jos: un render()
+      // aici ar reconstrui tot #app și ar fura focusul din acest input la
+      // mijlocul tastării.
+      var msSite = findSite(msSiteId);
+      var msTbody = document.getElementById("materiale-tbody-" + msSiteId);
+      var msCount = document.getElementById("materiale-count-" + msSiteId);
+      if (msSite && msTbody) {
+        var msMats = materialeForSite(msSite);
+        msTbody.innerHTML = materialeTbodyHTML(msMats, e.target.value);
+        if (msCount) msCount.innerHTML = materialeCountLabelHTML(msMats, e.target.value);
+      }
     }
     else if (e.target.dataset.comandaItemQty) { comandaItemDraft(e.target.dataset.comandaItemQty).cantitate = e.target.value; }
     else if (e.target.dataset.comandaItemMaterialSearch) {
