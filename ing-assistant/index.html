@@ -632,7 +632,7 @@
   .mtable td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--ink); text-align: left; }
   .mtable tbody tr:last-child td { border-bottom: none; }
   .mtable tr.row-over td { background: var(--red-soft); }
-  .mtable td.num { font-family: var(--mono); text-align: right; white-space: nowrap; }
+  .mtable td.num { font-family: var(--mono); text-align: center; white-space: nowrap; }
   .mtable td.actions { text-align: right; white-space: nowrap; }
   .mtable td.denumire { max-width: 420px; }
   .badge-ok { background: var(--green-soft); color: var(--green); }
@@ -729,7 +729,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b86-2026-10-21";
+  var BUILD = "b87-2026-10-21";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -4336,9 +4336,9 @@
       '</div>' +
       importHtml +
       '<div class="panel mtable-panel"><table class="mtable"><thead><tr>' +
-        '<th style="width:32%">Denumire</th><th>UM</th><th style="text-align:right">Cant. prevăzută</th>' +
-        '<th style="text-align:right">Cant. comandată</th><th style="text-align:right">Cant. primită</th>' +
-        '<th style="text-align:right">Rămasă</th><th>Stare</th><th></th>' +
+        '<th style="width:32%">Denumire</th><th>UM</th><th style="text-align:center">Cant. prevăzută</th>' +
+        '<th style="text-align:center">Cant. comandată</th><th style="text-align:center">Cant. primită</th>' +
+        '<th style="text-align:center">Rămasă</th><th>Stare</th><th></th>' +
       '</tr></thead><tbody>' + rowsHtml + emptyHtml + '</tbody></table></div>' +
       '<div class="helper">„Cant. comandată” = suma din toate comenzile (indiferent dacă au ajuns); „Cant. primită” = doar din comenzile cu dată de primire completată — aceea se scade efectiv din prevăzut. Rând roșu + „DEPĂȘIT” = comandat peste cantitatea prevăzută.</div>';
   }
