@@ -729,7 +729,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b85-2026-10-21";
+  var BUILD = "b86-2026-10-21";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -4702,21 +4702,25 @@
     list.style.left = Math.min(Math.max(r.left, 8), viewportW - list.offsetWidth - 8) + "px";
     list.style.width = r.width + "px";
     var lh = list.offsetHeight;
-    // Preferă ABOVE input-ului, nu below: ăsta e un câmp de text, care
-    // cheamă aproape sigur tastatura virtuală pe telefon — iar tastatura
-    // acoperă mereu partea de JOS a ecranului, niciodată partea de sus.
-    // "Sub input, dacă încape" (ca la celelalte popover-uri de mai sus, care
-    // nu au nevoie de tastatură) ar plasa din nou lista exact acolo unde
-    // tastatura o va acoperi o clipă mai târziu.
-    var spaceAbove = r.top - 8;
-    var top = (spaceAbove >= lh) ? Math.max(8, r.top - lh - 4) : Math.min(r.bottom + 4, viewportH - lh - 8);
-    // Final safety clamp: on a real phone the browser auto-scrolls a
-    // focused input above the keyboard as it opens, so by the time the
-    // "resize" listener above fires, r.top should already be within
-    // viewportH — but clamp anyway rather than trust that ordering, since an
-    // uncovered edge case here is exactly the kind of thing that silently
-    // puts the list back behind the keyboard (see the comment above this
-    // function for how expensive that already was to track down once).
+    // "Deasupra" e preferat NUMAI când există o tastatură virtuală chiar
+    // deschisă ACUM (window.visualViewport arată vizibil mai puțin spațiu
+    // decât window.innerHeight — asta nu se întâmplă niciodată pe desktop,
+    // unde innerHeight și visualViewport.height sunt egale). Pe desktop
+    // (fără nicio tastatură) lista se deschide normal DEDESUBT, exact ca
+    // orice alt popover din aplicație (.colorpop/.daypop) — un utilizator pe
+    // desktop a raportat explicit că deschiderea în sus "nu merge bine" (nu
+    // se aștepta la ea, și nici n-avea vreun motiv să apară, fără tastatură
+    // de evitat).
+    var keyboardLikelyOpen = vv && (window.innerHeight - vv.height > 80);
+    var top;
+    if (keyboardLikelyOpen) {
+      var spaceAbove = r.top - 8;
+      top = (spaceAbove >= lh) ? Math.max(8, r.top - lh - 4) : Math.min(r.bottom + 4, viewportH - lh - 8);
+    } else {
+      top = (r.bottom + 4 + lh <= viewportH) ? (r.bottom + 4) : Math.max(8, r.top - lh - 4);
+    }
+    // Final safety clamp: never let the list extend past the currently
+    // visible area, whichever branch above picked its position.
     top = Math.min(top, viewportH - lh - 8);
     top = Math.max(top, 8);
     list.style.top = top + "px";
@@ -5108,7 +5112,22 @@
       else if (t.dataset.saveComanda) { saveComandaEdit(t.dataset.saveComanda); }
       else if (t.dataset.addComandaItem) { addComandaItem(t.dataset.addComandaItem); }
       else if (t.dataset.removeComandaItem) { removeComandaItem(t.dataset.removeComandaItem); }
-      else if (t.dataset.comandaItemSearchOpen) { state.siteForm.comandaItemDropdownOpen = t.dataset.comandaItemSearchOpen; }
+      else if (t.dataset.comandaItemSearchOpen) {
+        // Clicking the wrapper also focuses the <input> inside it (default
+        // browser behavior for clicking a text field) — but the generic
+        // render() at the bottom of this handler destroys and recreates the
+        // WHOLE #app DOM, including that just-focused input, leaving focus
+        // on nothing. Render right here instead, then explicitly re-focus
+        // the freshly-created input — same pattern as the dblclick
+        // label/cell-edit handlers below use for the same reason (see their
+        // own comments). Without this the search box LOOKS focused for an
+        // instant but typing goes nowhere — exactly the bug reported.
+        state.siteForm.comandaItemDropdownOpen = t.dataset.comandaItemSearchOpen;
+        render();
+        var matSearchInput = document.querySelector('[data-comanda-item-material-search="' + t.dataset.comandaItemSearchOpen + '"]');
+        if (matSearchInput) matSearchInput.focus();
+        needsRender = false;
+      }
       else if (t.dataset.comandaItemPick) {
         var pickParts = t.dataset.comandaItemPick.split("|");
         var pickDraft = comandaItemDraft(pickParts[0]);
