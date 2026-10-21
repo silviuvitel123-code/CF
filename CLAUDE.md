@@ -382,6 +382,31 @@ aplicația reală (nu doar în mockup)** — toate în `comandaRowHTML`/funcții
   Deschiderea inițială a listei (click) TOT prin `render()` trece, pentru că
   un click e o acțiune discretă, nu tastare continuă — doar actualizările
   ulterioare, din tastare, ocolesc `render()`.
+- **Runda 1 a dropdown-ului custom de mai sus (`position: absolute`) tot nu
+  mergea în producție** — utilizatorul a trimis o poză reală arătând lista de
+  sugestii aproape complet tăiată (doar un colț rotunjit vizibil sub bara de
+  căutare), iar `santier_materiale_comenzi_itemi` rămânea gol ȘI DUPĂ acest
+  prim fix. Cauza: `.mat-suggest-list` era `position: absolute` față de
+  `.mat-search-wrap`, dar e cuibărit în `.items-table` ȘI `.mtable-panel`,
+  care au AMÂNDOUĂ `overflow: hidden` (pus pentru colțurile lor rotunjite) —
+  orice conținut poziționat absolut care depășește acea cutie e tăiat la
+  randare. (Nu a reprodus identic în Chromium headless la lățimea testată
+  atunci — diferă probabil cu tastatura virtuală reală de pe telefon, care
+  micșorează spațiul vizibil disponibil fără ca `window.innerHeight` să
+  reflecte asta pe toate browserele — dar mecanismul de tăiere la
+  `overflow:hidden` e real și verificabil independent de asta.) Fix: `.mat-suggest-list`
+  e acum `position: fixed`, cu `left`/`top`/`width` calculate din
+  `getBoundingClientRect()` al input-ului de căutare prin `positionMatSuggestList()`
+  — EXACT tiparul `.colorpop`/`.daypop` (`positionColorPopover()`/
+  `positionOpenPopover()`), deja dovedit funcțional în restul aplicației,
+  apelat atât din `render()` cât și direct din handler-ul de `input` (care
+  ocolește `render()`, vezi mai sus). **Regula generală**: orice element
+  poziționat ca popover/dropdown care poate ajunge în interiorul unui
+  `.panel`/`.mtable-panel`/`.items-table` (toate cu `overflow: hidden`
+  pentru colțuri rotunjite) TREBUIE să fie `position: fixed` cu poziție
+  calculată din JS, NICIODATĂ `position: absolute` relativ la un ancestor
+  din interiorul acelor cutii — `overflow: hidden` câștigă mereu, indiferent
+  cât de sus pui `z-index`.
 - **Bug de aliniere găsit și reparat**: aplicația are o regulă GLOBALĂ
   `th, td { text-align: center }` (convenție veche, pentru alte tabele din
   app). `.mtable`/`.items-table` suprascriau explicit doar coloanele
