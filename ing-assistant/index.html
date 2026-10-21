@@ -729,7 +729,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b84-2026-10-21";
+  var BUILD = "b85-2026-10-21";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -4671,6 +4671,24 @@
   // called again (not just from render()) from the material-search input
   // handler, since that handler deliberately skips render() while typing
   // (see its own comment) and must still keep the list glued under the input.
+  //
+  // window.innerHeight is NOT enough on a phone: tapping the search input
+  // opens the virtual keyboard, which on most mobile browsers does NOT
+  // shrink the layout viewport (window.innerHeight stays the "no keyboard"
+  // value) — it just visually covers the bottom of the screen. Positioning
+  // against window.innerHeight placed the dropdown "below the input, there's
+  // room" by the stale pre-keyboard measurement, then the keyboard finished
+  // animating in a few hundred ms later and covered exactly that spot — a
+  // REAL bug, confirmed by zero POST requests to
+  // santier_materiale_comenzi_itemi ever reaching Supabase (checked the
+  // project's edge_logs directly): the user could never actually tap a
+  // suggestion, because it was sitting behind the keyboard the whole time,
+  // even though it *looked* positioned correctly in a screenshot taken
+  // before the keyboard had opened. window.visualViewport.height, where
+  // available, reflects the ACTUAL visible area (keyboard excluded) and
+  // fires a "resize" event as the keyboard animates — listened for below so
+  // the dropdown re-settles once the keyboard finishes opening, not just at
+  // the instant it was first shown.
   function positionMatSuggestList() {
     var comandaId = state.siteForm.comandaItemDropdownOpen;
     if (!comandaId) return;
@@ -4678,11 +4696,33 @@
     var input = document.querySelector('[data-comanda-item-material-search="' + comandaId + '"]');
     if (!list || !input) return;
     var r = input.getBoundingClientRect();
-    list.style.left = Math.min(Math.max(r.left, 8), window.innerWidth - list.offsetWidth - 8) + "px";
+    var vv = window.visualViewport;
+    var viewportW = vv ? vv.width : window.innerWidth;
+    var viewportH = vv ? vv.height : window.innerHeight;
+    list.style.left = Math.min(Math.max(r.left, 8), viewportW - list.offsetWidth - 8) + "px";
     list.style.width = r.width + "px";
     var lh = list.offsetHeight;
-    var top = (r.bottom + 4 + lh <= window.innerHeight) ? (r.bottom + 4) : Math.max(8, r.top - lh - 4);
+    // Preferă ABOVE input-ului, nu below: ăsta e un câmp de text, care
+    // cheamă aproape sigur tastatura virtuală pe telefon — iar tastatura
+    // acoperă mereu partea de JOS a ecranului, niciodată partea de sus.
+    // "Sub input, dacă încape" (ca la celelalte popover-uri de mai sus, care
+    // nu au nevoie de tastatură) ar plasa din nou lista exact acolo unde
+    // tastatura o va acoperi o clipă mai târziu.
+    var spaceAbove = r.top - 8;
+    var top = (spaceAbove >= lh) ? Math.max(8, r.top - lh - 4) : Math.min(r.bottom + 4, viewportH - lh - 8);
+    // Final safety clamp: on a real phone the browser auto-scrolls a
+    // focused input above the keyboard as it opens, so by the time the
+    // "resize" listener above fires, r.top should already be within
+    // viewportH — but clamp anyway rather than trust that ordering, since an
+    // uncovered edge case here is exactly the kind of thing that silently
+    // puts the list back behind the keyboard (see the comment above this
+    // function for how expensive that already was to track down once).
+    top = Math.min(top, viewportH - lh - 8);
+    top = Math.max(top, 8);
     list.style.top = top + "px";
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", positionMatSuggestList);
   }
 
   document.getElementById("app").addEventListener("click", function (e) {

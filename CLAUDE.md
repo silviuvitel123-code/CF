@@ -407,6 +407,56 @@ aplicația reală (nu doar în mockup)** — toate în `comandaRowHTML`/funcții
   calculată din JS, NICIODATĂ `position: absolute` relativ la un ancestor
   din interiorul acelor cutii — `overflow: hidden` câștigă mereu, indiferent
   cât de sus pui `z-index`.
+- **Runda 2, cauza REALĂ (confirmată, nu doar bănuită)**: utilizatorul a
+  raportat A TREIA oară că materialele tot nu se contorizau în comenzi —
+  DUPĂ fix-ul `position: fixed` de mai sus. În loc să ghicesc din nou dintr-o
+  poză, am interogat direct log-urile proiectului Supabase
+  (`mcp__Supabase__query_logs`, `source = 'edge_logs'`, filtrat după
+  `comenzi_itemi`): zeci de `GET`-uri către `santier_materiale_comenzi_itemi`
+  (reîncărcări de pagină), dar **NICIUN `POST`** — niciodată. Asta elimină
+  orice teorie despre RLS/schema/backend și demonstrează că butonul „Adaugă”
+  lovea mereu garda `if (!materialId) { flashSyncError(...); return; }`
+  din `addComandaItem` — adică utilizatorul NU reușea niciodată să aleagă
+  efectiv un material din listă, deși vizual (în poza trimisă) lista PĂREA
+  poziționată corect. Cauza: `window.innerHeight` NU scade când se deschide
+  tastatura virtuală pe majoritatea browserelor mobile (viewport-ul de
+  layout rămâne fix, tastatura doar ACOPERĂ vizual partea de jos a
+  ecranului) — `positionMatSuggestList()` calcula poziția o singură dată, la
+  deschidere, înainte ca tastatura să termine animația de apariție, folosind
+  o înălțime "fără tastatură"; o clipă mai târziu tastatura acoperea exact
+  acea zonă, iar sugestiile ajungeau să stea, invizibil, SUB tastatură —
+  nu puteau fi atinse, deși `position: fixed` rezolvase corect problema
+  anterioară de `overflow: hidden`. Dublu fix:
+  1. `window.visualViewport.height` (unde există) reflectă zona REAL
+     vizibilă (exclude tastatura), spre deosebire de `window.innerHeight` —
+     folosit acum ca limită de poziționare, cu un listener
+     `window.visualViewport.addEventListener("resize", positionMatSuggestList)`
+     înregistrat o singură dată la pornire, ca să repoziționeze lista live
+     când tastatura își termină animația (nu doar la momentul inițial al
+     deschiderii).
+  2. Lista preferă acum să se deschidă DEASUPRA input-ului, nu dedesubt —
+     tastatura acoperă mereu partea de JOS a ecranului, niciodată partea de
+     sus, deci „deasupra” e structural mai sigur pentru orice dropdown legat
+     de un `<input>` de text (spre deosebire de `.colorpop`/`.daypop`, care
+     nu cheamă nicio tastatură și pot rămâne „dedesubt, dacă încape”).
+  Plus un clamp final (`top = Math.min(top, viewportH - lh - 8)`) care NU
+  are voie să lase lista să depășească zona vizibilă curentă indiferent de
+  ramura aleasă mai sus — apărare suplimentară pentru cazul în care
+  `r.top` al input-ului nu e încă în zona vizibilă quando se calculează
+  poziția (browserul mobil derulează automat input-ul focalizat deasupra
+  tastaturii, dar nu garantat înainte ca listener-ul de `resize` să ruleze).
+  **Testat printr-un `visualViewport` fals**, instalat cu
+  `page.addInitScript()` ÎNAINTE de navigare (ca să fie deja activ când
+  codul aplicației își înregistrează propriul listener), cu o funcție
+  `window.__setKeyboardOpen(bool)` care micșorează `.height` la 1/3 și
+  declanșează manual callback-urile de `resize` — un `visualViewport` real
+  nu poate fi micșorat la comandă dintr-un test, dar efectul unei tastaturi
+  reale e identic. **Lecție pentru orice alt dropdown/popover legat de un
+  `<input>` de text pe care-l mai adaugi în aplicație**: `window.innerHeight`
+  NU e suficient, trebuie `window.visualViewport` + listener de `resize` +
+  preferință pentru „deasupra”, nu doar `position: fixed` simplu (care
+  rezolvă DOAR tăierea prin `overflow:hidden`, nu și acoperirea de
+  tastatură — două bug-uri diferite, descoperite separat, în două runde).
 - **Bug de aliniere găsit și reparat**: aplicația are o regulă GLOBALĂ
   `th, td { text-align: center }` (convenție veche, pentru alte tabele din
   app). `.mtable`/`.items-table` suprascriau explicit doar coloanele
