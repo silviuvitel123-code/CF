@@ -675,11 +675,17 @@
   .items-table td.num { font-family: var(--mono); text-align: right; }
   .items-table select, .items-table input { font-family: var(--sans); font-size: 12px; background: var(--bg); color: var(--ink);
     border: 1px solid var(--border-strong); border-radius: 5px; padding: 4px 6px; }
-  .mat-search-wrap { position: relative; }
   .mat-search-wrap input { width: 100%; }
-  .mat-suggest-list { position: absolute; top: calc(100% + 3px); left: 0; min-width: 220px; max-width: 360px;
+  /* position:fixed + JS-computed left/top (positionMatSuggestList(), set from
+     getBoundingClientRect() — same pattern as .daypop/.colorpop below), NOT
+     position:absolute: this dropdown lives inside .items-table/.mtable-panel,
+     both of which have overflow:hidden (for their own rounded corners), so an
+     absolutely-positioned child was silently clipped the instant it extended
+     past that box — real bug, found with a real screenshot, "Adaugă" looked
+     like it had nothing to pick because the list WAS there but invisible. */
+  .mat-suggest-list { position: fixed; min-width: 220px; max-width: 360px;
     max-height: 220px; overflow-y: auto; background: var(--surface-2); border: 1px solid var(--border-strong);
-    border-radius: 7px; box-shadow: 0 8px 20px rgba(0,0,0,.35); z-index: 20; }
+    border-radius: 7px; box-shadow: 0 8px 20px rgba(0,0,0,.35); z-index: 500; }
   .mat-suggest-item { padding: 7px 10px; font-size: 12px; color: var(--ink); cursor: pointer; text-align: left; }
   .mat-suggest-item:hover { background: var(--surface); color: var(--navy-hover); }
   .mat-suggest-empty { padding: 7px 10px; font-size: 12px; color: var(--ink-faint); }
@@ -723,7 +729,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b83-2026-10-21";
+  var BUILD = "b84-2026-10-21";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -4583,6 +4589,7 @@
       '<div class="main"><div class="main-inner' + (isWide ? " wide" : "") + '">' + main + '</div></div></div>';
     positionOpenPopover();
     positionColorPopover();
+    positionMatSuggestList();
     if (navChanged) {
       var mainInner = document.querySelector(".main-inner");
       motionAnimate(mainInner, { opacity: [0, 1], transform: ["translateY(6px)", "translateY(0px)"] }, { duration: 0.22, easing: "ease-out" });
@@ -4656,6 +4663,26 @@
     var top = (r.bottom + 4 + ph <= window.innerHeight) ? (r.bottom + 4) : Math.max(8, r.top - ph - 4);
     pop.style.left = left + "px";
     pop.style.top = top + "px";
+  }
+
+  // Same fixed-positioning trick as positionColorPopover/positionOpenPopover
+  // above, needed here because .mat-suggest-list lives inside .items-table /
+  // .mtable-panel, which both clip overflow for their own rounded corners —
+  // called again (not just from render()) from the material-search input
+  // handler, since that handler deliberately skips render() while typing
+  // (see its own comment) and must still keep the list glued under the input.
+  function positionMatSuggestList() {
+    var comandaId = state.siteForm.comandaItemDropdownOpen;
+    if (!comandaId) return;
+    var list = document.getElementById("mat-suggest-" + comandaId);
+    var input = document.querySelector('[data-comanda-item-material-search="' + comandaId + '"]');
+    if (!list || !input) return;
+    var r = input.getBoundingClientRect();
+    list.style.left = Math.min(Math.max(r.left, 8), window.innerWidth - list.offsetWidth - 8) + "px";
+    list.style.width = r.width + "px";
+    var lh = list.offsetHeight;
+    var top = (r.bottom + 4 + lh <= window.innerHeight) ? (r.bottom + 4) : Math.max(8, r.top - lh - 4);
+    list.style.top = top + "px";
   }
 
   document.getElementById("app").addEventListener("click", function (e) {
@@ -5125,6 +5152,7 @@
       if (cimsSite && cimsListEl) {
         cimsListEl.style.display = "";
         cimsListEl.innerHTML = comandaItemSuggestionsListHTML(cimsId, materialeForSite(cimsSite), cimsDraft.materialQuery);
+        positionMatSuggestList();
       }
     }
   });
