@@ -681,6 +681,9 @@
   .mat-list-search-wrap input { font-family: var(--sans); font-size: 12.5px; background: var(--bg); color: var(--ink);
     border: 1px solid var(--border-strong); border-radius: 6px; padding: 7px 10px 7px 31px; width: 220px; }
   .mat-list-search-wrap input:focus { border-color: var(--navy); outline: none; background: var(--surface); }
+  .mat-sort-select { font-family: var(--sans); font-size: 12.5px; background: var(--bg); color: var(--ink);
+    border: 1px solid var(--border-strong); border-radius: 6px; padding: 7px 8px; }
+  .mat-sort-select:focus { border-color: var(--navy); outline: none; background: var(--surface); }
   /* position:fixed + JS-computed left/top (positionMatSuggestList(), set from
      getBoundingClientRect() — same pattern as .daypop/.colorpop below), NOT
      position:absolute: this dropdown lives inside .items-table/.mtable-panel,
@@ -734,7 +737,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "b88-2026-10-21";
+  var BUILD = "b89-2026-10-21";
   var todayD = new Date();
 
   function emptySiteDraft() {
@@ -793,7 +796,8 @@
       comandaItemDropdownOpen: null,
       comandaUploading: {},
       materialeImport: null,
-      materialeSearchQuery: ""
+      materialeSearchQuery: "",
+      materialeSortKey: "ordine"
     },
     sidebarNameEdit: { siteId: null, draft: "" }
   };
@@ -4337,8 +4341,71 @@
     return (m.denumire || "").toLowerCase().indexOf(q) !== -1;
   }
 
-  function materialeTbodyHTML(mats, query) {
+  var MATERIALE_SORT_OPTIONS = [
+    { value: "ordine", label: "Ordine implicită" },
+    { value: "denumire-asc", label: "Denumire (A → Z)" },
+    { value: "denumire-desc", label: "Denumire (Z → A)" },
+    { value: "cantitate-desc", label: "Cant. prevăzută (mare → mică)" },
+    { value: "cantitate-asc", label: "Cant. prevăzută (mică → mare)" },
+    { value: "ramasa-desc", label: "Cant. rămasă (mare → mică)" },
+    { value: "depasite-first", label: "Depășite primele" },
+    { value: "finalizate-first", label: "Finalizate primele" }
+  ];
+
+  function materialeDenumireCompare(a, b) {
+    return (a.denumire || "").localeCompare(b.denumire || "", "ro", { sensitivity: "base" });
+  }
+
+  // Sortează o listă DEJA filtrată de materiale, după cheia aleasă din
+  // MATERIALE_SORT_OPTIONS. Calculează cantitățile derivate (comandată/
+  // primită/rămasă/depășit) o singură dată per material, nu de N ori în
+  // comparator, ca să nu refacă suma liniilor de comandă la fiecare
+  // comparație dintr-un sort O(n log n).
+  function materialeSortMats(mats, sortKey) {
+    var withCalc = mats.map(function (m) { return { m: m, calc: materialCantitati(m) }; });
+    switch (sortKey) {
+      case "denumire-asc":
+        withCalc.sort(function (a, b) { return materialeDenumireCompare(a.m, b.m); });
+        break;
+      case "denumire-desc":
+        withCalc.sort(function (a, b) { return materialeDenumireCompare(b.m, a.m); });
+        break;
+      case "cantitate-desc":
+        withCalc.sort(function (a, b) { return (b.m.cantitatePrevazuta || 0) - (a.m.cantitatePrevazuta || 0) || materialeDenumireCompare(a.m, b.m); });
+        break;
+      case "cantitate-asc":
+        withCalc.sort(function (a, b) { return (a.m.cantitatePrevazuta || 0) - (b.m.cantitatePrevazuta || 0) || materialeDenumireCompare(a.m, b.m); });
+        break;
+      case "ramasa-desc":
+        withCalc.sort(function (a, b) { return b.calc.ramasa - a.calc.ramasa || materialeDenumireCompare(a.m, b.m); });
+        break;
+      case "depasite-first":
+        // Rândurile roșii (comandat peste prevăzut) primele, apoi restul —
+        // în fiecare grup, alfabetic, ca ordinea să rămână previzibilă.
+        withCalc.sort(function (a, b) { return (a.calc.peste ? 0 : 1) - (b.calc.peste ? 0 : 1) || materialeDenumireCompare(a.m, b.m); });
+        break;
+      case "finalizate-first":
+        // "Finalizat" = tot ce era prevăzut a fost deja PRIMIT (rămasă <= 0)
+        // — nu doar comandat; vezi regula de calcul de mai sus din
+        // materialCantitati (cantitate primită e cea care se scade efectiv).
+        withCalc.sort(function (a, b) {
+          var aFin = a.calc.ramasa <= 0 ? 0 : 1, bFin = b.calc.ramasa <= 0 ? 0 : 1;
+          return aFin - bFin || materialeDenumireCompare(a.m, b.m);
+        });
+        break;
+      default:
+        break; // "ordine" — materialeForSite(...) e deja sortat după ordine
+    }
+    return withCalc.map(function (x) { return x.m; });
+  }
+
+  function materialeVisibleMats(mats, query, sortKey) {
     var filtered = mats.filter(function (m) { return materialeMatchesQuery(m, query); });
+    return materialeSortMats(filtered, sortKey || "ordine");
+  }
+
+  function materialeTbodyHTML(mats, query, sortKey) {
+    var filtered = materialeVisibleMats(mats, query, sortKey);
     var rowsHtml = filtered.map(materialRowHTML).join("");
     var emptyHtml = filtered.length === 0
       ? '<tr><td colspan="8" class="doclist-empty progrid-empty-cell">' +
@@ -4359,8 +4426,12 @@
   function listaMaterialePanelHTML(site) {
     var mats = materialeForSite(site);
     var query = state.siteForm.materialeSearchQuery || "";
+    var sortKey = state.siteForm.materialeSortKey || "ordine";
     var importHtml = (state.siteForm.materialeImport && state.siteForm.materialeImport.siteId === site.id)
       ? materialeImportPreviewHTML(site) : "";
+    var sortOptionsHtml = MATERIALE_SORT_OPTIONS.map(function (o) {
+      return '<option value="' + o.value + '"' + (o.value === sortKey ? " selected" : "") + '>' + esc(o.label) + '</option>';
+    }).join("");
     return '' +
       '<div class="mat-toolbar">' +
         '<div class="helper" id="materiale-count-' + site.id + '" style="margin:0">' + materialeCountLabelHTML(mats, query) + '</div>' +
@@ -4368,6 +4439,7 @@
           '<div class="mat-list-search-wrap">' + icon("search", 14) +
             '<input type="text" autocomplete="off" placeholder="Caută în materiale…" id="materiale-search-' + site.id + '" data-materiale-search="' + site.id + '" value="' + esc(query) + '">' +
           '</div>' +
+          '<select class="mat-sort-select" id="materiale-sort-' + site.id + '" data-materiale-sort="' + site.id + '">' + sortOptionsHtml + '</select>' +
           '<label class="btn btn-ghost btn-sm doc-upload-label" for="materiale-import-input-' + site.id + '">' + icon("upload", 13) + 'Importă din Excel' +
             '<input type="file" id="materiale-import-input-' + site.id + '" data-import-excel-input="' + site.id + '" accept=".xls,.xlsx" style="display:none"></label>' +
           '<button class="btn btn-ghost btn-sm" data-add-material="' + site.id + '">' + icon("plus", 13) + 'Adaugă material</button>' +
@@ -4378,8 +4450,8 @@
         '<th style="width:32%">Denumire</th><th>UM</th><th style="text-align:center">Cant. prevăzută</th>' +
         '<th style="text-align:center">Cant. comandată</th><th style="text-align:center">Cant. primită</th>' +
         '<th style="text-align:center">Rămasă</th><th>Stare</th><th></th>' +
-      '</tr></thead><tbody id="materiale-tbody-' + site.id + '">' + materialeTbodyHTML(mats, query) + '</tbody></table></div>' +
-      '<div class="helper">„Cant. comandată” = suma din toate comenzile (indiferent dacă au ajuns); „Cant. primită” = doar din comenzile cu dată de primire completată — aceea se scade efectiv din prevăzut. Rând roșu + „DEPĂȘIT” = comandat peste cantitatea prevăzută.</div>';
+      '</tr></thead><tbody id="materiale-tbody-' + site.id + '">' + materialeTbodyHTML(mats, query, sortKey) + '</tbody></table></div>' +
+      '<div class="helper">„Cant. comandată” = suma din toate comenzile (indiferent dacă au ajuns); „Cant. primită” = doar din comenzile cu dată de primire completată — aceea se scade efectiv din prevăzut. Rând roșu + „DEPĂȘIT” = comandat peste cantitatea prevăzută. „Finalizate” = tot ce era prevăzut a fost deja primit.</div>';
   }
 
   function comandaRowHTML(site, o) {
@@ -5244,7 +5316,7 @@
       var msCount = document.getElementById("materiale-count-" + msSiteId);
       if (msSite && msTbody) {
         var msMats = materialeForSite(msSite);
-        msTbody.innerHTML = materialeTbodyHTML(msMats, e.target.value);
+        msTbody.innerHTML = materialeTbodyHTML(msMats, e.target.value, state.siteForm.materialeSortKey);
         if (msCount) msCount.innerHTML = materialeCountLabelHTML(msMats, e.target.value);
       }
     }
@@ -5286,6 +5358,7 @@
   document.getElementById("app").addEventListener("change", function (e) {
     if (e.target.id === "new-worker-metoda") state.pontaj.newWorker.metoda = e.target.value;
     else if (e.target.id === "addcol-tip-select") { state.siteForm.addColForm.tip = e.target.value; render(); }
+    else if (e.target.dataset.materialeSort) { state.siteForm.materialeSortKey = e.target.value; render(); }
     else if (e.target.id === "addcol-numarator") state.siteForm.addColForm.numarator = e.target.value;
     else if (e.target.id === "addcol-numitor") state.siteForm.addColForm.numitor = e.target.value;
     else if (e.target.dataset.addcolSumaCheck) {

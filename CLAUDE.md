@@ -525,6 +525,37 @@ aplicația reală (nu doar în mockup)** — toate în `comandaRowHTML`/funcții
   `materialeSearchQuery` înainte de `render()`, ca rândul nou (editabil) să
   fie mereu vizibil imediat. Căutarea se resetează și la navigarea către alt
   șantier (alături de celelalte câmpuri de `siteForm` legate de Materiale).
+- **Sortare la Listă materiale** (cerută explicit: alfabetic, după cantitate
+  mare/mică, după cele depășite, după cele finalizate). `<select
+  data-materiale-sort>`, `state.siteForm.materialeSortKey` (NU se resetează
+  la schimbarea șantierului — e o preferință de vizualizare, spre deosebire
+  de căutare, care e legată de datele curente). Opțiuni implementate în
+  `MATERIALE_SORT_OPTIONS`/`materialeSortMats`: `ordine` (implicit, cea din
+  `materialeForSite`), `denumire-asc`/`denumire-desc` (`localeCompare` cu
+  locale `"ro"`, pentru diacritice corecte), `cantitate-asc`/`cantitate-desc`
+  (pe `cantitatePrevazuta`), `ramasa-desc` (pe `calc.ramasa` — cerere
+  implicită a utilizatorului, „ce mai trebuie comandat", adăugată pe lângă
+  cele 4 explicit cerute, folosind același mecanism), `depasite-first`
+  (`calc.peste`) și `finalizate-first` (`calc.ramasa <= 0` — „finalizat"
+  înseamnă tot ce era prevăzut a fost efectiv PRIMIT, nu doar comandat,
+  aceeași regulă ca la badge-ul DEPĂȘIT/OK). Fiecare mod grupează/ordonează
+  după cheia principală, cu denumire alfabetică drept criteriu secundar de
+  departajare, ca rezultatul să fie determinist. Sortarea se aplică DUPĂ
+  filtrarea de căutare (`materialeVisibleMats`), deci cele două se combină:
+  căutarea îngustează lista, sortarea ordonează ce rămâne — verificat explicit
+  cu un test care caută și sortează simultan. Select-ul folosește `change`
+  (nu `input`), deci un `render()` complet la schimbare e sigur — spre
+  deosebire de inputul de căutare, un `<select>` nu are bug-ul de "focus
+  furat la mijlocul tastării" (alegerea se confirmă dintr-o singură acțiune
+  de `change`, nu se tastează litera cu literă).
+  **Idei suplimentare de filtre/sortare, neimplementate încă** (menționate
+  explicit utilizatorului înainte de implementare, de adăugat doar la
+  cerere): comutator rapid „arată doar depășite”/„doar nefinalizate” (fără
+  să schimbe select-ul de sortare), filtru după UM, sortare după procent de
+  completare (`primita/cantitatePrevazuta`) — mai relevantă decât cantitatea
+  absolută, dată fiind diferența mare de scară între materiale (ex. 8872 m
+  de țeavă vs. 8 buc. piese de trecere), dar nu s-a implementat încă din
+  cauza cazurilor limită cu `cantitatePrevazuta = 0`.
 
 ### Testare
 
